@@ -63,11 +63,11 @@ export function MymyKakao(p: SkinProps) {
     [menu, setMenu] = useState(false);
   const contacts = [
     { name: "周安信", avatar: "/FoundPhone-Studio/kakao/周安信-kakao.png" },
-    { name: "张家豪", avatar: "/FoundPhone-Studio/kakao/张家豪-kakao.png" },
+    { name: "张家豪", avatar: "/FoundPhone-Studio/kakao/張家豪-kakao.png" },
     { name: "李理悟", avatar: "/FoundPhone-Studio/kakao/李理悟-kakao.jpg" },
     { name: "李相沅", avatar: "/FoundPhone-Studio/kakao/李相沅-kakao.png" },
-    { name: "贺鑫隆", avatar: "/FoundPhone-Studio/kakao/贺鑫隆-kakao.png" },
-    { name: "郑相炫", avatar: "/FoundPhone-Studio/kakao/郑相炫-kakao.png" },
+    { name: "贺鑫隆", avatar: "/FoundPhone-Studio/kakao/賀鑫隆-kakao.png" },
+    { name: "郑相炫", avatar: "/FoundPhone-Studio/kakao/鄭相炫-kakao.png" },
     { name: "金俊抒", avatar: "/FoundPhone-Studio/kakao/金俊抒-kakao.png" },
     { name: "金虔佑", avatar: "/FoundPhone-Studio/kakao/金虔佑-kakao.png" },
   ],
