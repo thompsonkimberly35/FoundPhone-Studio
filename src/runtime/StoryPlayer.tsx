@@ -7,7 +7,7 @@ import "./player.css";
 
 const MEMBERS = ["李相沅", "周安信", "贺鑫隆", "金虔佑", "张家豪", "李理悟", "郑相炫", "金俊抒"];
 
-function CharacterSelection({ onComplete }: { onComplete: () => void }) {
+function CharacterSelection({ onComplete }: { onComplete: (boyfriend: string, friend: string) => void }) {
   const [step, setStep] = useState<"boyfriend" | "friend">("boyfriend");
   const [boyfriend, setBoyfriend] = useState("");
   const [friend, setFriend] = useState("");
@@ -18,7 +18,7 @@ function CharacterSelection({ onComplete }: { onComplete: () => void }) {
   const next = () => {
     if (!selected) return;
     if (isBoyfriend) setStep("friend");
-    else onComplete();
+    else onComplete(boyfriend, friend);
   };
 
   return (
@@ -47,6 +47,8 @@ function StoryPlayer() {
   const [work, setWork] = useState<Work | null>(null),
     [error, setError] = useState("");
   const [selectionComplete, setSelectionComplete] = useState(false);
+  const [selectedBoyfriend, setSelectedBoyfriend] = useState("");
+  const [selectedFriend, setSelectedFriend] = useState("");
   const musicRef = useRef<HTMLAudioElement>(null);
   const musicIndex = useRef(1);
   const [musicNeedsTap, setMusicNeedsTap] = useState(false);
@@ -90,7 +92,9 @@ function StoryPlayer() {
   return (
     <main className="story-runtime">
       <audio ref={musicRef} preload="auto" onEnded={advanceMusic} onError={advanceMusic} aria-hidden="true" />
-      {work ? selectionComplete ? <Phone work={work} /> : <CharacterSelection onComplete={() => {
+      {work ? selectionComplete ? <Phone work={work} selectedBoyfriend={selectedBoyfriend} selectedFriend={selectedFriend} /> : <CharacterSelection onComplete={(boyfriend, friend) => {
+        setSelectedBoyfriend(boyfriend);
+        setSelectedFriend(friend);
         playMusic(1);
         setSelectionComplete(true);
       }} /> : <p role="status">{error || "正在打开手机…"}</p>}
