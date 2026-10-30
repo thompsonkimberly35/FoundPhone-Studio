@@ -58,6 +58,21 @@ const homeScreenApps = new Set([
 ]);
 const dockApps = new Set(["phone", "messages", "camera", "safari"]);
 const allowedHomeApps = new Set([...homeScreenApps, ...dockApps]);
+const homePositions: DeviceLayout["positions"] = {
+  twitter: { page: 0, x: 0, y: 0 },
+  threads: { page: 0, x: 1, y: 0 },
+  youtube: { page: 0, x: 2, y: 0 },
+  kakao: { page: 0, x: 3, y: 0 },
+  spotify: { page: 0, x: 0, y: 1 },
+  instagram: { page: 0, x: 1, y: 1 },
+  notes: { page: 0, x: 2, y: 1 },
+  photos: { page: 0, x: 0, y: 4 },
+  clock: { page: 0, x: 1, y: 4 },
+  weather: { page: 0, x: 2, y: 4 },
+  douyin: { page: 0, x: 3, y: 4 },
+  calendar: { page: 0, x: 0, y: 5 },
+  settings: { page: 0, x: 1, y: 5 },
+};
 function applyCuratedApps(apps: AppConfig[]) {
   return apps.map((app) => {
     if (app.id === "appstore")
@@ -78,7 +93,7 @@ export function defaultLayout(input: Work): DeviceLayout {
   return {
     version: 1,
     workId: w.id,
-    previewLayoutRevision: 2,
+    previewLayoutRevision: 3,
     apps: applyCuratedApps(structuredClone(w.apps)),
     widgets: [],
     order: [
@@ -86,7 +101,7 @@ export function defaultLayout(input: Work): DeviceLayout {
       "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
     ],
     cleared: [],
-    positions: {},
+    positions: structuredClone(homePositions),
   };
 }
 export function validateLayout(raw: unknown, input: Work) {
@@ -113,14 +128,14 @@ export function validateLayout(raw: unknown, input: Work) {
     store.dock = false;
     store.folder = "";
   }
-  if (layout.previewLayoutRevision < 2) {
+  if (layout.previewLayoutRevision < 3) {
     layout.apps = applyCuratedApps(layout.apps);
     layout.order = [
       "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
       "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
     ];
-    layout.positions = {};
-    layout.previewLayoutRevision = 2;
+    layout.positions = structuredClone(homePositions);
+    layout.previewLayoutRevision = 3;
   }
   if (w.id === "ui-test-phone-v2" && layout.previewLayoutRevision < 1) {
     const visibleApps = ["wechat", "douyin"];
