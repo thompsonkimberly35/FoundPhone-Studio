@@ -1330,3 +1330,24 @@
   grid-template-rows: repeat(6, 99px);
   grid-auto-rows: 99px;
 }
+
+
+/* Photo wallpaper: keep the actual image crisp; blur only translucent controls. */
+.ios18 .phone-screen:not(.is-locked):not(.in-app) {
+  background-image: url("../home-screen-wallpaper.webp") !important;
+  background-size: cover !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
+.ios18 .phone-screen:not(.is-locked):not(.in-app) .wallpaper-orb {
+  display: none !important;
+}
+.ios18 .phone-screen.is-locked > .device-lock {
+  filter: none !important;
+  -webkit-filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background-size: 100% 100% !important;
+  background-position: center center !important;
+  background-repeat: no-repeat !important;
+}
