@@ -95,8 +95,8 @@ export function Avatar({
 }) {
   return (
     <span className={`catalog-avatar ${round ? "round" : ""}`}>
-      {safeMedia(src)?.startsWith("data:image/") ? (
-        <img src={safeMedia(src)} alt="" />
+      {safeMedia(src)?.startsWith("data:image/") || src.startsWith("/") ? (
+        <img src={safeMedia(src) || src} alt="" />
       ) : (
         name.slice(0, 1) || "人"
       )}
