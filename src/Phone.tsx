@@ -308,7 +308,7 @@ function PhoneRuntime({
           title: "【Dispatch独家】恋爱传闻引发热议",
           sender: "KoreaDispatch",
           body: `【Dispatch独家】
-ALPHA DRIVE ONE成员「${selectedBoyfriend || "李理悟"}」近日因恋爱传闻成为讨论焦点。
+ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成为讨论焦点。
 网传其结束工作行程后曾与一名圈外女性同行，相关说法目前尚未获得当事人或所属公司证实。
 目前网络流传的时间线与相关照片仍有待核实，是否存在恋爱关系、双方是否认识，均不能仅凭网传内容下定论。
 粉丝与网友对此意见不一，也有声音呼吁停止传播未经证实的私人信息，并等待正式回应。
@@ -347,7 +347,7 @@ ALPHA DRIVE ONE成员「${selectedBoyfriend || "李理悟"}」近日因恋爱传
           meta: { handle: "Dicon_korea", verified: "true", reposts: "128.6万", views: "2860万" },
         });
         const isTestPost = (item: Item) =>
-          /测试|test\s*(用户|账号|用戶|帳號)?|testuser|测试用户/i.test(
+          /测试|test|demo|sample|测试用户|测试内容/i.test(
             [item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" "),
           );
         const nextXPosts = [
@@ -1002,6 +1002,12 @@ function AppContent({
   const [likes, setLikes] = useState<string[]>([]);
   const shown = items
     .filter((i) => creator || visible(i, state))
+    .filter((i) =>
+      app.id !== "twitter" ||
+      !/测试|test|demo|sample|测试用户|测试内容/i.test(
+        [i.id, i.title, i.body, i.sender, i.folder, ...Object.values(i.meta ?? {})].join(" "),
+      ),
+    )
     .filter((i) =>
       (i.title + i.body + i.sender).toLowerCase().includes(q.toLowerCase()),
     );
