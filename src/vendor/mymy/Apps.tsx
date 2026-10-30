@@ -62,16 +62,18 @@ export function MymyKakao(p: SkinProps) {
     [query, setQuery] = useState(""),
     [menu, setMenu] = useState(false);
   const contacts = [
-    { name: "周安信", avatar: "/FoundPhone-Studio/kakao/周安信-kakao.png" },
-    { name: "张家豪", avatar: "/FoundPhone-Studio/kakao/張家豪-kakao.png" },
-    { name: "李理悟", avatar: "/FoundPhone-Studio/kakao/李理悟-kakao.jpg" },
-    { name: "李相沅", avatar: "/FoundPhone-Studio/kakao/李相沅-kakao.png" },
-    { name: "贺鑫隆", avatar: "/FoundPhone-Studio/kakao/賀鑫隆-kakao.png" },
-    { name: "郑相炫", avatar: "/FoundPhone-Studio/kakao/鄭相炫-kakao.png" },
-    { name: "金俊抒", avatar: "/FoundPhone-Studio/kakao/金俊抒-kakao.png" },
-    { name: "金虔佑", avatar: "/FoundPhone-Studio/kakao/金虔佑-kakao.png" },
-  ],
-    chatItems = p.items.filter((item) => !/测试对话/.test(item.title)),
+    { name: "周安信", file: "周安信-kakao.png" },
+    { name: "张家豪", file: "張家豪-kakao.png" },
+    { name: "李理悟", file: "李理悟-kakao.jpg" },
+    { name: "李相沅", file: "李相沅-kakao.png" },
+    { name: "贺鑫隆", file: "賀鑫隆-kakao.png" },
+    { name: "郑相炫", file: "鄭相炫-kakao.png" },
+    { name: "金俊抒", file: "金俊抒-kakao.png" },
+    { name: "金虔佑", file: "金虔佑-kakao.png" },
+  ].map((person) => ({ ...person, avatar: import.meta.env.BASE_URL + "kakao/" + person.file })),
+    isTestItem = (item: Item) => /测试|test/i.test([item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" ")),
+    chatItems = p.items.filter((item) => !isTestItem(item)),
+    memberAvatar = (name: string, saved = "") => contacts.find((person) => person.name === name)?.avatar || saved,
     messages: Item[] = chatItems.filter((item) => item.title === p.thread),
     scroll = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -106,7 +108,7 @@ export function MymyKakao(p: SkinProps) {
                   {!m.outgoing && run.first && (
                     <>
                       <div className="kzmav">
-                        <Avatar name={m.sender} src={m.avatar} />
+                        <Avatar name={m.sender} src={memberAvatar(m.sender, m.avatar)} />
                       </div>
                       <div className="kzmn">{m.sender}</div>
                     </>
@@ -286,7 +288,7 @@ export function MymyKakao(p: SkinProps) {
                         key={title}
                         onClick={() => p.onThread(title)}
                       >
-                        <Avatar name={title} src={latest.avatar} />
+                        <Avatar name={title} src={memberAvatar(title, latest.avatar)} />
                         <span className="kzkn">
                           <b>{title}</b>
                           <small>{latest.body}</small>
