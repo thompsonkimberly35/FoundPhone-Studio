@@ -340,12 +340,6 @@ export function MymyInstagram(p: SkinProps) {
     );
     return () => clearTimeout(t);
   }, [active, stories.length]);
-  const openStory = (i: number) => {
-    const m = stories[i];
-    setSeen([...new Set([...seen, m.id])]);
-    read(p, m);
-    setStory(i + 1);
-  };
   const openPost = (i: Item) => {
     if (p.creator || i.password) p.onItem(i);
     else {
