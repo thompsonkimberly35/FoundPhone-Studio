@@ -995,6 +995,9 @@ function AppContent({
   onSettings,
   onUi,
   work,
+  selectedBoyfriend,
+  selectedFriend,
+  onKakaoChoice,
 }: {
   app: AppPlugin;
   name: string;
@@ -1008,6 +1011,9 @@ function AppContent({
   onSettings?: () => void;
   onUi?: (key: string, value: UiValue) => void;
   work: Work;
+  selectedBoyfriend?: string;
+  selectedFriend?: string;
+  onKakaoChoice?: (character: string, playerText: string, reply: string) => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
   const [thread, setThread] = useState("");
@@ -1134,6 +1140,9 @@ function AppContent({
               onBack={onBack}
               thread={thread}
               onThread={setThread}
+              selectedBoyfriend={selectedBoyfriend}
+              selectedFriend={selectedFriend}
+              onKakaoChoice={onKakaoChoice}
             />
           </Suspense>
         </div>
