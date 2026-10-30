@@ -57,7 +57,6 @@ function Back({ onClick }: { onClick: () => void }) {
 }
 export function MymyKakao(p: SkinProps) {
   const [tab, setTab] = useSkinState<string>(p, "mymyTab", "聊天"),
-    [sent, setSent] = useSkinState<string[]>(p, "mymyKktSent", []),
     [query, setQuery] = useState(""),
     [showChoices, setShowChoices] = useState(false),
     [menu, setMenu] = useState(false);
