@@ -289,28 +289,40 @@ function PhoneRuntime({
       if (selectedBoyfriend || selectedFriend) {
         const current = runtimeRef.current;
         const existing = current.messages.kakao ?? [];
+        const avatarFor = (name: string) => {
+          const files: Record<string, string> = {
+            "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+            "李理悟": "李理悟-kakao.jpg", "李相沅": "李相沅-kakao.png",
+            "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+            "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+          };
+          return files[name] ? import.meta.env.BASE_URL + "kakao/" + files[name] : "";
+        };
         const incoming = [
-          selectedBoyfriend
-            ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, body: "你看到X了吗？", time: displayTime })
-            : null,
-          selectedFriend
-            ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, body: "你们还好吗？", time: displayTime })
-            : null,
+          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "你看到X了吗？", time: displayTime }) : null,
+          selectedFriend ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, avatar: avatarFor(selectedFriend), body: "你们还好吗？", time: displayTime }) : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
-        const fresh = incoming.filter((item) => !existing.some((saved) => saved.id === item.id));
-        // The stable message IDs make this a one-time story event. Once both
-        // selected characters' opening messages exist, later unlocks do nothing.
-        if (fresh.length) {
-          const notices = fresh.map((item) => `KakaoTalk: ${item.title}：${item.body}`);
+        // Reconcile stale saved opening messages with the current character choices.
+        const corrected = incoming.map((item) => {
+          const saved = existing.find((entry) => entry.id === item.id);
+          return saved ? { ...saved, title: item.title, sender: item.sender, avatar: item.avatar, body: item.body } : item;
+        });
+        const changed = corrected.some((item, index) => {
+          const saved = existing.find((entry) => entry.id === item.id);
+          return !saved || saved.title !== item.title || saved.sender !== item.sender || saved.avatar !== item.avatar || saved.body !== item.body;
+        });
+        if (changed) {
+          const notices = corrected.map((item) => `KakaoTalk: ${item.title}：${item.body}`);
+          const merged = [...existing.filter((item) => !corrected.some((next) => next.id === item.id)), ...corrected];
           noticesSeen.current = current.notifications.length + notices.length;
           update({
             ...current,
-            messages: { ...current.messages, kakao: [...existing, ...fresh] },
+            messages: { ...current.messages, kakao: merged },
             notifications: [...current.notifications, ...notices],
           });
           setBanner(notices[0] || "");
-          window.setTimeout(() => setBanner(notices[1] || ""), 1800);
-          window.setTimeout(() => setBanner(""), 6200);
+          window.setTimeout(() => setBanner(notices[1] || ""), 1500);
+          window.setTimeout(() => setBanner(""), 6000);
         }
       }
       event("password", pin);
@@ -462,7 +474,7 @@ function PhoneRuntime({
                     : work
                 }
                 time={displayTime}
-                notices={s.notifications}
+                notices={locked ? [] : s.notifications}
                 onDismiss={dismissNotice}
                 pinOpen={pinOpen}
                 setPinOpen={setPinOpen}
