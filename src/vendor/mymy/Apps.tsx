@@ -311,7 +311,30 @@ export function MymyKakao(p: SkinProps) {
                         key={title}
                         onClick={() => p.onThread(title)}
                       >
-                        <Avatar name={title} src={memberAvatar(title, latest.avatar)} />
+                        <span
+                          className="catalog-avatar round"
+                          style={{
+                            width: 48,
+                            height: 48,
+                            flex: "0 0 48px",
+                            overflow: "hidden",
+                            borderRadius: "50%",
+                            background: "#e9e5df",
+                          }}
+                        >
+                          <img
+                            src={memberAvatar(title, latest.avatar)}
+                            alt={title}
+                            loading="lazy"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "contain",
+                              display: "block",
+                              borderRadius: "50%",
+                            }}
+                          />
+                        </span>
                         <span className="kzkn">
                           <b>{title}</b>
                           <small>{latest.body}</small>
