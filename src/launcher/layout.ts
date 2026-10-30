@@ -60,6 +60,8 @@ const dockApps = new Set(["phone", "messages", "camera", "safari"]);
 const allowedHomeApps = new Set([...homeScreenApps, ...dockApps]);
 function applyCuratedApps(apps: AppConfig[]) {
   return apps.map((app) => {
+    if (app.id === "appstore")
+      return { ...app, installed: true, visible: false, dock: false, folder: "" };
     if (!allowedHomeApps.has(app.id))
       return { ...app, installed: false, visible: false, dock: false, folder: "" };
     return {
