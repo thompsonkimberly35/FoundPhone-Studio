@@ -28,15 +28,9 @@ import {
 import type { SkinProps } from "../../AppSkins";
 import { Avatar, Media } from "../../skins/shared";
 import { useSkinState } from "../../skinState";
-import { makeItem, type Item } from "../../schema";
+import type { Item } from "../../schema";
 import "./ui.css";
 import "./adapter.css";
-function grouped(items: Item[]) {
-  return [...new Set(items.map((i) => i.title))].map((title) => ({
-    title,
-    items: items.filter((i) => i.title === title),
-  }));
-}
 export function messageRun(items: Item[], index: number) {
   const m = items[index],
     previous = items[index - 1],
