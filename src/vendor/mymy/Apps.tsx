@@ -77,34 +77,7 @@ export function MymyKakao(p: SkinProps) {
     { name: "金俊抒", avatar: "/FoundPhone-Studio/kakao/金俊抒-kakao.png" },
     { name: "金虔佑", avatar: "/FoundPhone-Studio/kakao/金虔佑-kakao.png" },
   ],
-    messages = [
-      ...p.items.filter((i) => i.title === p.thread),
-      ...sent.flatMap((raw, index) => {
-        try {
-          const entry: unknown = JSON.parse(raw);
-          if (
-            !Array.isArray(entry) ||
-            entry.length !== 3 ||
-            !entry.every((v) => typeof v === "string") ||
-            entry[0] !== p.thread
-          )
-            return [];
-          return [
-            makeItem({
-              id: "local-kkt-" + index,
-              title: entry[0],
-              body: entry[1],
-              time: entry[2],
-              sender: p.owner || "机主",
-              outgoing: true,
-              meta: { local: "true" },
-            }),
-          ];
-        } catch {
-          return [];
-        }
-      }),
-    ],
+    messages: Item[] = [],
     scroll = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = scroll.current;
