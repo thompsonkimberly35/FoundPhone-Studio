@@ -536,8 +536,19 @@ export function MailSkin(p: Props) {
 export function ClockSkin(p: Props) {
   const { tab, setTab, items } = useContent(p, "闹钟");
   const [enabled, setEnabled] = useSkinState<string[]>(p, "alarms", p.items.map((i) => i.id)),
+    [alarmDefaultsRevision, setAlarmDefaultsRevision] = useSkinState<number>(
+      p,
+      "alarmDefaultsRevision",
+      0,
+    ),
     [seconds, setSeconds] = useState(0),
     [running, setRunning] = useState(false);
+  useEffect(() => {
+    if (alarmDefaultsRevision < 1) {
+      setEnabled(p.items.map((item) => item.id));
+      setAlarmDefaultsRevision(1);
+    }
+  }, [alarmDefaultsRevision, p.items, setEnabled, setAlarmDefaultsRevision]);
   useEffect(() => {
     if (!running) return;
     const timer = setInterval(() => setSeconds((s) => s + 1), 1000);
