@@ -447,18 +447,16 @@ export function MymyInstagram(p: SkinProps) {
           {!selected && tab === "主页" && (
             <section className="ig-official-profile">
               <div className="pf">
-                <Avatar name="ALPHA DRIVE ONE" />
+                <Avatar name="ALPHA DRIVE ONE" src="/FoundPhone-Studio/ald1-avatar-small.jpg" />
                 <div className="ps">
                   <div><b>0</b><small>帖子</small></div>
                   <div><b>2.5M</b><small>粉丝</small></div>
                   <div><b>8</b><small>关注中</small></div>
                 </div>
               </div>
-              <p className="pn"><b>ALPHA DRIVE ONE (ALD1)</b><br/>공식 Instagram</p>
+              <p className="pn"><b>ALPHA DRIVE ONE (알파드라이브원)</b></p>
               <p style={{padding:"0 16px",fontSize:13,lineHeight:1.55,margin:"4px 0 12px"}}>
-                ALPHA DRIVE ONE Official Instagram<br/>
-                ONE DESTINY, DRIVE TO THE TOP!<br/>
-                <a href="https://www.instagram.com/ald1.official/" target="_blank" rel="noreferrer">@ald1.official</a>
+                𝐃𝐢𝐠𝐢𝐭𝐚𝐥 𝐒𝐢𝐧𝐠𝐥𝐞 '𝐓𝐚𝐥𝐤 𝐭𝐨 𝐦𝐞' OUT NOW
               </p>
               <div style={{display:"flex",gap:8,padding:"0 16px 16px"}}>
                 <button style={{flex:1,border:0,borderRadius:7,padding:9,background:"#3797f0",color:"white",fontWeight:700}}>关注</button>
