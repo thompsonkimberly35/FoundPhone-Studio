@@ -317,8 +317,7 @@ export function MymyInstagram(p: SkinProps) {
   const [tab, setTab] = useSkinState<string>(p, "mymyTab", "主页"),
     [liked, setLiked] = useSkinState<string[]>(p, "mymyLiked", []),
     [saved, setSaved] = useSkinState<string[]>(p, "mymySaved", []),
-    [replies, setReplies] = useSkinState<string[]>(p, "mymyReplies", []),
-    [seen, setSeen] = useSkinState<string[]>(p, "mymySeen", []);
+    [replies, setReplies] = useSkinState<string[]>(p, "mymyReplies", []);
   const [sheet, setSheet] = useState<Item | null>(null),
     [selected, setSelected] = useState<Item | null>(null),
     [story, setStory] = useState(0),
