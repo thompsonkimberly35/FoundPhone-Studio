@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Phone } from "../Phone";
 import { validateWork, type Work } from "../schema";
@@ -47,6 +47,22 @@ function StoryPlayer() {
   const [work, setWork] = useState<Work | null>(null),
     [error, setError] = useState("");
   const [selectionComplete, setSelectionComplete] = useState(false);
+  const musicRef = useRef<HTMLAudioElement>(null);
+  const musicIndex = useRef(1);
+  const [musicNeedsTap, setMusicNeedsTap] = useState(false);
+
+  const playMusic = (index: number) => {
+    const audio = musicRef.current;
+    if (!audio) return;
+    musicIndex.current = index;
+    audio.src = import.meta.env.BASE_URL + "music/song" + index + ".mp3";
+    void audio.play().then(() => setMusicNeedsTap(false)).catch(() => setMusicNeedsTap(true));
+  };
+
+  const advanceMusic = () => {
+    const next = musicIndex.current >= 8 ? 1 : musicIndex.current + 1;
+    playMusic(next);
+  };
   useEffect(() => {
     const abort = new AbortController();
     fetch(
@@ -73,7 +89,17 @@ function StoryPlayer() {
   }, []);
   return (
     <main className="story-runtime">
-      {work ? selectionComplete ? <Phone work={work} /> : <CharacterSelection onComplete={() => setSelectionComplete(true)} /> : <p role="status">{error || "正在打开手机…"}</p>}
+      <audio ref={musicRef} preload="auto" onEnded={advanceMusic} onError={advanceMusic} aria-hidden="true" />
+      {work ? selectionComplete ? <Phone work={work} /> : <CharacterSelection onComplete={() => {
+        playMusic(1);
+        setSelectionComplete(true);
+      }} /> : <p role="status">{error || "正在打开手机…"}</p>}
+      {selectionComplete && musicNeedsTap && (
+        <button type="button" onClick={() => playMusic(musicIndex.current)}
+          style={{ position: "fixed", right: 16, bottom: 16, zIndex: 9999, padding: "10px 14px", borderRadius: 999, border: 0, background: "#222", color: "#fff" }}>
+          点击开启背景音乐
+        </button>
+      )}
     </main>
   );
 }
