@@ -71,7 +71,8 @@ export function MymyKakao(p: SkinProps) {
     { name: "金俊抒", avatar: "/FoundPhone-Studio/kakao/金俊抒-kakao.png" },
     { name: "金虔佑", avatar: "/FoundPhone-Studio/kakao/金虔佑-kakao.png" },
   ],
-    messages: Item[] = p.items.filter((item) => item.title === p.thread),
+    chatItems = p.items.filter((item) => !/测试对话/.test(item.title)),
+    messages: Item[] = chatItems.filter((item) => item.title === p.thread),
     scroll = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const node = scroll.current;
@@ -275,10 +276,10 @@ export function MymyKakao(p: SkinProps) {
               </>
             ) : (
               <>
-                <div className="kzksec">全部聊天 {new Set(p.items.map((item) => item.title)).size}</div>
-                {p.items.length ? (
-                  [...new Set(p.items.map((item) => item.title))].map((title) => {
-                    const latest = p.items.filter((item) => item.title === title).at(-1)!;
+                <div className="kzksec">全部聊天 {new Set(chatItems.map((item) => item.title)).size}</div>
+                {chatItems.length ? (
+                  [...new Set(chatItems.map((item) => item.title))].map((title) => {
+                    const latest = chatItems.filter((item) => item.title === title).at(-1)!;
                     return (
                       <button
                         className="kzkr"
