@@ -298,17 +298,17 @@ function PhoneRuntime({
             : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
         const fresh = incoming.filter((item) => !existing.some((saved) => saved.id === item.id));
-        if (fresh.length) {
-          const notices = fresh.map((item) => `KakaoTalk: ${item.title}：${item.body}`);
-          update({
-            ...current,
-            messages: { ...current.messages, kakao: [...existing, ...fresh] },
-            notifications: [...current.notifications, ...notices],
-          });
-          setBanner(notices[0]);
-          window.setTimeout(() => setBanner(notices[1] || ""), 1800);
-          window.setTimeout(() => setBanner(""), 6200);
-        }
+        const notices = incoming.map((item) => `KakaoTalk: ${item.title}：${item.body}`);
+        update({
+          ...current,
+          messages: { ...current.messages, kakao: [...existing, ...fresh] },
+          notifications: [...current.notifications, ...notices],
+        });
+        // Always announce the selected characters on unlock, even if their
+        // chat messages were already saved during an earlier play session.
+        setBanner(notices[0] || "");
+        window.setTimeout(() => setBanner(notices[1] || ""), 1800);
+        window.setTimeout(() => setBanner(""), 6200);
       }
       event("password", pin);
     } else {
