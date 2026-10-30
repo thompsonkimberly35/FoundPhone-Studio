@@ -452,31 +452,33 @@ export function MymyInstagram(p: SkinProps) {
         <div className="igb">
           {selected && post(selected)}
           {!selected && tab === "主页" && (
-            <>
-              <div className="sts">
-                {stories.map((s, n) => (
-                  <button
-                    className="st"
-                    key={s.id}
-                    onClick={() => openStory(n)}
-                  >
-                    <span
-                      className={"sr on " + (seen.includes(s.id) ? "seen" : "")}
-                    >
-                      <Avatar name={s.sender} src={s.avatar} />
-                    </span>
-                    <small>{s.sender}</small>
-                  </button>
-                ))}
+            <section className="ig-official-profile">
+              <div className="pf">
+                <Avatar name="ALPHA DRIVE ONE" />
+                <div className="ps">
+                  <div><b>0</b><small>帖子</small></div>
+                  <div><b>2.5M</b><small>粉丝</small></div>
+                  <div><b>8</b><small>关注中</small></div>
+                </div>
               </div>
-              {posts.map(post)}
-              {!posts.length && <Blank />}
-            </>
+              <p className="pn"><b>ALPHA DRIVE ONE (ALD1)</b><br/>공식 Instagram</p>
+              <p style={{padding:"0 16px",fontSize:13,lineHeight:1.55,margin:"4px 0 12px"}}>
+                ALPHA DRIVE ONE Official Instagram<br/>
+                ONE DESTINY, DRIVE TO THE TOP!<br/>
+                <a href="https://www.instagram.com/ald1.official/" target="_blank" rel="noreferrer">@ald1.official</a>
+              </p>
+              <div style={{display:"flex",gap:8,padding:"0 16px 16px"}}>
+                <button style={{flex:1,border:0,borderRadius:7,padding:9,background:"#3797f0",color:"white",fontWeight:700}}>关注</button>
+                <button style={{flex:1,border:0,borderRadius:7,padding:9,background:"#efefef",color:"#111",fontWeight:700}}>发消息</button>
+              </div>
+              <div className="ptab"><div className="on"><Grid /></div></div>
+              <div className="pg2"><Blank /></div>
+            </section>
           )}
           {!selected && tab === "个人主页" && (
             <>
               <div className="pf">
-                <Avatar name={p.owner || "机主"} />
+                <Avatar name="allyz_1101" />
                 <div className="ps">
                   <div>
                     <b>{posts.length}</b>
@@ -492,7 +494,7 @@ export function MymyInstagram(p: SkinProps) {
                   </div>
                 </div>
               </div>
-              <p className="pn">{p.owner}</p>
+              <p className="pn">allyz_1101</p>
               <div className="ptab">
                 <div className="on">
                   <Grid />
