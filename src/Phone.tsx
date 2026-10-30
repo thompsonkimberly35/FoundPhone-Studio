@@ -307,7 +307,7 @@ function PhoneRuntime({
           const saved = existing.find((entry) => entry.id === item.id);
           return saved ? { ...saved, title: item.title, sender: item.sender, avatar: item.avatar, body: item.body } : item;
         });
-        const changed = corrected.some((item, index) => {
+        const changed = corrected.some((item) => {
           const saved = existing.find((entry) => entry.id === item.id);
           return !saved || saved.title !== item.title || saved.sender !== item.sender || saved.avatar !== item.avatar || saved.body !== item.body;
         });
