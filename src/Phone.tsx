@@ -595,11 +595,14 @@ function PhoneRuntime({
                     <SystemNotifications
                       notices={s.notifications}
                       apps={work.apps}
-                      onOpen={() => {
+                      onOpen={(appId) => {
                         setPanel("");
-                        if (locked) beginUnlock();
-                        else if (installedApps.some((a) => a.id === "messages"))
-                          open("messages");
+                        if (locked) {
+                          beginUnlock();
+                          return;
+                        }
+                        if (installedApps.some((a) => a.id === appId))
+                          open(appId);
                       }}
                       onDismiss={dismissNotice}
                     />
@@ -724,7 +727,7 @@ function PhoneRuntime({
               style={{ position: "absolute", zIndex: 9999, top: 58, left: 8, right: 8, display: "flex", visibility: "visible", opacity: 1 }}
               onClick={() => {
                 setBanner("");
-                setPanel("notification");
+                open("kakao");
               }}
             >
               <AppIcon id="kakao" small />
