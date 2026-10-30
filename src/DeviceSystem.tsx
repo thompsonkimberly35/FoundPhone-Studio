@@ -103,6 +103,16 @@ export function DeviceLock({
   return (
     <motion.div
       className={"lock-screen device-lock " + (pinOpen ? "pin-open" : "")}
+      style={
+        work.phone.wallpaper === "custom-photo"
+          ? {
+              backgroundImage: `linear-gradient(180deg, #00000030 0%, transparent 34%, #00000020 100%), url("${import.meta.env.BASE_URL}lockscreen-photo.jpg.png")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }
+          : undefined
+      }
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ y: -852, opacity: 0 }}
