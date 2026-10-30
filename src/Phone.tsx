@@ -305,24 +305,59 @@ function PhoneRuntime({
         const xPosts = current.messages.twitter ?? [];
         const dispatchPost = makeItem({
           id: "permanent-dispatch-opening-post",
-          title: "【Dispatch独家】",
+          title: "【Dispatch独家】恋爱传闻引发热议",
           sender: "KoreaDispatch",
           body: `【Dispatch独家】
-ALPHA DRIVE ONE成员「${selectedBoyfriend || "李理悟"}」，疑似与圈外女性秘密交往，深夜约会行踪引发关注。
-据报道情节，两人曾多次在首尔江南区、汉南洞一带低调见面。
-李理悟结束工作行程后，疑似前往女方住处附近，两人更被目击于深夜一同离开私人聚会场所，举止亲密。
-与此同时，女方身份疑似遭网友扒出，有消息称，该女性并非演艺圈人士，但与娱乐行业存在一定联系，相关社交账号也成为讨论焦点。
-这段关系究竟从何时开始？双方所属公司又将如何回应？
-深夜约会时间线、女方身份线索及更多细节，点击评论区链接查看完整报道：
-`,
+ALPHA DRIVE ONE成员「${selectedBoyfriend || "李理悟"}」近日因恋爱传闻成为讨论焦点。
+网传其结束工作行程后曾与一名圈外女性同行，相关说法目前尚未获得当事人或所属公司证实。
+目前网络流传的时间线与相关照片仍有待核实，是否存在恋爱关系、双方是否认识，均不能仅凭网传内容下定论。
+粉丝与网友对此意见不一，也有声音呼吁停止传播未经证实的私人信息，并等待正式回应。
+相关讨论持续发酵，事件后续仍有待观察。`,
           time: displayTime,
           kind: "post",
-          likes: 286400,
-          comments: ["真的假的？", "希望双方尽快回应。", "已经转发给朋友了。"],
-          meta: { handle: "Dicon_korea", verified: "true", reposts: "42.8万", views: "2860万" },
+          likes: 2864000,
+          comments: [
+            "@m0on_7x：团队到底有没有看到粉丝的担心？希望尽快给个清楚说法。",
+            "@bluehour_092：行程和传闻都没说清楚，大家先别急着下结论。",
+            "@haechan_zip：比起炒话题，我更想知道团队接下来怎么处理。",
+            "@dive深夜：看到热搜真的很失望，希望本人正面回应。",
+            "@orbit_441：粉丝一直支持到现在，至少应该认真对待大家的疑问。",
+            "@cloudyday_88：未经证实的内容别继续扩散，但公司也不能一直沉默。",
+            "@pinknoise_21：宣传期碰上这种话题，团队公关反应太慢了。",
+            "@starry_031：希望不要把责任推给任何普通人，先把事实说清楚。",
+            "@mintchoco_5：现在最需要的是可信的说明，不是模糊回应。",
+            "@ddalki_404：对粉丝的信任感真的会被这种处理方式消耗。",
+            "@nightwalk_77：请把注意力放回事实，不要围攻传闻里的当事人。",
+            "@blue_fox_19：如果是假的就尽快澄清，如果是真的也请坦诚面对。",
+            "@moodmaker_02：管理团队这次的危机处理让人很难满意。",
+            "@soda_pop_615：别再让粉丝靠截图和猜测拼凑消息了。",
+            "@winterlog_33：支持作品不代表不能提出质疑，回应呢？",
+            "@luvdrive_108：现在各种说法满天飞，官方至少该说明已知情况。",
+            "@cloudnine_6：请停止传播私人行踪，讨论也该有边界。",
+            "@peachring_52：最失望的是到现在还没有清晰、负责的沟通。",
+            "@daybreak_209：希望成员本人和团队都认真看待这次争议。",
+            "@filmgrain_17：别拿粉丝的担心当流量，先把事情讲明白。",
+            "@sunday_kk：没有证据就别把猜测说成事实，媒体也该谨慎。",
+            "@violet_820：公关团队真的需要检讨，处理方式让讨论更混乱。",
+            "@lemonade_04：希望大家批评事情本身，不要攻击女性或曝光隐私。",
+            "@moonriver_71：粉丝想要的是尊重和坦诚，不是继续沉默。",
+            "@daisychain_29：等正式回应。在那之前请不要把未经证实的内容当真。",
+            "@echo_501：这次的沟通方式很难让人接受，希望之后别再发生。"
+          ],
+          meta: { handle: "Dicon_korea", verified: "true", reposts: "128.6万", views: "2860万" },
         });
-        const hasDispatchPost = xPosts.some((item) => item.id === dispatchPost.id);
-        const nextXPosts = hasDispatchPost ? xPosts : [dispatchPost, ...xPosts];
+        const isTestPost = (item: Item) =>
+          /测试|test\s*(用户|账号|用戶|帳號)?|testuser|测试用户/i.test(
+            [item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" "),
+          );
+        const nextXPosts = [
+          dispatchPost,
+          ...xPosts.filter((item) => item.id !== dispatchPost.id && !isTestPost(item)),
+        ];
+        const xPostsChanged =
+          xPosts.length !== nextXPosts.length ||
+          xPosts[0]?.id !== dispatchPost.id ||
+          xPosts.find((item) => item.id === dispatchPost.id)?.body !== dispatchPost.body;
         // Reconcile stale saved opening messages with the current character choices.
         const corrected = incoming.map((item) => {
           const saved = existing.find((entry) => entry.id === item.id);
@@ -344,7 +379,7 @@ ALPHA DRIVE ONE成员「${selectedBoyfriend || "李理悟"}」，疑似与圈外
           setBanner(notices[0] || "");
           window.setTimeout(() => setBanner(notices[1] || ""), 1500);
           window.setTimeout(() => setBanner(""), 6000);
-        } else if (!hasDispatchPost) {
+        } else if (xPostsChanged) {
           update({ ...current, messages: { ...current.messages, twitter: nextXPosts } });
         }
       }
