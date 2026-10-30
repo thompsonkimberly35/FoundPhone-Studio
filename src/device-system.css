@@ -162,7 +162,7 @@
   transform: scaleX(1.1);
 }
 .ios18 .phone-screen.wallpaper-custom-photo .device-lock {
-  background-image: linear-gradient(180deg, #00000030 0%, transparent 34%, #00000020 100%), url("/lockscreen-photo.jpg.png");
+  background-image: linear-gradient(180deg, #00000030 0%, transparent 34%, #00000020 100%), var(--custom-wallpaper);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
