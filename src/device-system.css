@@ -161,6 +161,12 @@
 .ios18 .home-indicator:active:after {
   transform: scaleX(1.1);
 }
+.ios18 .phone-screen.wallpaper-custom-photo .device-lock {
+  background-image: linear-gradient(180deg, #00000030 0%, transparent 34%, #00000020 100%), url("/lockscreen-photo.jpg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 .ios18 .device-lock {
   padding: 0;
   position: absolute;
