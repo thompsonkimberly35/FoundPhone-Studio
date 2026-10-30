@@ -305,8 +305,9 @@ function PhoneRuntime({
             messages: { ...current.messages, kakao: [...existing, ...fresh] },
             notifications: [...current.notifications, ...notices],
           });
-          setBanner(notices[notices.length - 1]);
-          window.setTimeout(() => setBanner(""), 4500);
+          setBanner(notices[0]);
+          window.setTimeout(() => setBanner(notices[1] || ""), 1800);
+          window.setTimeout(() => setBanner(""), 6200);
         }
       }
       event("password", pin);
@@ -716,18 +717,16 @@ function PhoneRuntime({
           )}
           {banner && !locked && (
             <button
-              className="device-banner"
+              className="device-banner kakao-unlock-banner"
+              style={{ position: "absolute", zIndex: 9999, top: 58, left: 8, right: 8, display: "flex", visibility: "visible", opacity: 1 }}
               onClick={() => {
                 setBanner("");
                 setPanel("notification");
               }}
             >
-              <AppIcon
-                id={notificationContent(banner, work.apps).appId}
-                small
-              />
+              <AppIcon id="kakao" small />
               <span>
-                <strong>{notificationContent(banner, work.apps).title}</strong>
+                <strong>KakaoTalk · {notificationContent(banner, work.apps).title}</strong>
                 <span>{notificationContent(banner, work.apps).body}</span>
               </span>
             </button>
