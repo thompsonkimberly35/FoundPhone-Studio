@@ -38,6 +38,30 @@ export const useStudio = create<Store>((set, get) => ({
         const w = createWork();
         await db.works.put(w);
         works = [w];
+      } else {
+        // Migrate the existing preview work: demo seed changes do not reach
+        // works already stored in IndexedDB, so update its weather and alarms once.
+        const current = works[0];
+        const needsWeather =
+          current.data.weather?.length !== 1 ||
+          current.data.weather?.[0]?.id !== "weather-seoul";
+        const needsAlarms =
+          current.data.clock?.length !== 8 ||
+          current.data.clock?.[0]?.id !== "alarm-1";
+        if (needsWeather || needsAlarms) {
+          const seed = createWork();
+          const migrated = {
+            ...current,
+            data: {
+              ...current.data,
+              ...(needsWeather ? { weather: seed.data.weather } : {}),
+              ...(needsAlarms ? { clock: seed.data.clock } : {}),
+            },
+            updatedAt: Date.now(),
+          };
+          await db.works.put(migrated);
+          works = [migrated, ...works.slice(1)];
+        }
       }
       set({ works, work: works[0], status: "已保存到本机" });
     } catch (e) {
