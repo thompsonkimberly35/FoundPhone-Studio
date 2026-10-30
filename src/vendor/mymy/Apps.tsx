@@ -163,7 +163,7 @@ export function MymyKakao(p: SkinProps) {
                 <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
                   onClick={() => {
                     const boyfriend = p.thread === p.selectedBoyfriend;
-                    p.onKakaoChoice?.(p.thread, boyfriend ? "看到了，怎么办？" : "不好，我好害怕", boyfriend ? "你的身份好像已经被扒出来了" : "妳先别紧张，他已经在和公司开会了");
+                    p.onKakaoChoice?.(p.thread, boyfriend ? "看到了，怎么办？" : "不好，我好害怕", boyfriend ? "你的身份好像已经被扒出来了" : "你先别紧张，他已经在和公司开会了");
                     setShowChoices(false);
                   }}>
                   {p.thread === p.selectedBoyfriend ? "看到了，怎么办？" : "不好，我好害怕"}
