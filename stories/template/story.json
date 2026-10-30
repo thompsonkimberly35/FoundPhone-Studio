@@ -3,7 +3,7 @@
   "id": "ui-test-phone-v2",
   "title": "捡手机",
   "description": "仅用于界面测试，不含剧情",
-  "revision": 4,
+  "revision": 5,
   "phone": {
     "owner": "机主",
     "passcode": "0925",
@@ -330,12 +330,92 @@
     ],
     "clock": [
       {
-        "id": "test-item-clock",
-        "title": "测试内容",
-        "body": "这是一条测试内容。",
-        "sender": "测试用户",
+        "id": "alarm-0311",
+        "title": "闹钟 03:11",
+        "body": "每天 03:11 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 03:11",
         "kind": "text",
-        "meta": {}
+        "meta": {
+          "clock": "03:11"
+        }
+      },
+      {
+        "id": "alarm-0411",
+        "title": "闹钟 04:11",
+        "body": "每天 04:11 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 04:11",
+        "kind": "text",
+        "meta": {
+          "clock": "04:11"
+        }
+      },
+      {
+        "id": "alarm-0508",
+        "title": "闹钟 05:08",
+        "body": "每天 05:08 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 05:08",
+        "kind": "text",
+        "meta": {
+          "clock": "05:08"
+        }
+      },
+      {
+        "id": "alarm-0724",
+        "title": "闹钟 07:24",
+        "body": "每天 07:24 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 07:24",
+        "kind": "text",
+        "meta": {
+          "clock": "07:24"
+        }
+      },
+      {
+        "id": "alarm-0822",
+        "title": "闹钟 08:22",
+        "body": "每天 08:22 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 08:22",
+        "kind": "text",
+        "meta": {
+          "clock": "08:22"
+        }
+      },
+      {
+        "id": "alarm-0919",
+        "title": "闹钟 09:19",
+        "body": "每天 09:19 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 09:19",
+        "kind": "text",
+        "meta": {
+          "clock": "09:19"
+        }
+      },
+      {
+        "id": "alarm-1120",
+        "title": "闹钟 11:20",
+        "body": "每天 11:20 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 11:20",
+        "kind": "text",
+        "meta": {
+          "clock": "11:20"
+        }
+      },
+      {
+        "id": "alarm-1225",
+        "title": "闹钟 12:25",
+        "body": "每天 12:25 提醒",
+        "sender": "时钟",
+        "time": "2026-10-30 12:25",
+        "kind": "text",
+        "meta": {
+          "clock": "12:25"
+        }
       }
     ],
     "reminders": [
@@ -380,12 +460,26 @@
     ],
     "weather": [
       {
-        "id": "test-item-weather",
-        "title": "测试内容",
-        "body": "这是一条测试内容。",
-        "sender": "测试用户",
+        "id": "seoul-weather",
+        "title": "首尔",
+        "body": "首尔天气资料（静态示例，非即时更新）。晴朗，气温 13°C。最高 19°C，最低 8°C。降雨概率 0%，风速 2.9 m/s。空气质量：普通。",
+        "sender": "天气",
+        "time": "2026-10-30 11:00",
         "kind": "text",
-        "meta": {}
+        "meta": {
+          "locationLabel": "韩国",
+          "temperature": "13",
+          "high": "19",
+          "low": "8",
+          "condition": "晴朗",
+          "aqi": "75",
+          "aqiLabel": "普通",
+          "rain": "0%",
+          "wind": "2.9 m/s",
+          "sunrise": "06:45",
+          "hourly": "[{\"time\":\"现在\",\"temperature\":13},{\"time\":\"13时\",\"temperature\":16},{\"time\":\"14时\",\"temperature\":17},{\"time\":\"15时\",\"temperature\":18},{\"time\":\"16时\",\"temperature\":18},{\"time\":\"日出\",\"temperature\":8}]",
+          "daily": "[{\"label\":\"今天\",\"low\":\"8\",\"high\":\"19\"},{\"label\":\"明天\",\"low\":\"9\",\"high\":\"18\"},{\"label\":\"周日\",\"low\":\"7\",\"high\":\"17\"}]"
+        }
       }
     ],
     "wallet": [
