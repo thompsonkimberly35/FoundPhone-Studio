@@ -302,6 +302,27 @@ function PhoneRuntime({
           selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "你看到X了吗？", time: displayTime }) : null,
           selectedFriend ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, avatar: avatarFor(selectedFriend), body: "你们还好吗？", time: displayTime }) : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
+        const xPosts = current.messages.twitter ?? [];
+        const dispatchPost = makeItem({
+          id: "permanent-dispatch-opening-post",
+          title: "【Dispatch独家】",
+          sender: "KoreaDispatch",
+          body: `【Dispatch独家】
+ALPHA DRIVE ONE成员「${selectedBoyfriend || "李理悟"}」，疑似与圈外女性秘密交往，深夜约会行踪引发关注。
+据报道情节，两人曾多次在首尔江南区、汉南洞一带低调见面。
+李理悟结束工作行程后，疑似前往女方住处附近，两人更被目击于深夜一同离开私人聚会场所，举止亲密。
+与此同时，女方身份疑似遭网友扒出，有消息称，该女性并非演艺圈人士，但与娱乐行业存在一定联系，相关社交账号也成为讨论焦点。
+这段关系究竟从何时开始？双方所属公司又将如何回应？
+深夜约会时间线、女方身份线索及更多细节，点击评论区链接查看完整报道：
+<span>游戏剧情虚构，非真实新闻。</span>`,
+          time: displayTime,
+          kind: "post",
+          likes: 286400,
+          comments: ["真的假的？", "希望双方尽快回应。", "已经转发给朋友了。"],
+          meta: { handle: "Dicon_korea", verified: "true", reposts: "42.8万", views: "2860万" },
+        });
+        const hasDispatchPost = xPosts.some((item) => item.id === dispatchPost.id);
+        const nextXPosts = hasDispatchPost ? xPosts : [dispatchPost, ...xPosts];
         // Reconcile stale saved opening messages with the current character choices.
         const corrected = incoming.map((item) => {
           const saved = existing.find((entry) => entry.id === item.id);
@@ -317,12 +338,14 @@ function PhoneRuntime({
           noticesSeen.current = current.notifications.length + notices.length;
           update({
             ...current,
-            messages: { ...current.messages, kakao: merged },
+            messages: { ...current.messages, kakao: merged, twitter: nextXPosts },
             notifications: [...current.notifications, ...notices],
           });
           setBanner(notices[0] || "");
           window.setTimeout(() => setBanner(notices[1] || ""), 1500);
           window.setTimeout(() => setBanner(""), 6000);
+        } else if (!hasDispatchPost) {
+          update({ ...current, messages: { ...current.messages, twitter: nextXPosts } });
         }
       }
       event("password", pin);
