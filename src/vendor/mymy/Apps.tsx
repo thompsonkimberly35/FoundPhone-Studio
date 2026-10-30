@@ -447,7 +447,7 @@ export function MymyInstagram(p: SkinProps) {
           {!selected && tab === "主页" && (
             <section className="ig-official-profile">
               <div className="pf">
-                <Avatar name="ALPHA DRIVE ONE" src="/FoundPhone-Studio/ald1-avatar.jpg.png" />
+                <span className="catalog-avatar round" style={{ overflow: "hidden" }}><img src="/FoundPhone-Studio/ald1-avatar.jpg.png" alt="ALPHA DRIVE ONE" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /></span>
                 <div className="ps">
                   <div><b>0</b><small>帖子</small></div>
                   <div><b>2.5M</b><small>粉丝</small></div>
