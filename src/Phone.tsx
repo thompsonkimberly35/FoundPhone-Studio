@@ -299,7 +299,7 @@ function PhoneRuntime({
           return files[name] ? import.meta.env.BASE_URL + "kakao/" + files[name] : "";
         };
         const incoming = [
-          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "你看到X了吗？", time: displayTime }) : null,
+          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "是你看到X了吗？", time: displayTime }) : null,
           selectedFriend ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, avatar: avatarFor(selectedFriend), body: "你们还好吗？", time: displayTime }) : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
         const xPosts = current.messages.twitter ?? [];
@@ -585,6 +585,23 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     );
                   }}
                   work={work}
+                  selectedBoyfriend={selectedBoyfriend}
+                  selectedFriend={selectedFriend}
+                  onKakaoChoice={(character, playerText, reply) => {
+                    const current = runtimeRef.current;
+                    const files: Record<string, string> = {
+                      "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+                      "李理悟": "李理悟-kakao.jpg", "李相沅": "李相沅-kakao.png",
+                      "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+                      "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+                    };
+                    const avatar = files[character] ? import.meta.env.BASE_URL + "kakao/" + files[character] : "";
+                    const time = current.time || displayTime;
+                    const stamp = Date.now();
+                    const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
+                    const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: true });
+                    update({ ...current, messages: { ...current.messages, kakao: [...(current.messages.kakao ?? []), outgoing, incomingReply] } });
+                  }}
                 />
               </AppWindow>
             ) : (
