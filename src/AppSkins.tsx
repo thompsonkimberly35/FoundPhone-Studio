@@ -47,6 +47,9 @@ export type SkinProps = {
   onBack: () => void;
   thread: string;
   onThread: (s: string) => void;
+  selectedBoyfriend?: string;
+  selectedFriend?: string;
+  onKakaoChoice?: (character: string, playerText: string, reply: string) => void;
 };
 function Avatar({
   name,
