@@ -232,46 +232,53 @@ export function MymyKakao(p: SkinProps) {
             )}
           </div>
           <div className="kzkb">
-            <div className="kzksec">
-              {tab === "好友" ? "好友" : "全部聊天"} {contacts.length}
-            </div>
-            {contacts
-              .filter((person) => person.name.includes(query.trim()))
-              .map((person) => (
-                <button
-                  className="kzkr kzkcr"
-                  key={person.name}
-                  onClick={() => p.onThread(person.name)}
-                >
-                  <span
-                    className="catalog-avatar round"
-                    style={{
-                      width: 48,
-                      height: 48,
-                      flex: "0 0 48px",
-                      overflow: "hidden",
-                      borderRadius: "50%",
-                      background: "#e9e5df",
-                    }}
-                  >
-                    <img
-                      src={person.avatar}
-                      alt={person.name}
-                      loading="lazy"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "contain",
-                        display: "block",
-                      }}
-                    />
-                  </span>
-                  <span className="kzkn">
-                    <b>{person.name}</b>
-                  </span>
-                </button>
-              ))}
-            {!contacts.length && <Blank />}
+            {tab === "好友" ? (
+              <>
+                <div className="kzksec">好友 {contacts.length}</div>
+                {contacts
+                  .filter((person) => person.name.includes(query.trim()))
+                  .map((person) => (
+                    <button
+                      className="kzkr kzkcr"
+                      key={person.name}
+                      onClick={() => p.onThread(person.name)}
+                    >
+                      <span
+                        className="catalog-avatar round"
+                        style={{
+                          width: 48,
+                          height: 48,
+                          flex: "0 0 48px",
+                          overflow: "hidden",
+                          borderRadius: "50%",
+                          background: "#e9e5df",
+                        }}
+                      >
+                        <img
+                          src={person.avatar}
+                          alt={person.name}
+                          loading="lazy"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "contain",
+                            display: "block",
+                          }}
+                        />
+                      </span>
+                      <span className="kzkn">
+                        <b>{person.name}</b>
+                      </span>
+                    </button>
+                  ))}
+                {!contacts.filter((person) => person.name.includes(query.trim())).length && <Blank />}
+              </>
+            ) : (
+              <>
+                <div className="kzksec">全部聊天 0</div>
+                <Blank />
+              </>
+            )}
           </div>
           <nav className="kzknv">
             {[Users, MessageCircle, Compass, Grid, MoreHorizontal].map(
