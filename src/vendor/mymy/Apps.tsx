@@ -108,7 +108,29 @@ export function MymyKakao(p: SkinProps) {
                   {!m.outgoing && run.first && (
                     <>
                       <div className="kzmav">
-                        <Avatar name={m.sender} src={memberAvatar(m.sender, m.avatar)} />
+                        <span
+                          className="catalog-avatar round"
+                          style={{
+                            width: 34,
+                            height: 34,
+                            flex: "0 0 34px",
+                            overflow: "hidden",
+                            borderRadius: 13,
+                            background: "#e9e5df",
+                          }}
+                        >
+                          <img
+                            src={memberAvatar(m.sender, m.avatar)}
+                            alt={m.sender}
+                            loading="lazy"
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              objectFit: "contain",
+                              display: "block",
+                            }}
+                          />
+                        </span>
                       </div>
                       <div className="kzmn">{m.sender}</div>
                     </>
