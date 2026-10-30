@@ -106,7 +106,7 @@ export function DeviceLock({
       style={
         work.phone.wallpaper === "custom-photo"
           ? {
-              backgroundImage: `linear-gradient(180deg, #00000030 0%, transparent 34%, #00000020 100%), url("${import.meta.env.BASE_URL}lockscreen-photo.jpg.png")`,
+              backgroundImage: `linear-gradient(180deg, #00000030 0%, transparent 34%, #00000020 100%), url("${import.meta.env.BASE_URL}lockscreen-wallpaper.jpg.jpg")`,
               backgroundSize: "cover",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
