@@ -298,7 +298,16 @@ function PhoneRuntime({
             : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
         const fresh = incoming.filter((item) => !existing.some((saved) => saved.id === item.id));
-        if (fresh.length) update({ ...current, messages: { ...current.messages, kakao: [...existing, ...fresh] } });
+        if (fresh.length) {
+          const notices = fresh.map((item) => `KakaoTalk: ${item.title}：${item.body}`);
+          update({
+            ...current,
+            messages: { ...current.messages, kakao: [...existing, ...fresh] },
+            notifications: [...current.notifications, ...notices],
+          });
+          setBanner(notices[notices.length - 1]);
+          window.setTimeout(() => setBanner(""), 4500);
+        }
       }
       event("password", pin);
     } else {
