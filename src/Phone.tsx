@@ -1258,7 +1258,7 @@ function AppContent({
                     <strong>{i.sender}</strong>
                     {i.meta?.handle && (
                       <small>
-                        @{i.meta.handle} {i.meta.verified === "true" ? "☑" : ""}
+                        @{i.meta.handle} {i.meta.verified === "true" ? <span aria-label="已认证" style={{ display: "inline-flex", width: 14, height: 14, marginLeft: 3, borderRadius: "50%", alignItems: "center", justifyContent: "center", background: "#1d9bf0", color: "#fff", fontSize: 10, lineHeight: 1 }}>✓</span> : null}
                       </small>
                     )}
                     <small>{i.time}</small>
