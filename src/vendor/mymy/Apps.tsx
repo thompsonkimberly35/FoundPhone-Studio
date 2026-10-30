@@ -58,8 +58,8 @@ function Back({ onClick }: { onClick: () => void }) {
 export function MymyKakao(p: SkinProps) {
   const [tab, setTab] = useSkinState<string>(p, "mymyTab", "聊天"),
     [sent, setSent] = useSkinState<string[]>(p, "mymyKktSent", []),
-    [draft, setDraft] = useState(""),
     [query, setQuery] = useState(""),
+    [showChoices, setShowChoices] = useState(false),
     [menu, setMenu] = useState(false);
   const contacts = [
     { name: "周安信", file: "周安信-kakao.png" },
@@ -93,7 +93,7 @@ export function MymyKakao(p: SkinProps) {
               </button>
             </span>
           </header>
-          <div className="msgs kk" ref={scroll}>
+          <div className="msgs kk" ref={scroll} onClick={() => setShowChoices(true)}>
             {messages.map((m, i) => {
               const run = messageRun(messages, i);
               return (
@@ -157,46 +157,24 @@ export function MymyKakao(p: SkinProps) {
             })}
             {!messages.length && <Blank />}
           </div>
-          <form
-            className="kzinp"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (draft.trim()) {
-                setSent([
-                  ...sent,
-                  JSON.stringify([
-                    p.thread,
-                    draft.trim(),
-                    p.virtualTime || "09:41",
-                  ]),
-                ]);
-                setDraft("");
-              }
-            }}
-          >
-            <button
-              type="button"
-              aria-label="添加聊天内容"
-              onClick={() => (p.creator ? p.onAdd() : setMenu(!menu))}
-            >
-              <Plus size={21} />
-            </button>
-            <input
-              aria-label="KKT消息"
-              placeholder="输入消息"
-              value={draft}
-              maxLength={2000}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-            <Smile size={22} />
-            <button
-              className={draft.trim() ? "go" : ""}
-              aria-label="发送KKT消息"
-              disabled={!draft.trim()}
-            >
-              ↑
-            </button>
-          </form>
+          {((p.thread === p.selectedBoyfriend && p.selectedBoyfriend) || (p.thread === p.selectedFriend && p.selectedFriend)) && (
+            <div className="kzinp" style={{ height: "auto", minHeight: 58, padding: "10px 14px", flexWrap: "wrap" }}>
+              {showChoices ? (
+                <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
+                  onClick={() => {
+                    const boyfriend = p.thread === p.selectedBoyfriend;
+                    p.onKakaoChoice?.(p.thread, boyfriend ? "看到了，怎么办？" : "不好，我好害怕", boyfriend ? "你的身份好像已经被扒出来了" : "妳先别紧张，他已经在和公司开会了");
+                    setShowChoices(false);
+                  }}>
+                  {p.thread === p.selectedBoyfriend ? "看到了，怎么办？" : "不好，我好害怕"}
+                </button>
+              ) : (
+                <button type="button" onClick={() => setShowChoices(true)} style={{ width: "100%", color: "inherit" }}>
+                  <Smile size={22} /> 点击选择回复
+                </button>
+              )}
+            </div>
+          )}
           {menu && (
             <div className="mymy-local-menu">
               <strong>{p.thread}</strong>
