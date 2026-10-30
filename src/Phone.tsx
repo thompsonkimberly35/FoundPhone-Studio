@@ -321,10 +321,11 @@ function PhoneRuntime({
           className={`phone-screen wallpaper-${work.phone.wallpaper} ${locked ? "is-locked" : ""} ${app ? "in-app" : ""} ${keyboard ? "keyboard-open" : ""}`}
           style={{
             "--custom-wallpaper": `url("${import.meta.env.BASE_URL}lockscreen-photo.jpg.png")`,
-            backgroundImage: `url("${import.meta.env.BASE_URL}home-screen-wallpaper.webp")`,
+            backgroundImage: `url("${import.meta.env.BASE_URL}home-screen-wallpaper.webp?v=20261030-2")`,
             backgroundSize: "cover",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
+            backgroundColor: "#d9cfc5",
           } as CSSProperties}
           data-app={app}
           onDragStart={(e) => e.preventDefault()}
