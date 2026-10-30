@@ -1256,6 +1256,11 @@ function AppContent({
                   </span>
                   <div>
                     <strong>{i.sender}</strong>
+                    {i.meta?.handle && (
+                      <small>
+                        @{i.meta.handle} {i.meta.verified === "true" ? "☑" : ""}
+                      </small>
+                    )}
                     <small>{i.time}</small>
                   </div>
                   <button aria-label="查看帖子详情" onClick={() => read(i)}>
@@ -1285,12 +1290,19 @@ function AppContent({
                     <MessageCircle size={22} />
                   </button>
                   <small>
-                    {i.likes + (likes.includes(i.id) ? 1 : 0)} 次虚构喜欢
+                    {i.likes + (likes.includes(i.id) ? 1 : 0)} 次喜欢
                   </small>
+                  {i.meta?.reposts && <small>转发 {i.meta.reposts}</small>}
+                  {i.meta?.views && <small>浏览 {i.meta.views}</small>}
                 </div>
                 <button className="post-text" onClick={() => read(i)}>
                   <strong>{i.title}</strong>
                   <p>{i.body}</p>
+                  {i.id === "permanent-dispatch-opening-post" && (
+                    <small style={{ display: "block", marginTop: 8, color: "#888", fontSize: 10, lineHeight: 1.4 }}>
+                      游戏剧情虚构，非真实新闻。
+                    </small>
+                  )}
                 </button>
               </article>
             ))
