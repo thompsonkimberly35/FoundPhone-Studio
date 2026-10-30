@@ -62,6 +62,7 @@ import {
   type Runtime,
   type UiValue,
 } from "./schema";
+import { makeItem } from "./schema";
 import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 export function AppIcon({
@@ -121,6 +122,8 @@ function PhoneRuntime({
   onOpen,
   runtime: external,
   onRuntime,
+  selectedBoyfriend = "",
+  selectedFriend = "",
 }: {
   deviceLayout: ReturnType<typeof useDeviceLayout>;
   work: Work;
@@ -131,6 +134,8 @@ function PhoneRuntime({
   onOpen?: (app: string) => void;
   runtime?: Runtime;
   onRuntime?: (s: Runtime) => void;
+  selectedBoyfriend?: string;
+  selectedFriend?: string;
 }) {
   const [app, setApp] = useState("");
   const [homeRequest, setHomeRequest] = useState(0);
@@ -281,6 +286,20 @@ function PhoneRuntime({
     if (!work.phone.passcode || pin === work.phone.passcode) {
       setLocked(false);
       setPinOpen(false);
+      if (selectedBoyfriend || selectedFriend) {
+        const current = runtimeRef.current;
+        const existing = current.messages.kakao ?? [];
+        const incoming = [
+          selectedBoyfriend
+            ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, body: "你看到X了吗？", time: displayTime })
+            : null,
+          selectedFriend
+            ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, body: "你们还好吗？", time: displayTime })
+            : null,
+        ].filter((item): item is NonNullable<typeof item> => item !== null);
+        const fresh = incoming.filter((item) => !existing.some((saved) => saved.id === item.id));
+        if (fresh.length) update({ ...current, messages: { ...current.messages, kakao: [...existing, ...fresh] } });
+      }
       event("password", pin);
     } else {
       setPinError("密码不正确");
