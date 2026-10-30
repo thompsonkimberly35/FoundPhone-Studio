@@ -299,7 +299,7 @@ function PhoneRuntime({
           return files[name] ? import.meta.env.BASE_URL + "kakao/" + files[name] : "";
         };
         const incoming = [
-          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "是你看到X了吗？", time: displayTime }) : null,
+          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "你看到X了吗？", time: displayTime }) : null,
           selectedFriend ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, avatar: avatarFor(selectedFriend), body: "你们还好吗？", time: displayTime }) : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
         const xPosts = current.messages.twitter ?? [];
