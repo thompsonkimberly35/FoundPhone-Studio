@@ -14,7 +14,7 @@ describe("device layout", () => {
   it("keeps all 47 apps and only defaults installed", () => {
     const l = defaultLayout(work());
     expect(l.apps).toHaveLength(49);
-    expect(l.apps.filter((a) => a.installed)).toHaveLength(7);
+    expect(l.apps.filter((a) => a.installed)).toHaveLength(18);
   });
   it("packs different widget sizes and pages without overlap", () => {
     const l = defaultLayout(work());
@@ -95,7 +95,7 @@ it("adds store to legacy work without changing author data or other app states",
   ).toBe(true);
 });
 
-it("migrates preview folders once while preserving custom folders and widgets", async () => {
+it("migrates preview folders once to the curated layout while preserving widgets", async () => {
   const preview = await import("../../stories/test-preview/story.json");
   const w = compileStory(preview.default).work;
   const before = JSON.stringify(w);
@@ -109,7 +109,7 @@ it("migrates preview folders once while preserving custom folders and widgets", 
   const migrated = validateLayout(old, w);
   for (const id of ["wechat", "douyin", "instagram"])
     expect(migrated.apps.find((a) => a.id === id)!.folder).toBe("");
-  expect(migrated.apps.find((a) => a.id === "clock")!.folder).toBe("我的工具");
+  expect(migrated.apps.find((a) => a.id === "clock")!.folder).toBe("");
   expect(migrated.widgets).toEqual(old.widgets);
   expect(JSON.stringify(w)).toBe(before);
   migrated.apps.find((a) => a.id === "wechat")!.folder = "作者新建文件夹";
