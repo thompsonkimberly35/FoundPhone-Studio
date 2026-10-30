@@ -44,7 +44,7 @@ export function ensureAppStore(work: Work): Work {
             id: "appstore",
             name: "App Store",
             installed: true,
-            visible: true,
+            visible: false,
             dock: false,
             folder: "",
             icon: "",
@@ -52,21 +52,37 @@ export function ensureAppStore(work: Work): Work {
         ],
       };
 }
+const homeScreenApps = new Set([
+  "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
+  "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
+]);
+const dockApps = new Set(["phone", "messages", "camera", "safari"]);
+const allowedHomeApps = new Set([...homeScreenApps, ...dockApps]);
+function applyCuratedApps(apps: AppConfig[]) {
+  return apps.map((app) => {
+    if (!allowedHomeApps.has(app.id))
+      return { ...app, installed: false, visible: false, dock: false, folder: "" };
+    return {
+      ...app,
+      installed: true,
+      visible: true,
+      dock: dockApps.has(app.id),
+      folder: "",
+    };
+  });
+}
 export function defaultLayout(input: Work): DeviceLayout {
   const w = ensureAppStore(input);
   return {
     version: 1,
     workId: w.id,
-    previewLayoutRevision: w.id === "ui-test-phone-v2" ? 1 : 0,
-    apps: structuredClone(w.apps)
-      .sort((a, b) => (a.id === "appstore" ? -1 : b.id === "appstore" ? 1 : 0))
-      .map((a) =>
-        a.id === "appstore"
-          ? { ...a, installed: true, visible: true, folder: "", dock: false }
-          : a,
-      ),
+    previewLayoutRevision: 2,
+    apps: applyCuratedApps(structuredClone(w.apps)),
     widgets: [],
-    order: [],
+    order: [
+      "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
+      "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
+    ],
     cleared: [],
     positions: {},
   };
@@ -91,8 +107,18 @@ export function validateLayout(raw: unknown, input: Work) {
   const store = layout.apps.find((a) => a.id === "appstore");
   if (store) {
     store.installed = true;
-    store.visible = true;
+    store.visible = false;
+    store.dock = false;
     store.folder = "";
+  }
+  if (layout.previewLayoutRevision < 2) {
+    layout.apps = applyCuratedApps(layout.apps);
+    layout.order = [
+      "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
+      "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
+    ];
+    layout.positions = {};
+    layout.previewLayoutRevision = 2;
   }
   if (w.id === "ui-test-phone-v2" && layout.previewLayoutRevision < 1) {
     const visibleApps = ["wechat", "douyin"];
