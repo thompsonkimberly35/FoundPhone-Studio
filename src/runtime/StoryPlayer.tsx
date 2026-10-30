@@ -4,9 +4,49 @@ import { Phone } from "../Phone";
 import { validateWork, type Work } from "../schema";
 import "../styles.css";
 import "./player.css";
+
+const MEMBERS = ["李相沅", "周安信", "贺鑫隆", "金虔佑", "张家豪", "李理悟", "郑相炫", "金俊抒"];
+
+function CharacterSelection({ onComplete }: { onComplete: () => void }) {
+  const [step, setStep] = useState<"boyfriend" | "friend">("boyfriend");
+  const [boyfriend, setBoyfriend] = useState("");
+  const [friend, setFriend] = useState("");
+  const isBoyfriend = step === "boyfriend";
+  const selected = isBoyfriend ? boyfriend : friend;
+  const options = isBoyfriend ? MEMBERS : MEMBERS.filter((name) => name !== boyfriend);
+
+  const next = () => {
+    if (!selected) return;
+    if (isBoyfriend) setStep("friend");
+    else onComplete();
+  };
+
+  return (
+    <section className="ald1-selection">
+      <div className="ald1-card">
+        <div className="ald1-brand">ALD1 <span>·</span> STORY</div>
+        <div className="ald1-progress"><i className="active" /><i className={!isBoyfriend ? "active" : ""} /></div>
+        <p className="ald1-step">{isBoyfriend ? "STEP 01 / 02" : "STEP 02 / 02"}</p>
+        <h1>{isBoyfriend ? "请选择妳在ALD1的男友" : "请选择你的知心好友"}</h1>
+        <p className="ald1-copy">{isBoyfriend ? "选择一位男友，开启属于你们的故事。" : "再选择一位知心好友，陪伴你的日常。"}</p>
+        <label htmlFor="ald1-person">{isBoyfriend ? "男友" : "知心好友"}</label>
+        <select id="ald1-person" value={selected} onChange={(e) => isBoyfriend ? setBoyfriend(e.target.value) : setFriend(e.target.value)}>
+          <option value="" disabled>请选择一位成员</option>
+          {options.map((name) => <option value={name} key={name}>{name}</option>)}
+        </select>
+        {!isBoyfriend && <p className="ald1-hint">男友「{boyfriend}」不会出现在好友名单中。</p>}
+        <button className="ald1-next" disabled={!selected} onClick={next}>{isBoyfriend ? "下一步" : "进入手机"} <span>→</span></button>
+        {!isBoyfriend && <button className="ald1-back" onClick={() => setStep("boyfriend")}>返回上一步</button>}
+      </div>
+      <p className="ald1-footer">每一次选择，都是故事的开始</p>
+    </section>
+  );
+}
+
 function StoryPlayer() {
   const [work, setWork] = useState<Work | null>(null),
     [error, setError] = useState("");
+  const [selectionComplete, setSelectionComplete] = useState(false);
   useEffect(() => {
     const abort = new AbortController();
     fetch(
@@ -23,8 +63,7 @@ function StoryPlayer() {
       })
       .then((x) => {
         const w = validateWork(x);
-        document.title =
-          w.title === "捡手机" ? "捡手机" : w.title + " · 捡手机";
+        document.title = w.title === "捡手机" ? "捡手机" : w.title + " · 捡手机";
         setWork(w);
       })
       .catch((e) => {
@@ -34,11 +73,7 @@ function StoryPlayer() {
   }, []);
   return (
     <main className="story-runtime">
-      {work ? (
-        <Phone work={work} />
-      ) : (
-        <p role="status">{error || "正在打开手机…"}</p>
-      )}
+      {work ? selectionComplete ? <Phone work={work} /> : <CharacterSelection onComplete={() => setSelectionComplete(true)} /> : <p role="status">{error || "正在打开手机…"}</p>}
     </main>
   );
 }
