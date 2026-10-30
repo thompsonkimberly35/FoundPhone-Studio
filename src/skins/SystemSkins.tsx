@@ -535,7 +535,7 @@ export function MailSkin(p: Props) {
 }
 export function ClockSkin(p: Props) {
   const { tab, setTab, items } = useContent(p, "闹钟");
-  const [enabled, setEnabled] = useSkinState<string[]>(p, "alarms", []),
+  const [enabled, setEnabled] = useSkinState<string[]>(p, "alarms", p.items.map((i) => i.id)),
     [seconds, setSeconds] = useState(0),
     [running, setRunning] = useState(false);
   useEffect(() => {
@@ -569,7 +569,14 @@ export function ClockSkin(p: Props) {
             </div>
           </div>
         ) : (
-          items.map((i) => (
+          (tab === "闹钟"
+            ? [...items].sort((a, b) =>
+                meta(a, "clock", a.time.slice(-5)).localeCompare(
+                  meta(b, "clock", b.time.slice(-5)),
+                ),
+              )
+            : items
+          ).map((i) => (
             <div className="alarm-row" key={i.id}>
               <button onClick={() => p.onItem(i)}>
                 <time>{meta(i, "clock", i.time.slice(-5))}</time>
