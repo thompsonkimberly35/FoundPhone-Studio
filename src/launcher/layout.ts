@@ -66,12 +66,12 @@ const homePositions: DeviceLayout["positions"] = {
   spotify: { page: 0, x: 0, y: 1 },
   instagram: { page: 0, x: 1, y: 1 },
   notes: { page: 0, x: 2, y: 1 },
-  photos: { page: 0, x: 0, y: 4 },
-  clock: { page: 0, x: 1, y: 4 },
-  weather: { page: 0, x: 2, y: 4 },
-  douyin: { page: 0, x: 3, y: 4 },
-  calendar: { page: 0, x: 0, y: 5 },
-  settings: { page: 0, x: 1, y: 5 },
+  photos: { page: 1, x: 0, y: 0 },
+  clock: { page: 1, x: 1, y: 0 },
+  weather: { page: 1, x: 2, y: 0 },
+  douyin: { page: 1, x: 3, y: 0 },
+  calendar: { page: 1, x: 0, y: 1 },
+  settings: { page: 1, x: 1, y: 1 },
 };
 function applyCuratedApps(apps: AppConfig[]) {
   return apps.map((app) => {
@@ -93,7 +93,7 @@ export function defaultLayout(input: Work): DeviceLayout {
   return {
     version: 1,
     workId: w.id,
-    previewLayoutRevision: 3,
+    previewLayoutRevision: 4,
     apps: applyCuratedApps(structuredClone(w.apps)),
     widgets: [],
     order: [
@@ -128,14 +128,14 @@ export function validateLayout(raw: unknown, input: Work) {
     store.dock = false;
     store.folder = "";
   }
-  if (layout.previewLayoutRevision < 3) {
+  if (layout.previewLayoutRevision < 4) {
     layout.apps = applyCuratedApps(layout.apps);
     layout.order = [
       "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
       "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
     ];
     layout.positions = structuredClone(homePositions);
-    layout.previewLayoutRevision = 3;
+    layout.previewLayoutRevision = 4;
   }
   if (w.id === "ui-test-phone-v2" && layout.previewLayoutRevision < 1) {
     const visibleApps = ["wechat", "douyin"];
