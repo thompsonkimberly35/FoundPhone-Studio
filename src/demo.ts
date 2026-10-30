@@ -142,6 +142,59 @@ export function createWork(title = "雨停之前"): Work {
       kind: "image",
     }),
   ];
+  w.data.weather = [
+    makeItem({
+      id: "weather-seoul",
+      title: "首尔",
+      body: "首尔天气 · 晴朗。当前约 18°C，今日最高 19°C、最低 8°C。",
+      time: "2026-10-30 16:00",
+      kind: "text",
+      meta: {
+        locationLabel: "韩国",
+        temperature: "18",
+        high: "19",
+        low: "8",
+        condition: "晴朗",
+        aqi: "78",
+        aqiLabel: "空气质量中等",
+        sunrise: "06:48",
+        rain: "0%",
+        wind: "2.9 m/s",
+        hourly: JSON.stringify([
+          { time: "现在", temperature: "18" },
+          { time: "17时", temperature: "17" },
+          { time: "18时", temperature: "16" },
+          { time: "19时", temperature: "15" },
+          { time: "20时", temperature: "14" },
+          { time: "21时", temperature: "14" },
+        ]),
+        daily: JSON.stringify([
+          { label: "今天", low: "8", high: "19" },
+          { label: "明天", low: "9", high: "14" },
+          { label: "后天", low: "6", high: "17" },
+        ]),
+      },
+    }),
+  ];
+  w.data.clock = [
+    ["03:11", "闹钟 03:11"],
+    ["04:11", "闹钟 04:11"],
+    ["05:08", "闹钟 05:08"],
+    ["07:24", "闹钟 07:24"],
+    ["08:22", "闹钟 08:22"],
+    ["09:19", "闹钟 09:19"],
+    ["11:20", "闹钟 11:20"],
+    ["12:25", "闹钟 12:25"],
+  ].map(([clock, title], n) =>
+    makeItem({
+      id: `alarm-${n + 1}`,
+      title,
+      body: "每天重复",
+      time: `2026-10-30 ${clock}`,
+      kind: "text",
+      meta: { clock, repeat: "每天" },
+    }),
+  );
   w.data.instagram = [
     makeItem({
       id: "ig1",
