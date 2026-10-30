@@ -1334,7 +1334,7 @@
 
 /* Photo wallpaper: keep the actual image crisp; blur only translucent controls. */
 .ios18 .phone-screen:not(.is-locked):not(.in-app) {
-  background-image: url("/FoundPhone-Studio/home-screen-wallpaper.webp?v=20261030-2") !important;
+  background-image: url("/FoundPhone-Studio/home-screen-wallpaper.jpg.jpg?v=20261030-3") !important;
   background-size: cover !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
@@ -1357,14 +1357,14 @@
 /* Keep the home wallpaper on the screen surface after the lock view exits. */
 .ios18 .phone-screen:not(.is-locked):not(.in-app) {
   background-color: #d9cfc5 !important;
-  background-image: url("/FoundPhone-Studio/home-screen-wallpaper.webp?v=20261030-2") !important;
+  background-image: url("/FoundPhone-Studio/home-screen-wallpaper.jpg.jpg?v=20261030-3") !important;
   background-size: cover !important;
   background-position: center center !important;
 }
 .ios18 .phone-screen.is-locked .device-lock {
   background-image:
     linear-gradient(180deg, #00000018 0%, transparent 30%, #00000012 100%),
-    url("/FoundPhone-Studio/lockscreen-photo.jpg.png?v=20261030-2") !important;
+    url("/FoundPhone-Studio/lockscreen-wallpaper.jpg.jpg?v=20261030-3") !important;
   background-size: contain !important;
   background-position: center center !important;
   background-repeat: no-repeat !important;
