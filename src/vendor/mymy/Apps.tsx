@@ -67,7 +67,16 @@ export function MymyKakao(p: SkinProps) {
     [draft, setDraft] = useState(""),
     [query, setQuery] = useState(""),
     [menu, setMenu] = useState(false);
-  const list = grouped(p.items),
+  const contacts = [
+    { name: "周安信", avatar: "/FoundPhone-Studio/kakao/周安信-kakao.png" },
+    { name: "張家豪", avatar: "/FoundPhone-Studio/kakao/張家豪-kakao.png" },
+    { name: "李理悟", avatar: "/FoundPhone-Studio/kakao/李理悟-kakao.jpg" },
+    { name: "李相沅", avatar: "/FoundPhone-Studio/kakao/李相沅-kakao.png" },
+    { name: "賀鑫隆", avatar: "/FoundPhone-Studio/kakao/賀鑫隆-kakao.png" },
+    { name: "鄭相炫", avatar: "/FoundPhone-Studio/kakao/鄭相炫-kakao.png" },
+    { name: "金俊抒", avatar: "/FoundPhone-Studio/kakao/金俊抒-kakao.png" },
+    { name: "金虔佑", avatar: "/FoundPhone-Studio/kakao/金虔佑-kakao.png" },
+  ],
     messages = [
       ...p.items.filter((i) => i.title === p.thread),
       ...sent.flatMap((raw, index) => {
@@ -257,33 +266,45 @@ export function MymyKakao(p: SkinProps) {
           </div>
           <div className="kzkb">
             <div className="kzksec">
-              {tab === "好友" ? "好友" : "全部聊天"} {list.length}
+              {tab === "好友" ? "好友" : "全部聊天"} {contacts.length}
             </div>
-            {list
-              .filter((g) => g.title.includes(query.trim()))
-              .map((g) => {
-                const last = g.items.at(-1)!;
-                return (
-                  <button
-                    className="kzkr kzkcr"
-                    key={g.title}
-                    onClick={() => p.onThread(g.title)}
+            {contacts
+              .filter((person) => person.name.includes(query.trim()))
+              .map((person) => (
+                <button
+                  className="kzkr kzkcr"
+                  key={person.name}
+                  onClick={() => p.onThread(person.name)}
+                >
+                  <span
+                    className="catalog-avatar round"
+                    style={{
+                      width: 48,
+                      height: 48,
+                      flex: "0 0 48px",
+                      overflow: "hidden",
+                      borderRadius: "50%",
+                      background: "#e9e5df",
+                    }}
                   >
-                    <Avatar name={last.sender || g.title} src={last.avatar} />
-                    <span className="kzkn">
-                      <b>{g.title}</b>
-                      <small>{tab === "好友" ? last.sender : last.body}</small>
-                    </span>
-                    <span className="kzkmt">
-                      {last.time.slice(-5)}
-                      {last.meta.unread && (
-                        <i className="kzkbd">{last.meta.unread}</i>
-                      )}
-                    </span>
-                  </button>
-                );
-              })}
-            {!list.length && <Blank />}
+                    <img
+                      src={person.avatar}
+                      alt={person.name}
+                      loading="lazy"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                        display: "block",
+                      }}
+                    />
+                  </span>
+                  <span className="kzkn">
+                    <b>{person.name}</b>
+                  </span>
+                </button>
+              ))}
+            {!contacts.length && <Blank />}
           </div>
           <nav className="kzknv">
             {[Users, MessageCircle, Compass, Grid, MoreHorizontal].map(
