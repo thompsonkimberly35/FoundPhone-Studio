@@ -126,6 +126,8 @@ function PhoneRuntime({
   onRuntime,
   selectedBoyfriend = "",
   selectedFriend = "",
+  onSaveProgress,
+  savedAt,
 }: {
   deviceLayout: ReturnType<typeof useDeviceLayout>;
   work: Work;
@@ -138,6 +140,8 @@ function PhoneRuntime({
   onRuntime?: (s: Runtime) => void;
   selectedBoyfriend?: string;
   selectedFriend?: string;
+  onSaveProgress?: (state: Runtime) => Promise<string>;
+  savedAt?: string;
 }) {
   const [app, setApp] = useState("");
   const [homeRequest, setHomeRequest] = useState(0);
@@ -1245,6 +1249,8 @@ function AppContent({
           creator={creator}
           onItem={read}
           onSettings={onSettings}
+          onSaveProgress={() => onSaveProgress?.(runtimeRef.current)}
+          savedAt={savedAt}
         />
       ) : app.id === "calculator" && !detail ? (
         <NativeCalculator
