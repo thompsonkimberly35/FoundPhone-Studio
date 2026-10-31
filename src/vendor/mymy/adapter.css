@@ -876,3 +876,23 @@
   font-size: 14px;
   font-weight: 700;
 }
+
+
+/* Instagram inbox: General list with a separate Requests entry */
+.mymy-ui.mymy-instagram .ig-dm-section-head {
+  flex:none; min-height:48px; display:flex; align-items:center;
+  justify-content:space-between; gap:12px; padding:0 16px; color:#111;
+}
+.mymy-ui.mymy-instagram .ig-dm-section-head > b { font-size:20px; font-weight:700; }
+.mymy-ui.mymy-instagram .ig-dm-section-head > button {
+  display:flex; align-items:center; gap:5px; color:#68717c;
+  background:none; border:0; padding:8px 0; font-size:14px; font-weight:600;
+}
+.mymy-ui.mymy-instagram .ig-dm-section-head > button i {
+  display:inline-grid; place-items:center; min-width:17px; height:17px;
+  padding:0 4px; border-radius:9px; background:#e9edf2; color:#68717c;
+  font-size:10px; font-style:normal;
+}
+.mymy-ui.mymy-instagram .ig-dm-section-head > .ig-dm-requests-back {
+  justify-content:flex-start; color:#262626;
+}
