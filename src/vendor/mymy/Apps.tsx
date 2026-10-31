@@ -131,9 +131,9 @@ export function MymyKakao(p: SkinProps) {
                         <span
                           className="catalog-avatar kzka round"
                           style={{
-                            width: 48,
-                            height: 48,
-                            flex: "0 0 48px",
+                            width: 38,
+                            height: 38,
+                            flex: "0 0 38px",
                             overflow: "hidden",
                             borderRadius: "50%",
                             background: "#e9e5df",
@@ -146,7 +146,7 @@ export function MymyKakao(p: SkinProps) {
                             style={{
                               width: "100%",
                               height: "100%",
-                              objectFit: "contain",
+                              objectFit: "cover",
                               display: "block",
                               borderRadius: "50%",
                             }}
