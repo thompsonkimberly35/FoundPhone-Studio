@@ -153,14 +153,14 @@ export function MymyKakao(p: SkinProps) {
                     <div className="kzmav">
                       <span className="catalog-avatar kzka round">
                         <img
-                          src={memberAvatar(p.thread, memberAvatar(m.sender, m.avatar))}
+                          src={memberAvatar(p.thread)}
                           alt={p.thread}
                           loading="eager"
                           decoding="sync"
                           style={{
                             width: "100%",
                             height: "100%",
-                            objectFit: "cover",
+                            objectFit: "contain",
                             display: "block",
                             borderRadius: "50%",
                           }}
@@ -185,7 +185,13 @@ export function MymyKakao(p: SkinProps) {
                 <div className="kzm kzot first kztyping" aria-label="正在输入">
                   <div className="kzmav">
                     <span className="catalog-avatar kzka round">
-                      <img src={memberAvatar(p.thread)} alt="" loading="eager" decoding="sync" />
+                      <img
+                         src={memberAvatar(p.thread)}
+                         alt=""
+                         loading="eager"
+                         decoding="sync"
+                         style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", borderRadius: "50%" }}
+                       />
                     </span>
                   </div>
                   <div className="kz-content">
