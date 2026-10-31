@@ -624,11 +624,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const stamp = Date.now();
                     const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
                     const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: true });
-                    const nextMessages = [...(current.messages.kakao ?? []), outgoing, incomingReply];
-                    let messages: Runtime["messages"] = { ...current.messages, kakao: nextMessages };
-                    if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(current.messages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
+                    const currentMessages = current.messages as Runtime["messages"];
+                    const nextMessages = [...(currentMessages.kakao ?? []), outgoing, incomingReply];
+                    let messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
+                    if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(currentMessages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
                       const backlash = createInstagramBacklash(time);
-                      messages = { ...messages, instagram: [...(current.messages.instagram ?? []), ...backlash] };
+                      messages = { ...messages, instagram: [...(currentMessages.instagram ?? []), ...backlash] };
                       setIgQueue(backlash);
                     }
                     update({ ...current, messages });
