@@ -521,7 +521,7 @@ export function MymyInstagram(p: SkinProps) {
               <header className="ig-dm-person">
                 <button aria-label="返回收件匣" onClick={() => setSelected(null)}><ArrowLeft size={23}/></button>
                 <Avatar name={selected.sender} /><span><b>{selected.sender}</b><small>活跃状态不可用</small></span>
-                <button aria-label="语音通话"><Phone size={21}/></button><button aria-label="更多选项"><MoreHorizontal size={22}/></button>
+                <button aria-label="语音通话"><Phone size={21}/></button><button aria-label="視訊通話"><Video size={21}/></button><button aria-label="對話資訊"><Info size={21}/></button>
               </header>
               <div className="ig-dm-thread">
                 <div className="ig-dm-date">今天 {selected.time.slice(-5)}</div>
