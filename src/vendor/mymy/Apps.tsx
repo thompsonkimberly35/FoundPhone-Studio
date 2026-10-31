@@ -72,13 +72,13 @@ export function MymyKakao(p: SkinProps) {
   const contacts = [
     { name: "周安信", file: "周安信-kakao.png" },
     { name: "张家豪", file: "張家豪-kakao.png" },
-    { name: "李理悟", file: "李理悟-kakao.jpg" },
+    { name: "李理悟", file: "李理悟-kakao-v2.jpg" },
     { name: "李相沅", file: "李相沅-kakao.png" },
     { name: "贺鑫隆", file: "賀鑫隆-kakao.png" },
     { name: "郑相炫", file: "鄭相炫-kakao.png" },
     { name: "金俊抒", file: "金俊抒-kakao.png" },
     { name: "金虔佑", file: "金虔佑-kakao.png" },
-  ].map((person) => ({ ...person, avatar: import.meta.env.BASE_URL + "kakao/" + person.file + "?v=20261031-avatar-refresh" })),
+  ].map((person) => ({ ...person, avatar: import.meta.env.BASE_URL + "kakao/" + person.file + "?v=20261031-avatar-v2" })),
     isTestItem = (item: Item) => /测试|test/i.test([item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" ")),
     chatItems = p.items.filter((item) => !isTestItem(item)),
     memberAvatar = (name: string, saved = "") => contacts.find((person) => person.name === name)?.avatar || saved,
@@ -382,7 +382,7 @@ export function MymyKakao(p: SkinProps) {
                             src={memberAvatar(title, latest.avatar)}
                             alt={title}
                             loading="eager"
-                          decoding="sync"
+                            decoding="sync"
                             style={{
                               width: "100%",
                               height: "100%",
