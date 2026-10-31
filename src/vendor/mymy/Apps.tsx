@@ -91,6 +91,12 @@ export function MymyKakao(p: SkinProps) {
   }, [p.thread, messages.length]);
   useEffect(() => {
     const node = scroll.current;
+    if (!node) return;
+    const nearBottom = node.scrollHeight - node.scrollTop - node.clientHeight < 90;
+    if (nearBottom) node.scrollTop = node.scrollHeight;
+  }, [p.ui?.["typing-state"]]);
+  useEffect(() => {
+    const node = scroll.current;
     if (node) node.scrollTop = node.scrollHeight;
     setShowChoices(hasBacklashCheckin);
   }, [p.thread, messages.length, hasBacklashCheckin]);
@@ -179,7 +185,7 @@ export function MymyKakao(p: SkinProps) {
               let typing: { title?: string; until?: number } | null = null;
               try { typing = JSON.parse(String(p.ui?.["typing-state"] || "null")); } catch { typing = null; }
               return typing?.title === p.thread && Number(typing.until) > Date.now() ? (
-                <div className="kzm kzot kztyping" aria-label="正在输入">
+                <div className="kzm kzot first kztyping" aria-label="正在输入">
                   <div className="kzmav"><span className="catalog-avatar kzka round"><img src={memberAvatar(p.thread)} alt="" /></span></div>
                   <div className="kzmn">{p.thread}</div>
                   <div className="kzbub kztyping-bubble"><i/><i/><i/></div>
