@@ -508,7 +508,7 @@ export function MymyInstagram(p: SkinProps) {
             <span/>
             <button aria-label="新增訊息"><SquarePen size={23}/></button>
           </header>
-        ) : (
+        ) : selected?.folder === "私信" ? null : (
           <header className="igh">
             <button aria-label={selected ? "返回Instagram动态" : "关闭当前App"} onClick={() => (selected ? setSelected(null) : p.onBack())}><ArrowLeft /></button>
             <span className="igl2">{selected ? "帖子" : tab === "主页" ? "Instagram" : tab}</span>
@@ -644,7 +644,7 @@ export function MymyInstagram(p: SkinProps) {
               <Icon />
             </button>
           ))}
-        </nav>
+        </nav>}
       </div>
       {sheet && (
         <div className="kzcs">
