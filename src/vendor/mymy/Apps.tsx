@@ -86,6 +86,10 @@ export function MymyKakao(p: SkinProps) {
     scroll = useRef<HTMLDivElement>(null);
   const hasBacklashCheckin = messages.some((item) => item.id === "boyfriend-backlash-checkin");
   useEffect(() => {
+    if (!p.thread) return;
+    messages.filter((item) => !item.outgoing && !item.read).forEach((item) => p.onRead(item.id));
+  }, [p.thread, messages.length]);
+  useEffect(() => {
     const node = scroll.current;
     if (node) node.scrollTop = node.scrollHeight;
     setShowChoices(hasBacklashCheckin);
@@ -171,6 +175,17 @@ export function MymyKakao(p: SkinProps) {
                 </div>
               );
             })}
+            {(() => {
+              let typing: { title?: string; until?: number } | null = null;
+              try { typing = JSON.parse(String(p.ui?.["typing-state"] || "null")); } catch { typing = null; }
+              return typing?.title === p.thread && Number(typing.until) > Date.now() ? (
+                <div className="kzm kzot kztyping" aria-label="正在输入">
+                  <div className="kzmav"><span className="catalog-avatar kzka round"><img src={memberAvatar(p.thread)} alt="" /></span></div>
+                  <div className="kzmn">{p.thread}</div>
+                  <div className="kzbub kztyping-bubble"><i/><i/><i/></div>
+                </div>
+              ) : null;
+            })()}
             {!messages.length && <Blank />}
           </div>
           {(boyfriendThread || friendThread) && !replyAlreadySent && (
@@ -331,7 +346,9 @@ export function MymyKakao(p: SkinProps) {
                 <div className="kzksec">全部聊天 {new Set(chatItems.map((item) => item.title)).size}</div>
                 {chatItems.length ? (
                   [...new Set(chatItems.map((item) => item.title))].map((title) => {
-                    const latest = chatItems.filter((item) => item.title === title).at(-1)!;
+                    const conversation = chatItems.filter((item) => item.title === title);
+                    const latest = conversation.at(-1)!;
+                    const unreadCount = conversation.filter((item) => !item.outgoing && !item.read).length;
                     return (
                       <button
                         className="kzkr"
@@ -366,7 +383,10 @@ export function MymyKakao(p: SkinProps) {
                           <b>{title}</b>
                           <small>{latest.body}</small>
                         </span>
-                        <time>{latest.time.slice(-5)}</time>
+                        <span className="kzkr-meta">
+                          <time>{latest.time.slice(-5)}</time>
+                          {unreadCount > 0 && <i className="kz-unread-count">{unreadCount > 99 ? "99+" : unreadCount}</i>}
+                        </span>
                       </button>
                     );
                   })
