@@ -206,20 +206,20 @@ function PhoneRuntime({
     onRuntime?.(next);
   };
   useEffect(() => {
-    if (igBanner || !igQueue.length) return;
-    // Each story DM banner stays visible for 500ms; advance immediately afterwards.
-    const delay = 0;
+    // Story notifications wait until the player unlocks the phone.
+    if (locked || igBanner || !igQueue.length) return;
     const timer = window.setTimeout(() => {
       setIgBanner(igQueue[0]);
       setIgQueue((items) => items.slice(1));
-    }, delay);
+    }, 0);
     return () => window.clearTimeout(timer);
-  }, [igQueue, igBanner]);
+  }, [igQueue, igBanner, locked]);
   useEffect(() => {
-    if (!igBanner) return;
+    // Keep the current banner paused while the phone is locked.
+    if (!igBanner || locked) return;
     const timer = window.setTimeout(() => setIgBanner(null), 500);
     return () => window.clearTimeout(timer);
-  }, [igBanner]);
+  }, [igBanner, locked]);
   useEffect(() => {
     let active = true;
     if (creator || external) return;
@@ -841,7 +841,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
               </div>
             </div>
           )}
-          {igBanner && (
+          {igBanner && !locked && (
             <button className="device-banner ig-backlash-banner" type="button" role="status" aria-live="polite" onClick={() => { const current = runtimeRef.current; update({ ...current, ui: { ...current.ui, instagram: { ...current.ui?.instagram, "ig-open-id": igBanner.id, mymyTab: "私信" } } }); setIgBanner(null); setApp("instagram"); }}>
               <span className="ig-notice-icon" aria-hidden="true"><Instagram size={19} /></span>
               <span className="ig-notice-copy"><strong>{igBanner.sender}</strong><span>{igBanner.body}</span></span>
