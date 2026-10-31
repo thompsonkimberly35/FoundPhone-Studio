@@ -599,7 +599,7 @@ export function MymyInstagram(p: SkinProps) {
                 <button className={dmTab === "陌生讯息" ? "active" : ""} onClick={() => setDmTab("陌生讯息")}>陌生讯息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
               </div>
               <div className="ig-dm-list">
-                {(dmTab === "一般" ? generalDms : requestDms).map((i, n) => (
+                {(dmTab === "一般" ? generalDms : requestDms).map((i) => (
                   <button className="ig-dm-list-row" key={i.id} onClick={() => openPost(i)}>
                     <Avatar name={i.sender} src={i.avatar}/>
                     <span className="ig-dm-row-copy"><b>{i.sender}</b><small className={!i.read ? "unread" : ""}>{i.body}</small></span>
