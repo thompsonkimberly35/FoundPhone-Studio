@@ -489,7 +489,14 @@ export function MymyInstagram(p: SkinProps) {
           </button>
         </header>
         <div className="igb">
-          {selected && post(selected)}
+          {selected?.folder === "私信" ? (
+            <section className="ig-dm-chat">
+              <div className="ig-dm-person"><Avatar name={selected.sender} /><span><b>{selected.sender}</b><small>Instagram 私信</small></span><MoreHorizontal /></div>
+              <div className="ig-dm-date">今天 {selected.time.slice(-5)}</div>
+              <div className="ig-dm-message"><Avatar name={selected.sender} /><p>{selected.body}</p></div>
+              <div className="ig-dm-read">已显示你收到的消息</div>
+            </section>
+          ) : selected ? post(selected) : null}
           {!selected && tab === "主页" && (
             <section className="ig-official-profile">
               <div className="pf">
@@ -548,13 +555,14 @@ export function MymyInstagram(p: SkinProps) {
           )}
           {!selected && tab === "私信" && (
             <>
-              {dms.map((i) => (
-                <button className="kzkr" key={i.id} onClick={() => openPost(i)}>
+              {[...dms].sort((a, b) => Number(b.meta.sequence || 0) - Number(a.meta.sequence || 0)).map((i) => (
+                <button className="kzkr ig-dm-list-row" key={i.id} onClick={() => openPost(i)}>
                   <Avatar name={i.sender} src={i.avatar} />
                   <span className="kzkn">
-                    <b>{i.title}</b>
+                    <b>{i.sender}</b>
                     <small>{i.body}</small>
                   </span>
+                  <span className="ig-dm-row-meta"><time>{i.time.slice(-5)}</time>{!i.read && <i aria-label="未读消息" />}</span>
                 </button>
               ))}
               {!dms.length && <Blank />}
