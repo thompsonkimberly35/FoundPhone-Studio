@@ -377,10 +377,23 @@ export function MymyInstagram(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [story, setStory] = useState(0),
     [draft, setDraft] = useState(""),
-    [sentMessages, setSentMessages] = useState<Record<string, string[]>>({}),
+    [sentMessagesJson, setSentMessagesJson] = useSkinState<string>(p, "igSentMessages", "{}"),
     [pop, setPop] = useState(""),
     [dmQuery, setDmQuery] = useState(""),
     [dmTab, setDmTab] = useState<"一般" | "陌生讯息">("一般");
+  const sentMessages: Record<string, string[]> = (() => {
+    try {
+      const parsed: unknown = JSON.parse(sentMessagesJson);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+      return Object.fromEntries(
+        Object.entries(parsed).filter(
+          ([, value]) => Array.isArray(value) && value.every((message) => typeof message === "string"),
+        ),
+      ) as Record<string, string[]>;
+    } catch {
+      return {};
+    }
+  })();
   const posts = p.items.filter(
       (i) => i.folder !== "私信" && i.meta.story !== "true",
     ),
@@ -537,9 +550,9 @@ export function MymyInstagram(p: SkinProps) {
                 e.preventDefault();
                 const message = draft.trim();
                 if (!message) return;
-                setSentMessages((current) => ({
-                  ...current,
-                  [selected.id]: [...(current[selected.id] || []), message],
+                setSentMessagesJson(JSON.stringify({
+                  ...sentMessages,
+                  [selected.id]: [...(sentMessages[selected.id] || []), message],
                 }));
                 // A reply accepts the request and moves the conversation to General.
                 if (isBacklash(selected)) setDmTab("一般");
