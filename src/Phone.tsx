@@ -127,6 +127,7 @@ function PhoneRuntime({
   selectedBoyfriend = "",
   selectedFriend = "",
   onSaveProgress,
+  onRestartGame,
   savedAt,
 }: {
   deviceLayout: ReturnType<typeof useDeviceLayout>;
@@ -141,6 +142,7 @@ function PhoneRuntime({
   selectedBoyfriend?: string;
   selectedFriend?: string;
   onSaveProgress?: (state: Runtime) => Promise<string>;
+  onRestartGame?: () => Promise<void>;
   savedAt?: string;
 }) {
   const [app, setApp] = useState("");
@@ -597,6 +599,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   onBack={() => setApp("")}
                   onSettings={onSettings}
                   onSaveProgress={onSaveProgress}
+                  onRestartGame={onRestartGame}
                   savedAt={savedAt}
                   onUi={(key, value) => {
                     const current = runtimeRef.current;
@@ -1040,6 +1043,7 @@ function AppContent({
   onBack,
   onSettings,
   onSaveProgress,
+  onRestartGame,
   savedAt,
   onUi,
   work,
@@ -1058,6 +1062,7 @@ function AppContent({
   onBack: () => void;
   onSettings?: () => void;
   onSaveProgress?: (state: Runtime) => Promise<string>;
+  onRestartGame?: () => Promise<void>;
   savedAt?: string;
   onUi?: (key: string, value: UiValue) => void;
   work: Work;
@@ -1256,6 +1261,7 @@ function AppContent({
           onItem={read}
           onSettings={onSettings}
           onSaveProgress={onSaveProgress ? () => onSaveProgress(state) : undefined}
+          onRestartGame={onRestartGame}
           savedAt={savedAt}
         />
       ) : app.id === "calculator" && !detail ? (
