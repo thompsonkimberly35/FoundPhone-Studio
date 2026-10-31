@@ -78,7 +78,7 @@ export function MymyKakao(p: SkinProps) {
     { name: "郑相炫", file: "鄭相炫-kakao.png" },
     { name: "金俊抒", file: "金俊抒-kakao.png" },
     { name: "金虔佑", file: "金虔佑-kakao.png" },
-  ].map((person) => ({ ...person, avatar: import.meta.env.BASE_URL + "kakao/" + person.file })),
+  ].map((person) => ({ ...person, avatar: import.meta.env.BASE_URL + "kakao/" + person.file + "?v=20261031-avatar-refresh" })),
     isTestItem = (item: Item) => /测试|test/i.test([item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" ")),
     chatItems = p.items.filter((item) => !isTestItem(item)),
     memberAvatar = (name: string, saved = "") => contacts.find((person) => person.name === name)?.avatar || saved,
@@ -155,7 +155,8 @@ export function MymyKakao(p: SkinProps) {
                         <img
                           src={memberAvatar(p.thread, memberAvatar(m.sender, m.avatar))}
                           alt={p.thread}
-                          loading="lazy"
+                          loading="eager"
+                          decoding="sync"
                           style={{
                             width: "100%",
                             height: "100%",
