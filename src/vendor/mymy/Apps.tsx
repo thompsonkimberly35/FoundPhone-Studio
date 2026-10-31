@@ -30,6 +30,9 @@ import {
   Mic,
   Image as ImageIcon,
   PlusCircle,
+  SquarePen,
+  Video,
+  Info,
 } from "lucide-react";
 import type { SkinProps } from "../../AppSkins";
 import { Avatar, Media } from "../../skins/shared";
@@ -498,12 +501,12 @@ export function MymyInstagram(p: SkinProps) {
   return (
     <div className="mymy-ui mymy-instagram" data-mymy="instagram">
       <div className="ig">
-        {tab === "私信" ? (
+        {tab === "私信" && !selected ? (
           <header className="ig-inbox-header">
             <button aria-label={selected ? "返回收件匣" : "返回"} onClick={() => selected ? setSelected(null) : p.onBack()}><ArrowLeft size={25}/></button>
             <b>allyz_1101</b><ChevronDown size={16}/>
             <span/>
-            <button aria-label="新增訊息"><Plus size={25}/></button>
+            <button aria-label="新增訊息"><SquarePen size={23}/></button>
           </header>
         ) : (
           <header className="igh">
@@ -625,7 +628,7 @@ export function MymyInstagram(p: SkinProps) {
             </>
           )}
         </div>
-        <nav className="mymy-ig-nav">
+        {!(selected?.folder === "私信") && <nav className="mymy-ig-nav">
           {[Home, Search, Send, User].map((Icon, n) => (
             <button
               key={n}
