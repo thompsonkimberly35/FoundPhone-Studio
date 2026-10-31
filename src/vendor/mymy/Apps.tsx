@@ -186,12 +186,18 @@ export function MymyKakao(p: SkinProps) {
                   <div className="kzmav">
                     <span className="catalog-avatar kzka round">
                       <img
-                         src={memberAvatar(p.thread)}
-                         alt=""
-                         loading="eager"
-                         decoding="sync"
-                         style={{ width: "100%", height: "100%", objectFit: "contain", display: "block", borderRadius: "50%" }}
-                       />
+                        src={memberAvatar(p.thread)}
+                        alt=""
+                        loading="eager"
+                        decoding="sync"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "contain",
+                          display: "block",
+                          borderRadius: "50%",
+                        }}
+                      />
                     </span>
                   </div>
                   <div className="kz-content">
