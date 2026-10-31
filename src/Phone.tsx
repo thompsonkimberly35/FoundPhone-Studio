@@ -1255,7 +1255,7 @@ function AppContent({
           creator={creator}
           onItem={read}
           onSettings={onSettings}
-          onSaveProgress={() => onSaveProgress?.(state)}
+          onSaveProgress={onSaveProgress ? () => onSaveProgress(state) : undefined}
           savedAt={savedAt}
         />
       ) : app.id === "calculator" && !detail ? (
