@@ -336,7 +336,8 @@ export function MymyKakao(p: SkinProps) {
                         <img
                           src={person.avatar}
                           alt={person.name}
-                          loading="lazy"
+                          loading="eager"
+                          decoding="sync"
                           style={{
                             width: "100%",
                             height: "100%",
@@ -380,7 +381,8 @@ export function MymyKakao(p: SkinProps) {
                           <img
                             src={memberAvatar(title, latest.avatar)}
                             alt={title}
-                            loading="lazy"
+                            loading="eager"
+                          decoding="sync"
                             style={{
                               width: "100%",
                               height: "100%",
