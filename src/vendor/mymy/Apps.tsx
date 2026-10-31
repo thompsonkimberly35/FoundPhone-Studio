@@ -84,15 +84,18 @@ export function MymyKakao(p: SkinProps) {
     memberAvatar = (name: string, saved = "") => contacts.find((person) => person.name === name)?.avatar || saved,
     messages: Item[] = chatItems.filter((item) => item.title === p.thread),
     scroll = useRef<HTMLDivElement>(null);
+  const hasBacklashCheckin = messages.some((item) => item.id === "boyfriend-backlash-checkin");
   useEffect(() => {
     const node = scroll.current;
     if (node) node.scrollTop = node.scrollHeight;
-    setShowChoices(false);
-  }, [p.thread, messages.length]);
+    setShowChoices(hasBacklashCheckin);
+  }, [p.thread, messages.length, hasBacklashCheckin]);
   const boyfriendThread = Boolean(p.selectedBoyfriend && p.thread === p.selectedBoyfriend);
   const friendThread = Boolean(p.selectedFriend && p.thread === p.selectedFriend);
   const playerReply = boyfriendThread ? "看到了，怎么办？" : "不好，我好害怕";
-  const replyAlreadySent = messages.some((item) => item.outgoing && item.sender === "我" && item.body === playerReply);
+  const replyAlreadySent = hasBacklashCheckin
+    ? messages.some((item) => item.meta.storyCheckinChoice === "1" || item.meta.storyCheckinChoice === "2")
+    : messages.some((item) => item.outgoing && item.sender === "我" && item.body === playerReply);
   return (
     <div className="mymy-ui mymy-kakao" data-mymy="kakao">
       {p.thread ? (
@@ -173,13 +176,44 @@ export function MymyKakao(p: SkinProps) {
           {(boyfriendThread || friendThread) && !replyAlreadySent && (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               {showChoices ? (
-                <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
-                  onClick={() => {
-                    p.onKakaoChoice?.(p.thread, playerReply, boyfriendThread ? "你的身份好像已经被扒出来了" : "你先别紧张，他已经在和公司开会了");
-                    setShowChoices(false);
-                  }}>
-                  {playerReply}
-                </button>
+                hasBacklashCheckin ? (
+                  <div style={{ display: "grid", gap: 8, width: "100%" }}>
+                    <button type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal", textAlign: "left" }}
+                      onClick={() => {
+                        p.onKakaoChoice?.(
+                          p.thread,
+                          "有，非常多，都是你的粉丝来骂我",
+                          "你先不要回复他们，我来处理，我在，别害怕",
+                          "我很爱你，我不想失去ALD1，也不想失去你",
+                          "1",
+                        );
+                        setShowChoices(false);
+                      }}>
+                      1. 有，非常多，都是你的粉丝来骂我
+                    </button>
+                    <button type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal", textAlign: "left" }}
+                      onClick={() => {
+                        p.onKakaoChoice?.(
+                          p.thread,
+                          "没有，你不用担心我，你跟公司那边开会的如何？",
+                          "公司说会先压压看新闻，但不确定有没有效果",
+                          "你没事真是太好了，我好担心因为这样你选择离开我……",
+                          "2",
+                        );
+                        setShowChoices(false);
+                      }}>
+                      2. 没有，你不用担心我，你跟公司那边开会的如何？
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
+                    onClick={() => {
+                      p.onKakaoChoice?.(p.thread, playerReply, boyfriendThread ? "你的身份好像已经被扒出来了" : "你先别紧张，他已经在和公司开会了");
+                      setShowChoices(false);
+                    }}>
+                    {playerReply}
+                  </button>
+                )
               ) : (
                 <button type="button" aria-label="选择回复" onClick={() => setShowChoices(true)}
                   style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 34, padding: "0 5px", color: "#777", textAlign: "left" }}>
