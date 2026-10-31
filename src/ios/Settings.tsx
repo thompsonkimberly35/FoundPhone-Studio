@@ -1,4 +1,4 @@
-import { useState, type ComponentType } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import {
   Plane,
   Wifi,
@@ -18,6 +18,7 @@ import {
   Link,
   Globe,
   Mic,
+  Save,
 } from "lucide-react";
 import type { Work, Item } from "../schema";
 import { IOSToggle } from "../vendor/konsta/Toggle";
@@ -37,6 +38,7 @@ const groups: Row[][] = [
     [Settings, "通用", "#8e8e93"],
     [Accessibility, "辅助功能", "#007aff"],
     [Image, "墙纸", "#32ade6"],
+    [Save, "储存进度", "#34c759"],
   ],
   [
     [Bell, "通知", "#ff3b30"],
@@ -51,19 +53,32 @@ export function NativeSettings({
   creator,
   onItem,
   onSettings,
+  onSaveProgress,
+  savedAt,
 }: {
   work: Work;
   items: Item[];
   creator: boolean;
   onItem: (i: Item) => void;
   onSettings?: () => void;
+  onSaveProgress?: () => Promise<string | undefined>;
+  savedAt?: string;
 }) {
   const nav = useNavigation(),
     [query, setQuery] = useState(""),
     [airplane, setAirplane] = useState(false),
     [wifi, setWifi] = useState(true),
     [bluetooth, setBluetooth] = useState(true),
-    [lowPower, setLowPower] = useState(false);
+    [lowPower, setLowPower] = useState(false),
+    [savedAtText, setSavedAtText] = useState(savedAt || ""),
+    [saving, setSaving] = useState(false);
+  useEffect(() => setSavedAtText(savedAt || ""), [savedAt]);
+  const formattedSavedAt = savedAtText
+    ? new Date(savedAtText).toLocaleString("zh-TW", {
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+      })
+    : "尚未儲存";
   const row = (label: string, value?: string, click?: () => void) => (
     <button key={label} className="settings-native-row" onClick={click}>
       <span>{label}</span>
@@ -79,6 +94,41 @@ export function NativeSettings({
   );
   const sub = () => {
     switch (nav.page) {
+      case "储存进度":
+        return (
+          <>
+            <div className="settings-group" style={{ padding: 16 }}>
+              <button
+                type="button"
+                disabled={saving || !onSaveProgress}
+                onClick={async () => {
+                  if (!onSaveProgress) return;
+                  setSaving(true);
+                  try {
+                    const timestamp = await onSaveProgress();
+                    if (timestamp) setSavedAtText(timestamp);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                style={{
+                  width: "100%", minHeight: 48, border: 0, borderRadius: 12,
+                  background: "#007aff", color: "#fff", fontSize: 16,
+                  fontWeight: 650, cursor: saving ? "wait" : "pointer",
+                  opacity: saving || !onSaveProgress ? 0.6 : 1,
+                }}
+              >
+                {saving ? "正在儲存…" : "儲存當前進度"}
+              </button>
+            </div>
+            <p className="settings-page-caption">
+              最近一次儲存：{formattedSavedAt}
+            </p>
+            <p className="settings-page-caption">
+              重新進入遊戲時，會自動載入最近一次手動儲存的進度。
+            </p>
+          </>
+        );
       case "通用":
         return (
           <div className="settings-group">
