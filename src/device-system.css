@@ -1371,3 +1371,12 @@
   background-color: #17141d !important;
   filter: none !important;
 }
+
+/* Native-style Instagram message notification banners */
+.ig-backlash-banner { position:absolute; z-index:10000; top:58px; left:8px; right:8px; display:flex; align-items:center; gap:10px; padding:12px 13px; border:1px solid rgba(255,255,255,.72); border-radius:17px; background:rgba(250,250,252,.96); color:#171717; box-shadow:0 8px 28px rgba(0,0,0,.2); backdrop-filter:blur(22px); animation:igNoticeIn .34s cubic-bezier(.2,.8,.2,1) both; }
+.ig-backlash-banner .ig-notice-icon { width:30px; height:30px; flex:0 0 30px; display:grid; place-items:center; border-radius:9px; color:white; background:linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045); }
+.ig-backlash-banner .ig-notice-copy { min-width:0; flex:1; display:flex; flex-direction:column; gap:3px; }
+.ig-backlash-banner .ig-notice-copy strong { font-size:12px; }
+.ig-backlash-banner .ig-notice-copy span { font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ig-backlash-banner time { align-self:flex-start; color:#888; font-size:10px; }
+@keyframes igNoticeIn { from { opacity:0; transform:translateY(-28px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
