@@ -90,6 +90,11 @@ export function MymyKakao(p: SkinProps) {
       display: "block",
       borderRadius: "50%",
     },
+    kakaoChatAvatarImageStyle = {
+      ...kakaoAvatarImageStyle,
+      transform: "translateZ(0)",
+      backfaceVisibility: "hidden" as const,
+    },
     messages: Item[] = chatItems.filter((item) => item.title === p.thread),
     scroll = useRef<HTMLDivElement>(null);
   const hasBacklashCheckin = messages.some((item) => item.id === "boyfriend-backlash-checkin");
@@ -165,7 +170,7 @@ export function MymyKakao(p: SkinProps) {
                           alt={p.thread}
                           loading="eager"
                           decoding="sync"
-                          style={kakaoAvatarImageStyle}
+                          style={kakaoChatAvatarImageStyle}
                         />
                       </span>
                     </div>
@@ -192,7 +197,7 @@ export function MymyKakao(p: SkinProps) {
                         alt=""
                         loading="eager"
                         decoding="sync"
-                        style={kakaoAvatarImageStyle}
+                        style={kakaoChatAvatarImageStyle}
                       />
                     </span>
                   </div>
