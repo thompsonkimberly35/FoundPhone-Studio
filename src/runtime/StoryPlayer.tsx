@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Phone } from "../Phone";
+import { db } from "../persistence";
 import { validateWork, type Work } from "../schema";
 import "../styles.css";
 import "./player.css";
@@ -79,10 +80,13 @@ function StoryPlayer() {
         if (!r.ok) throw Error("缺少作品文件，请运行 npm run story:build");
         return r.json();
       })
-      .then((x) => {
+      .then(async (x) => {
         const w = validateWork(x);
         document.title = w.title === "捡手机" ? "捡手机" : w.title + " · 捡手机";
-        setWork(w);
+        // A fresh page visit starts a new story run after character selection.
+        // Remove only this game's previous runtime save; authored story data stays intact.
+        await db.saves.delete(w.id).catch(() => undefined);
+        if (!abort.signal.aborted) setWork(w);
       })
       .catch((e) => {
         if (e.name !== "AbortError") setError(String(e));
