@@ -48,6 +48,7 @@ function StoryPlayer() {
   const [work, setWork] = useState<Work | null>(null),
     [error, setError] = useState("");
   const [selectionComplete, setSelectionComplete] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState("");
   const [selectedBoyfriend, setSelectedBoyfriend] = useState("");
   const [selectedFriend, setSelectedFriend] = useState("");
   const musicRef = useRef<HTMLAudioElement>(null);
@@ -83,9 +84,25 @@ function StoryPlayer() {
       .then(async (x) => {
         const w = validateWork(x);
         document.title = w.title === "捡手机" ? "捡手机" : w.title + " · 捡手机";
-        // A fresh page visit starts a new story run after character selection.
-        // Remove only this game's previous runtime save; authored story data stays intact.
-        await db.saves.delete(w.id).catch(() => undefined);
+        // A manual save is the only progress that survives a fresh page visit.
+        // Restore it before mounting the phone; otherwise discard the previous run.
+        const manual = await db.manualSaves.get(w.id).catch(() => undefined);
+        if (manual && manual.state.workId === w.id && manual.state.revision === w.updatedAt) {
+          await db.saves.put({ id: w.id, state: manual.state });
+          if (!abort.signal.aborted) {
+            setSelectedBoyfriend(manual.selectedBoyfriend);
+            setSelectedFriend(manual.selectedFriend);
+            setLastSavedAt(manual.savedAt);
+            setSelectionComplete(true);
+          }
+        } else {
+          if (manual) await db.manualSaves.delete(w.id).catch(() => undefined);
+          await db.saves.delete(w.id).catch(() => undefined);
+          if (!abort.signal.aborted) {
+            setLastSavedAt("");
+            setSelectionComplete(false);
+          }
+        }
         if (!abort.signal.aborted) setWork(w);
       })
       .catch((e) => {
@@ -96,7 +113,25 @@ function StoryPlayer() {
   return (
     <main className="story-runtime">
       <audio ref={musicRef} preload="auto" onEnded={advanceMusic} onError={advanceMusic} aria-hidden="true" />
-      {work ? selectionComplete ? <Phone work={work} selectedBoyfriend={selectedBoyfriend} selectedFriend={selectedFriend} /> : <CharacterSelection onComplete={(boyfriend, friend) => {
+      {work ? selectionComplete ? <Phone
+        work={work}
+        selectedBoyfriend={selectedBoyfriend}
+        selectedFriend={selectedFriend}
+        savedAt={lastSavedAt}
+        onSaveProgress={async (state) => {
+          const savedAt = new Date().toISOString();
+          await db.manualSaves.put({
+            id: work.id,
+            state,
+            savedAt,
+            selectedBoyfriend,
+            selectedFriend,
+          });
+          await db.saves.put({ id: work.id, state });
+          setLastSavedAt(savedAt);
+          return savedAt;
+        }}
+      /> : <CharacterSelection onComplete={(boyfriend, friend) => {
         setSelectedBoyfriend(boyfriend);
         setSelectedFriend(friend);
         playMusic(1);
