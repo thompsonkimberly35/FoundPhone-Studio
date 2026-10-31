@@ -422,6 +422,51 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   const backlashNotificationsComplete = (s.messages.instagram ?? []).some((item) => item.id === "ig-backlash-50");
   const checkinDueAt = s.ui?.kakao?.["ig-backlash-checkin-due-at"];
   const checkinSent = s.ui?.kakao?.["ig-backlash-checkin-sent"] === true;
+  const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
+  useEffect(() => {
+    let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    try { queue = JSON.parse(String(kakaoDeliveryQueue)); } catch { queue = []; }
+    if (!queue.length) {
+      if (s.ui?.kakao?.["typing-state"]) {
+        const current = runtimeRef.current;
+        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": "" } } });
+      }
+      return;
+    }
+    const next = queue[0];
+    const now = Date.now();
+    const typingRaw = s.ui?.kakao?.["typing-state"] || "";
+    const typingActive = now >= next.typingAt;
+    if (typingActive && !typingRaw) {
+      const current = runtimeRef.current;
+      update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": JSON.stringify({ title: next.item.title, until: next.deliverAt }) } } });
+    }
+    const due = typingActive ? next.deliverAt : next.typingAt;
+    const timer = window.setTimeout(() => {
+      const current = runtimeRef.current;
+      let currentQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+      try { currentQueue = JSON.parse(String(current.ui?.kakao?.["delivery-queue"] || "[]")); } catch { currentQueue = []; }
+      const head = currentQueue[0];
+      if (!head) return;
+      if (Date.now() < head.deliverAt) {
+        if (Date.now() >= head.typingAt && !current.ui?.kakao?.["typing-state"]) {
+          update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": JSON.stringify({ title: head.item.title, until: head.deliverAt }) } } });
+        }
+        return;
+      }
+      const existing = current.messages.kakao ?? [];
+      if (!existing.some((item) => item.id === head.item.id)) {
+        update({
+          ...current,
+          messages: { ...current.messages, kakao: [...existing, { ...head.item, read: false }] },
+          ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(currentQueue.slice(1)), "typing-state": "" } },
+        });
+      } else {
+        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(currentQueue.slice(1)), "typing-state": "" } } });
+      }
+    }, Math.max(0, due - now));
+    return () => window.clearTimeout(timer);
+  }, [kakaoDeliveryQueue, s.ui?.kakao?.["typing-state"]]);
   useEffect(() => {
     if (!backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedBoyfriend || checkinSent) return;
     if (!checkinDueAt) {
@@ -647,6 +692,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const current = runtimeRef.current;
                     if ((current.messages.instagram ?? []).some((item) => item.id === id)) {
                       update({ ...current, messages: { ...current.messages, instagram: (current.messages.instagram ?? []).map((item) => item.id === id ? { ...item, read: true } : item) } });
+                    } else if ((current.messages.kakao ?? []).some((item) => item.id === id)) {
+                      update({ ...current, messages: { ...current.messages, kakao: (current.messages.kakao ?? []).map((item) => item.id === id ? { ...item, read: true } : item) } });
                     }
                   }}
                   onEdit={(item) => onEdit?.(app, item)}
@@ -688,20 +735,31 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const time = current.time || displayTime;
                     const stamp = Date.now();
                     const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
-                    const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: true });
-                    if (choiceId) outgoing.meta = { ...outgoing.meta, storyCheckinChoice: choiceId };
-                    const followUp = followUpReply
-                      ? makeItem({ id: `kakao-reply-followup-${character}-${stamp}`, title: character, sender: character, avatar, body: followUpReply, time, outgoing: false, read: true })
-                      : null;
+                    outgoing.meta = { ...outgoing.meta, unread: "1", ...(choiceId ? { storyCheckinChoice: choiceId } : {}) };
+                    const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: false });
                     const currentMessages = current.messages as Runtime["messages"];
-                    const nextMessages = [...(currentMessages.kakao ?? []), outgoing, incomingReply, ...(followUp ? [followUp] : [])];
+                    const nextMessages = [...(currentMessages.kakao ?? []), outgoing, incomingReply];
                     let messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
+                    const currentQueue = (() => { try { return JSON.parse(String(current.ui?.kakao?.["delivery-queue"] || "[]")) as Array<{ item: Item; typingAt: number; deliverAt: number }>; } catch { return []; } })();
+                    const lastDue = currentQueue.at(-1)?.deliverAt ?? stamp;
+                    const queuedFollowUp = followUpReply ? makeItem({ id: `kakao-reply-followup-${character}-${stamp}`, title: character, sender: character, avatar, body: followUpReply, time, outgoing: false, read: false }) : null;
+                    const nextQueue = queuedFollowUp ? [...currentQueue, { item: queuedFollowUp, typingAt: Math.max(stamp, lastDue) + 1500, deliverAt: Math.max(stamp, lastDue) + 4500 }] : currentQueue;
                     if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(currentMessages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
                       const backlash = createInstagramBacklash(time);
                       messages = { ...messages, instagram: [...(currentMessages.instagram ?? []), ...backlash] };
                       setIgQueue(backlash);
                     }
-                    update({ ...current, messages });
+                    update({
+                      ...current,
+                      messages,
+                      ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(nextQueue) } },
+                    });
+                    if (outgoing.id) {
+                      window.setTimeout(() => {
+                        const latest = runtimeRef.current;
+                        update({ ...latest, messages: { ...latest.messages, kakao: (latest.messages.kakao ?? []).map((item) => item.id === outgoing.id ? { ...item, meta: { ...item.meta, unread: "" } } : item) } });
+                      }, 8000);
+                    }
                   }}
                 />
               </AppWindow>
