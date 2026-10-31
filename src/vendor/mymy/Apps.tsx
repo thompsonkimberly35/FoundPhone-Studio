@@ -368,13 +368,19 @@ export function MymyInstagram(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [story, setStory] = useState(0),
     [draft, setDraft] = useState(""),
-    [pop, setPop] = useState("");
+    [pop, setPop] = useState(""),
+    [dmQuery, setDmQuery] = useState(""),
+    [dmTab, setDmTab] = useState<"一般" | "陌生讯息">("陌生讯息");
   const posts = p.items.filter(
       (i) => i.folder !== "私信" && i.meta.story !== "true",
     ),
     stories = p.items.filter((i) => i.meta.story === "true"),
     dms = p.items.filter((i) => i.folder === "私信"),
-    active = stories[story - 1];
+    active = stories[story - 1],
+    isBacklash = (i: Item) => i.id.startsWith("ig-backlash-"),
+    filteredDms = [...dms].filter((i) => i.sender.toLowerCase().includes(dmQuery.toLowerCase())).sort((a, b) => Number(b.meta.sequence || 0) - Number(a.meta.sequence || 0)),
+    generalDms = filteredDms.filter((i) => !isBacklash(i)),
+    requestDms = filteredDms.filter(isBacklash);
   const toggle = (id: string, values: string[], set: (v: string[]) => void) =>
     set(values.includes(id) ? values.filter((v) => v !== id) : [...values, id]);
   useEffect(() => {
@@ -474,27 +480,37 @@ export function MymyInstagram(p: SkinProps) {
   return (
     <div className="mymy-ui mymy-instagram" data-mymy="instagram">
       <div className="ig">
-        <header className="igh">
-          <button
-            aria-label={selected ? "返回Instagram动态" : "关闭当前App"}
-            onClick={() => (selected ? setSelected(null) : p.onBack())}
-          >
-            <ArrowLeft />
-          </button>
-          <span className="igl2">
-            {selected ? "帖子" : tab === "主页" ? "Instagram" : tab}
-          </span>
-          <button aria-label="打开私信" onClick={() => setTab("私信")}>
-            <Send />
-          </button>
-        </header>
+        {tab === "私信" ? (
+          <header className="ig-inbox-header">
+            <button aria-label={selected ? "返回收件匣" : "返回"} onClick={() => selected ? setSelected(null) : p.onBack()}><ArrowLeft size={25}/></button>
+            <b>allyz_1101</b><ChevronDown size={16}/>
+            <span/>
+            <button aria-label="新增訊息"><Plus size={25}/></button>
+          </header>
+        ) : (
+          <header className="igh">
+            <button aria-label={selected ? "返回Instagram动态" : "关闭当前App"} onClick={() => (selected ? setSelected(null) : p.onBack())}><ArrowLeft /></button>
+            <span className="igl2">{selected ? "帖子" : tab === "主页" ? "Instagram" : tab}</span>
+            <button aria-label="打开私信" onClick={() => { setSelected(null); setTab("私信"); }}><Send /></button>
+          </header>
+        )}
         <div className="igb">
           {selected?.folder === "私信" ? (
             <section className="ig-dm-chat">
-              <div className="ig-dm-person"><Avatar name={selected.sender} /><span><b>{selected.sender}</b><small>Instagram 私信</small></span><MoreHorizontal /></div>
-              <div className="ig-dm-date">今天 {selected.time.slice(-5)}</div>
-              <div className="ig-dm-message"><Avatar name={selected.sender} /><p>{selected.body}</p></div>
-              <div className="ig-dm-read">已显示你收到的消息</div>
+              <header className="ig-dm-person">
+                <button aria-label="返回收件匣" onClick={() => setSelected(null)}><ArrowLeft size={23}/></button>
+                <Avatar name={selected.sender} /><span><b>{selected.sender}</b><small>活跃状态不可用</small></span>
+                <button aria-label="语音通话"><Phone size={21}/></button><button aria-label="更多选项"><MoreHorizontal size={22}/></button>
+              </header>
+              <div className="ig-dm-thread">
+                <div className="ig-dm-date">今天 {selected.time.slice(-5)}</div>
+                <div className="ig-dm-message"><Avatar name={selected.sender} /><p>{selected.body}</p></div>
+              </div>
+              <form className="ig-dm-compose" onSubmit={(e) => e.preventDefault()}>
+                <button type="button" aria-label="相机"><Camera size={21}/></button>
+                <input aria-label="发送消息" placeholder="发送消息……" value={draft} onChange={(e) => setDraft(e.target.value)}/>
+                <button type="button" aria-label="语音消息"><Mic size={21}/></button><button type="button" aria-label="图片"><Image size={21}/></button><button type="button" aria-label="添加"><PlusCircle size={21}/></button>
+              </form>
             </section>
           ) : selected ? post(selected) : null}
           {!selected && tab === "主页" && (
@@ -554,19 +570,27 @@ export function MymyInstagram(p: SkinProps) {
             </>
           )}
           {!selected && tab === "私信" && (
-            <>
-              {[...dms].sort((a, b) => Number(b.meta.sequence || 0) - Number(a.meta.sequence || 0)).map((i) => (
-                <button className="kzkr ig-dm-list-row" key={i.id} onClick={() => openPost(i)}>
-                  <Avatar name={i.sender} src={i.avatar} />
-                  <span className="kzkn">
-                    <b>{i.sender}</b>
-                    <small>{i.body}</small>
-                  </span>
-                  <span className="ig-dm-row-meta"><time>{i.time.slice(-5)}</time>{!i.read && <i aria-label="未读消息" />}</span>
-                </button>
-              ))}
-              {!dms.length && <Blank />}
-            </>
+            <section className="ig-inbox">
+              <label className="ig-dm-search"><Search size={18}/><input aria-label="搜尋使用者名稱" placeholder="搜尋" value={dmQuery} onChange={(e) => setDmQuery(e.target.value)}/></label>
+              <div className="ig-notes-strip">
+                <div className="ig-note-own"><Avatar name="allyz_1101"/><small>你的便條</small></div>
+                {stories.slice(0,5).map((storyItem) => <button key={storyItem.id} className="ig-note-person" onClick={() => openPost(storyItem)}><Avatar name={storyItem.sender} src={storyItem.avatar}/><small>{storyItem.sender}</small></button>)}
+              </div>
+              <div className="ig-dm-tabs">
+                <button className={dmTab === "一般" ? "active" : ""} onClick={() => setDmTab("一般")}>一般</button>
+                <button className={dmTab === "陌生讯息" ? "active" : ""} onClick={() => setDmTab("陌生讯息")}>陌生讯息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
+              </div>
+              <div className="ig-dm-list">
+                {(dmTab === "一般" ? generalDms : requestDms).map((i, n) => (
+                  <button className="ig-dm-list-row" key={i.id} onClick={() => openPost(i)}>
+                    <Avatar name={i.sender} src={i.avatar}/>
+                    <span className="ig-dm-row-copy"><b>{i.sender}</b><small className={!i.read ? "unread" : ""}>{i.body}</small></span>
+                    <span className="ig-dm-row-meta"><time>{i.time.slice(-5)}</time>{!i.read && <i aria-label="未读消息"/>}</span>
+                  </button>
+                ))}
+                {!(dmTab === "一般" ? generalDms : requestDms).length && <Blank/>}
+              </div>
+            </section>
           )}
           {!selected && tab === "搜索" && (
             <>
