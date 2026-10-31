@@ -54,6 +54,7 @@ export function NativeSettings({
   onItem,
   onSettings,
   onSaveProgress,
+  onRestartGame,
   savedAt,
 }: {
   work: Work;
@@ -62,6 +63,7 @@ export function NativeSettings({
   onItem: (i: Item) => void;
   onSettings?: () => void;
   onSaveProgress?: () => Promise<string | undefined>;
+  onRestartGame?: () => Promise<void>;
   savedAt?: string;
 }) {
   const nav = useNavigation(),
@@ -71,7 +73,9 @@ export function NativeSettings({
     [bluetooth, setBluetooth] = useState(true),
     [lowPower, setLowPower] = useState(false),
     [savedAtText, setSavedAtText] = useState(savedAt || ""),
-    [saving, setSaving] = useState(false);
+    [saving, setSaving] = useState(false),
+    [showRestartPrompt, setShowRestartPrompt] = useState(false),
+    [restarting, setRestarting] = useState(false);
   useEffect(() => setSavedAtText(savedAt || ""), [savedAt]);
   const formattedSavedAt = savedAtText
     ? new Date(savedAtText).toLocaleString("zh-TW", {
@@ -120,6 +124,67 @@ export function NativeSettings({
               >
                 {saving ? "正在儲存…" : "儲存當前進度"}
               </button>
+              <button
+                type="button"
+                disabled={restarting || !onRestartGame}
+                onClick={() => setShowRestartPrompt(true)}
+                style={{
+                  width: "100%", minHeight: 48, marginTop: 12, border: 0,
+                  borderRadius: 12, background: "#ff3b30", color: "#fff",
+                  fontSize: 16, fontWeight: 650, cursor: "pointer",
+                  opacity: restarting || !onRestartGame ? 0.6 : 1,
+                }}
+              >
+                重新開始
+              </button>
+              {showRestartPrompt && (
+                <div
+                  role="alertdialog"
+                  aria-modal="true"
+                  aria-label="確認重新開始"
+                  style={{
+                    marginTop: 16, padding: 16, borderRadius: 12,
+                    background: "var(--settings-card-secondary, #f2f2f7)",
+                    textAlign: "center",
+                  }}
+                >
+                  <strong style={{ display: "block", marginBottom: 14, fontSize: 16 }}>
+                    確定重新開始？
+                  </strong>
+                  <button
+                    type="button"
+                    disabled={restarting || !onRestartGame}
+                    onClick={async () => {
+                      if (!onRestartGame) return;
+                      setRestarting(true);
+                      try {
+                        await onRestartGame();
+                      } finally {
+                        setRestarting(false);
+                        setShowRestartPrompt(false);
+                      }
+                    }}
+                    style={{
+                      width: "100%", minHeight: 44, border: 0, borderRadius: 10,
+                      background: "#ff3b30", color: "#fff", fontSize: 16,
+                      fontWeight: 650, cursor: "pointer",
+                    }}
+                  >
+                    {restarting ? "正在重新開始…" : "確定"}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={restarting}
+                    onClick={() => setShowRestartPrompt(false)}
+                    style={{
+                      width: "100%", minHeight: 40, marginTop: 8, border: 0,
+                      background: "transparent", color: "#007aff", fontSize: 15,
+                    }}
+                  >
+                    取消
+                  </button>
+                </div>
+              )}
             </div>
             <p className="settings-page-caption">
               最近一次儲存：{formattedSavedAt}
