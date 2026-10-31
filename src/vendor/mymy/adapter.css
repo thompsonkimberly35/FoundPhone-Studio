@@ -628,3 +628,21 @@
   width: 25px;
   height: 25px;
 }
+
+/* Instagram backlash inbox and direct-message presentation */
+.mymy-instagram .ig-dm-list-row { display:flex; align-items:center; gap:12px; min-height:76px; padding:10px 14px; width:100%; text-align:left; background:transparent; border:0; border-bottom:1px solid #efefef; color:inherit; }
+.mymy-instagram .ig-dm-list-row .catalog-avatar, .mymy-instagram .ig-dm-list-row .skin-avatar { width:48px; height:48px; min-width:48px; border-radius:50%; display:grid; place-items:center; background:linear-gradient(135deg,#f7b7c8,#b7c8f7); color:#fff; font-weight:700; }
+.mymy-instagram .ig-dm-list-row .kzkn { flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.mymy-instagram .ig-dm-list-row .kzkn b { font-size:14px; color:#171717; }
+.mymy-instagram .ig-dm-list-row .kzkn small { color:#777; font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:245px; }
+.mymy-instagram .ig-dm-row-meta { display:flex; align-items:center; gap:7px; color:#999; font-size:10px; }
+.mymy-instagram .ig-dm-row-meta i { width:8px; height:8px; border-radius:50%; background:#3797f0; }
+.mymy-instagram .ig-dm-chat { min-height:calc(100% - 100px); display:flex; flex-direction:column; background:#fff; }
+.mymy-instagram .ig-dm-person { display:flex; align-items:center; gap:10px; padding:12px 15px; border-bottom:1px solid #eee; }
+.mymy-instagram .ig-dm-person span { flex:1; display:flex; flex-direction:column; gap:3px; }
+.mymy-instagram .ig-dm-person small { color:#999; font-size:11px; }
+.mymy-instagram .ig-dm-date { text-align:center; color:#999; font-size:10px; padding:20px 0; }
+.mymy-instagram .ig-dm-message { display:flex; align-items:flex-end; gap:8px; padding:0 14px; }
+.mymy-instagram .ig-dm-message .catalog-avatar, .mymy-instagram .ig-dm-message .skin-avatar { width:27px; height:27px; min-width:27px; border-radius:50%; display:grid; place-items:center; background:#e8dff2; color:#765b8b; font-size:11px; }
+.mymy-instagram .ig-dm-message p { margin:0; max-width:82%; padding:11px 14px; border-radius:18px 18px 18px 5px; background:#efefef; color:#171717; font-size:13px; line-height:1.55; overflow-wrap:anywhere; }
+.mymy-instagram .ig-dm-read { margin:10px 15px 18px 50px; color:#999; font-size:10px; }
