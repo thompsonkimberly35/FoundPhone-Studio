@@ -419,6 +419,61 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [app, work.apps]);
   const displayTime = creator ? work.phone.time : s.time || work.phone.time;
   const plugin = getApp(app);
+  const backlashNotificationsComplete = (s.messages.instagram ?? []).some((item) => item.id === "ig-backlash-50");
+  const checkinDueAt = s.ui?.kakao?.["ig-backlash-checkin-due-at"];
+  const checkinSent = s.ui?.kakao?.["ig-backlash-checkin-sent"] === true;
+  useEffect(() => {
+    if (!backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedBoyfriend || checkinSent) return;
+    if (!checkinDueAt) {
+      const current = runtimeRef.current;
+      update({
+        ...current,
+        ui: {
+          ...current.ui,
+          kakao: {
+            ...current.ui?.kakao,
+            "ig-backlash-checkin-due-at": Date.now() + 60_000,
+          },
+        },
+      });
+      return;
+    }
+    const remaining = Math.max(0, Number(checkinDueAt) - Date.now());
+    const timer = window.setTimeout(() => {
+      const current = runtimeRef.current;
+      if (current.ui?.kakao?.["ig-backlash-checkin-sent"] === true) return;
+      const existing = current.messages.kakao ?? [];
+      if (existing.some((item) => item.id === "boyfriend-backlash-checkin")) return;
+      const files: Record<string, string> = {
+        "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+        "李理悟": "李理悟-kakao.jpg", "李相沅": "李相沅-kakao.png",
+        "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+        "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+      };
+      const avatar = files[selectedBoyfriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedBoyfriend] : "";
+      const body = "亲爱的，我在处理了，目前有粉丝去找你吗？";
+      const message = makeItem({
+        id: "boyfriend-backlash-checkin",
+        title: selectedBoyfriend,
+        sender: selectedBoyfriend,
+        avatar,
+        body,
+        time: current.time || displayTime,
+        outgoing: false,
+        read: false,
+      });
+      update({
+        ...current,
+        messages: { ...current.messages, kakao: [...existing, message] },
+        ui: {
+          ...current.ui,
+          kakao: { ...current.ui?.kakao, "ig-backlash-checkin-sent": true },
+        },
+      });
+      setBanner(`KakaoTalk: ${selectedBoyfriend}：${body}`);
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [backlashNotificationsComplete, igQueue.length, igBanner, selectedBoyfriend, checkinSent, checkinDueAt]);
   useEffect(() => {
     const count = s.notifications.length;
     if (!locked && work.phone.notifications && count > noticesSeen.current) {
@@ -621,7 +676,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   work={work}
                   selectedBoyfriend={selectedBoyfriend}
                   selectedFriend={selectedFriend}
-                  onKakaoChoice={(character, playerText, reply) => {
+                  onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
                     const files: Record<string, string> = {
                       "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
@@ -634,8 +689,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const stamp = Date.now();
                     const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
                     const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: true });
+                    if (choiceId) outgoing.meta = { ...outgoing.meta, storyCheckinChoice: choiceId };
+                    const followUp = followUpReply
+                      ? makeItem({ id: `kakao-reply-followup-${character}-${stamp}`, title: character, sender: character, avatar, body: followUpReply, time, outgoing: false, read: true })
+                      : null;
                     const currentMessages = current.messages as Runtime["messages"];
-                    const nextMessages = [...(currentMessages.kakao ?? []), outgoing, incomingReply];
+                    const nextMessages = [...(currentMessages.kakao ?? []), outgoing, incomingReply, ...(followUp ? [followUp] : [])];
                     let messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
                     if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(currentMessages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
                       const backlash = createInstagramBacklash(time);
