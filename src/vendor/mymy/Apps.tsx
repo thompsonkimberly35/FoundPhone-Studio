@@ -397,6 +397,18 @@ export function MymyInstagram(p: SkinProps) {
     );
     return () => clearTimeout(t);
   }, [active, stories.length]);
+  useEffect(() => {
+    const requestedId = p.ui?.["ig-open-id"];
+    if (typeof requestedId !== "string" || !requestedId) return;
+    const target = dms.find((item) => item.id === requestedId);
+    if (target) {
+      setTab("私信");
+      setDmTab(isBacklash(target) ? "陌生讯息" : "一般");
+      setSelected(target);
+      read(p, target);
+      p.onUi?.("ig-open-id", "");
+    }
+  }, [p.ui?.["ig-open-id"], p.items.length]);
   const openPost = (i: Item) => {
     if (p.creator || i.password) p.onItem(i);
     else {
