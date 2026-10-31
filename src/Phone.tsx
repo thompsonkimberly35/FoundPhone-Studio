@@ -423,6 +423,30 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   const checkinDueAt = s.ui?.kakao?.["ig-backlash-checkin-due-at"];
   const checkinSent = s.ui?.kakao?.["ig-backlash-checkin-sent"] === true;
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
+  const kakaoPendingReadIds = (s.messages.kakao ?? [])
+    .filter((item) => item.outgoing && item.meta.unread === "1" && item.meta.unreadUntilAt)
+    .map((item) => ({ id: item.id, due: Number(item.meta.unreadUntilAt) }))
+    .filter((item) => Number.isFinite(item.due));
+  useEffect(() => {
+    if (!kakaoPendingReadIds.length) return;
+    const due = Math.min(...kakaoPendingReadIds.map((item) => item.due));
+    const timer = window.setTimeout(() => {
+      const current = runtimeRef.current;
+      const now = Date.now();
+      update({
+        ...current,
+        messages: {
+          ...current.messages,
+          kakao: (current.messages.kakao ?? []).map((item) =>
+            item.outgoing && item.meta.unread === "1" && Number(item.meta.unreadUntilAt) <= now
+              ? { ...item, meta: { ...item.meta, unread: "", readAt: String(now) } }
+              : item
+          ),
+        },
+      });
+    }, Math.max(0, due - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [s.messages.kakao]);
   useEffect(() => {
     let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
     try { queue = JSON.parse(String(kakaoDeliveryQueue)); } catch { queue = []; }
@@ -735,7 +759,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const time = current.time || displayTime;
                     const stamp = Date.now();
                     const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
-                    outgoing.meta = { ...outgoing.meta, unread: "1", ...(choiceId ? { storyCheckinChoice: choiceId } : {}) };
+                    outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 8000), ...(choiceId ? { storyCheckinChoice: choiceId } : {}) };
                     const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: false });
                     const currentMessages = current.messages as Runtime["messages"];
                     const nextMessages = [...(currentMessages.kakao ?? []), outgoing, incomingReply];
@@ -754,12 +778,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       messages,
                       ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(nextQueue) } },
                     });
-                    if (outgoing.id) {
-                      window.setTimeout(() => {
-                        const latest = runtimeRef.current;
-                        update({ ...latest, messages: { ...latest.messages, kakao: (latest.messages.kakao ?? []).map((item) => item.id === outgoing.id ? { ...item, meta: { ...item.meta, unread: "" } } : item) } });
-                      }, 8000);
-                    }
                   }}
                 />
               </AppWindow>
