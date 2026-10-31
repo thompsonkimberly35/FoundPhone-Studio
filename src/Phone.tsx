@@ -207,7 +207,7 @@ function PhoneRuntime({
   };
   useEffect(() => {
     if (igBanner || !igQueue.length) return;
-    const delay = igQueue.length > 45 ? 420 + Math.random() * 650 : 400 + Math.random() * 2100;
+    const delay = igQueue.length > 45 ? 35 + Math.random() * 65 : 80 + Math.random() * 120;
     const timer = window.setTimeout(() => {
       setIgBanner(igQueue[0]);
       setIgQueue((items) => items.slice(1));
@@ -216,7 +216,7 @@ function PhoneRuntime({
   }, [igQueue, igBanner]);
   useEffect(() => {
     if (!igBanner) return;
-    const timer = window.setTimeout(() => setIgBanner(null), 2800);
+    const timer = window.setTimeout(() => setIgBanner(null), 500);
     return () => window.clearTimeout(timer);
   }, [igBanner]);
   useEffect(() => {
@@ -841,11 +841,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             </div>
           )}
           {igBanner && !locked && (
-            <div className="device-banner ig-backlash-banner" role="status" aria-live="polite">
+            <button className="device-banner ig-backlash-banner" type="button" role="status" aria-live="polite" onClick={() => { setIgBanner(null); setApp("instagram"); }}>
               <span className="ig-notice-icon" aria-hidden="true"><Instagram size={19} /></span>
               <span className="ig-notice-copy"><strong>{igBanner.sender}</strong><span>{igBanner.body}</span></span>
               <time>现在</time>
-            </div>
+            </button>
           )}
           {banner && !locked && (
             <button
