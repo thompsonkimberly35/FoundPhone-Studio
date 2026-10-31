@@ -380,7 +380,7 @@ export function MymyInstagram(p: SkinProps) {
     [sentMessages, setSentMessages] = useState<Record<string, string[]>>({}),
     [pop, setPop] = useState(""),
     [dmQuery, setDmQuery] = useState(""),
-    [dmTab, setDmTab] = useState<"一般" | "陌生讯息">("陌生讯息");
+    [dmTab, setDmTab] = useState<"一般" | "陌生讯息">("一般");
   const posts = p.items.filter(
       (i) => i.folder !== "私信" && i.meta.story !== "true",
     ),
@@ -389,8 +389,8 @@ export function MymyInstagram(p: SkinProps) {
     active = stories[story - 1],
     isBacklash = (i: Item) => i.id.startsWith("ig-backlash-"),
     filteredDms = [...dms].filter((i) => i.sender.toLowerCase().includes(dmQuery.toLowerCase())).sort((a, b) => Number(b.meta.sequence || 0) - Number(a.meta.sequence || 0)),
-    generalDms = filteredDms.filter((i) => !isBacklash(i)),
-    requestDms = filteredDms.filter(isBacklash);
+    generalDms = filteredDms.filter((i) => !isBacklash(i) || (sentMessages[i.id]?.length || 0) > 0),
+    requestDms = filteredDms.filter((i) => isBacklash(i) && !(sentMessages[i.id]?.length || 0));
   const toggle = (id: string, values: string[], set: (v: string[]) => void) =>
     set(values.includes(id) ? values.filter((v) => v !== id) : [...values, id]);
   useEffect(() => {
@@ -541,6 +541,8 @@ export function MymyInstagram(p: SkinProps) {
                   ...current,
                   [selected.id]: [...(current[selected.id] || []), message],
                 }));
+                // A reply accepts the request and moves the conversation to General.
+                if (isBacklash(selected)) setDmTab("一般");
                 setDraft("");
               }}>
                 <button type="button" aria-label="相机"><Camera size={21}/></button>
@@ -618,18 +620,31 @@ export function MymyInstagram(p: SkinProps) {
                 <div className="ig-note-own"><Avatar name="allyz_1101"/><small>你的便條</small></div>
                 {stories.slice(0,5).map((storyItem) => <button key={storyItem.id} className="ig-note-person" onClick={() => openPost(storyItem)}><Avatar name={storyItem.sender} src={storyItem.avatar}/><small>{storyItem.sender}</small></button>)}
               </div>
-              <div className="ig-dm-tabs">
-                <button className={dmTab === "一般" ? "active" : ""} onClick={() => setDmTab("一般")}>一般</button>
-                <button className={dmTab === "陌生讯息" ? "active" : ""} onClick={() => setDmTab("陌生讯息")}>陌生讯息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
+              <div className="ig-dm-section-head">
+                {dmTab === "一般" ? (
+                  <>
+                    <b>消息</b>
+                    <button onClick={() => setDmTab("陌生讯息")}>陌生訊息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
+                  </>
+                ) : (
+                  <>
+                    <button className="ig-dm-requests-back" onClick={() => setDmTab("一般")}><ArrowLeft size={17}/> 返回消息</button>
+                    <b>陌生訊息</b>
+                    <span />
+                  </>
+                )}
               </div>
               <div className="ig-dm-list">
-                {(dmTab === "一般" ? generalDms : requestDms).map((i) => (
-                  <button className="ig-dm-list-row" key={i.id} onClick={() => openPost(i)}>
-                    <Avatar name={i.sender} src={i.avatar}/>
-                    <span className="ig-dm-row-copy"><b>{i.sender}</b><small className={!i.read ? "unread" : ""}>{i.body}</small></span>
-                    <span className="ig-dm-row-meta"><time>{i.time.slice(-5)}</time>{!i.read && <i aria-label="未读消息"/>}</span>
-                  </button>
-                ))}
+                {(dmTab === "一般" ? generalDms : requestDms).map((i) => {
+                  const lastReply = sentMessages[i.id]?.slice(-1)[0];
+                  return (
+                    <button className="ig-dm-list-row" key={i.id} onClick={() => openPost(i)}>
+                      <Avatar name={i.sender} src={i.avatar}/>
+                      <span className="ig-dm-row-copy"><b>{i.sender}</b><small className={!i.read && !lastReply ? "unread" : ""}>{lastReply ? "你：" + lastReply : i.body}</small></span>
+                      <span className="ig-dm-row-meta"><time>{i.time.slice(-5)}</time>{!i.read && !lastReply && <i aria-label="未讀訊息"/>}</span>
+                    </button>
+                  );
+                })}
                 {!(dmTab === "一般" ? generalDms : requestDms).length && <Blank/>}
               </div>
             </section>
