@@ -207,7 +207,8 @@ function PhoneRuntime({
   };
   useEffect(() => {
     if (igBanner || !igQueue.length) return;
-    // Each story DM banner stays visible for 500ms; advance immediately afterwards.\n    const delay = 0;
+    // Each story DM banner stays visible for 500ms; advance immediately afterwards.
+    const delay = 0;
     const timer = window.setTimeout(() => {
       setIgBanner(igQueue[0]);
       setIgQueue((items) => items.slice(1));
