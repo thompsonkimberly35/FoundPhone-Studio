@@ -900,3 +900,102 @@
 .mymy-ui .kzkr { align-items: center; }
 .mymy-ui .kzkn { min-width: 0; flex: 1; }
 .mymy-ui .kzkn small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+/* KakaoTalk inbound message DOM: avatar row -> vertical content -> bubble/time row. */
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  gap: 7px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0 34px 0 0;
+  margin: 0;
+  position: relative;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot.first {
+  padding-left: 0;
+  margin-top: 9px;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot.continuation {
+  padding-left: 45px;
+  margin-top: 3px;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot .kzmav {
+  position: static;
+  display: block;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  align-self: flex-start;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot .kzmav .kzka,
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot .kzmav .catalog-avatar {
+  display: block;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot .kzmav img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kz-content {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: calc(100% - 45px);
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot.continuation .kz-content {
+  max-width: 100%;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot .kzmn {
+  display: block;
+  width: auto;
+  margin: 0 0 3px;
+  align-self: flex-start;
+  font-size: 11.5px;
+  line-height: 1.25;
+  color: #334;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kz-message-line {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot .kzbub {
+  flex: 0 1 auto;
+  width: fit-content;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  background: #fff;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kzm.kzot .kzt {
+  flex: 0 0 auto;
+  align-self: flex-end;
+  padding: 0 0 1px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: #66717c;
+  white-space: nowrap;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kztyping {
+  margin-top: 4px;
+}
+.mymy-ui.mymy-kakao .msgs.kk .kztyping .kz-message-line {
+  align-items: center;
+}
