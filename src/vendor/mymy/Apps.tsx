@@ -185,7 +185,7 @@ export function MymyKakao(p: SkinProps) {
                 <div className="kzm kzot first kztyping" aria-label="正在输入">
                   <div className="kzmav">
                     <span className="catalog-avatar kzka round">
-                      <img src={memberAvatar(p.thread)} alt="" />
+                      <img src={memberAvatar(p.thread)} alt="" loading="eager" decoding="sync" />
                     </span>
                   </div>
                   <div className="kz-content">
