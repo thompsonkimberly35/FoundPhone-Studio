@@ -24,6 +24,12 @@ import {
   Smile,
   Menu,
   Compass,
+  ChevronDown,
+  Phone,
+  Camera,
+  Mic,
+  Image as ImageIcon,
+  PlusCircle,
 } from "lucide-react";
 import type { SkinProps } from "../../AppSkins";
 import { Avatar, Media } from "../../skins/shared";
@@ -509,7 +515,7 @@ export function MymyInstagram(p: SkinProps) {
               <form className="ig-dm-compose" onSubmit={(e) => e.preventDefault()}>
                 <button type="button" aria-label="相机"><Camera size={21}/></button>
                 <input aria-label="发送消息" placeholder="发送消息……" value={draft} onChange={(e) => setDraft(e.target.value)}/>
-                <button type="button" aria-label="语音消息"><Mic size={21}/></button><button type="button" aria-label="图片"><Image size={21}/></button><button type="button" aria-label="添加"><PlusCircle size={21}/></button>
+                <button type="button" aria-label="语音消息"><Mic size={21}/></button><button type="button" aria-label="图片"><ImageIcon size={21}/></button><button type="button" aria-label="添加"><PlusCircle size={21}/></button>
               </form>
             </section>
           ) : selected ? post(selected) : null}
