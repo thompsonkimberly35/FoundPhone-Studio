@@ -136,14 +136,6 @@ export function MymyKakao(p: SkinProps) {
                       <div className="kzmav">
                         <span
                           className="catalog-avatar kzka round"
-                          style={{
-                            width: 38,
-                            height: 38,
-                            flex: "0 0 38px",
-                            overflow: "hidden",
-                            borderRadius: "50%",
-                            background: "#e9e5df",
-                          }}
                         >
                           <img
                             src={memberAvatar(p.thread, memberAvatar(m.sender, m.avatar))}
