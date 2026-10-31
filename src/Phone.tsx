@@ -1127,7 +1127,7 @@ function AppContent({
   work: Work;
   selectedBoyfriend?: string;
   selectedFriend?: string;
-  onKakaoChoice?: (character: string, playerText: string, reply: string) => void;
+  onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
   const [thread, setThread] = useState("");
