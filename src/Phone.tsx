@@ -52,6 +52,7 @@ import {
   ArrowUp,
   Folder,
   Phone as PhoneIcon,
+  Instagram,
 } from "lucide-react";
 import { getApp, type AppPlugin } from "./registry";
 import {
@@ -624,7 +625,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
                     const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: true });
                     const nextMessages = [...(current.messages.kakao ?? []), outgoing, incomingReply];
-                    let messages = { ...current.messages, kakao: nextMessages };
+                    let messages: Runtime["messages"] = { ...current.messages, kakao: nextMessages };
                     if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(current.messages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
                       const backlash = createInstagramBacklash(time);
                       messages = { ...messages, instagram: [...(current.messages.instagram ?? []), ...backlash] };
@@ -840,7 +841,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           )}
           {igBanner && !locked && (
             <div className="device-banner ig-backlash-banner" role="status" aria-live="polite">
-              <span className="ig-notice-icon" aria-hidden="true"><Send size={19} /></span>
+              <span className="ig-notice-icon" aria-hidden="true"><Instagram size={19} /></span>
               <span className="ig-notice-copy"><strong>{igBanner.sender}</strong><span>{igBanner.body}</span></span>
               <time>现在</time>
             </div>
