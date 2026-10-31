@@ -596,6 +596,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   onAdd={() => onAdd?.(app)}
                   onBack={() => setApp("")}
                   onSettings={onSettings}
+                  onSaveProgress={onSaveProgress}
+                  savedAt={savedAt}
                   onUi={(key, value) => {
                     const current = runtimeRef.current;
                     update(
@@ -1037,6 +1039,8 @@ function AppContent({
   onAdd,
   onBack,
   onSettings,
+  onSaveProgress,
+  savedAt,
   onUi,
   work,
   selectedBoyfriend,
@@ -1053,6 +1057,8 @@ function AppContent({
   onAdd: () => void;
   onBack: () => void;
   onSettings?: () => void;
+  onSaveProgress?: (state: Runtime) => Promise<string>;
+  savedAt?: string;
   onUi?: (key: string, value: UiValue) => void;
   work: Work;
   selectedBoyfriend?: string;
@@ -1249,7 +1255,7 @@ function AppContent({
           creator={creator}
           onItem={read}
           onSettings={onSettings}
-          onSaveProgress={() => onSaveProgress?.(runtimeRef.current)}
+          onSaveProgress={() => onSaveProgress?.(state)}
           savedAt={savedAt}
         />
       ) : app.id === "calculator" && !detail ? (
