@@ -377,6 +377,7 @@ export function MymyInstagram(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [story, setStory] = useState(0),
     [draft, setDraft] = useState(""),
+    [sentMessages, setSentMessages] = useState<Record<string, string[]>>({}),
     [pop, setPop] = useState(""),
     [dmQuery, setDmQuery] = useState(""),
     [dmTab, setDmTab] = useState<"一般" | "陌生讯息">("陌生讯息");
@@ -526,11 +527,31 @@ export function MymyInstagram(p: SkinProps) {
               <div className="ig-dm-thread">
                 <div className="ig-dm-date">今天 {selected.time.slice(-5)}</div>
                 <div className="ig-dm-message"><Avatar name={selected.sender} /><p>{selected.body}</p></div>
+                {(sentMessages[selected.id] || []).map((message, index) => (
+                  <div className="ig-dm-message ig-dm-message-out" key={selected.id + "-reply-" + index}>
+                    <p>{message}</p>
+                  </div>
+                ))}
               </div>
-              <form className="ig-dm-compose" onSubmit={(e) => e.preventDefault()}>
+              <form className="ig-dm-compose" onSubmit={(e) => {
+                e.preventDefault();
+                const message = draft.trim();
+                if (!message) return;
+                setSentMessages((current) => ({
+                  ...current,
+                  [selected.id]: [...(current[selected.id] || []), message],
+                }));
+                setDraft("");
+              }}>
                 <button type="button" aria-label="相机"><Camera size={21}/></button>
                 <input aria-label="发送消息" placeholder="发送消息……" value={draft} onChange={(e) => setDraft(e.target.value)}/>
-                <button type="button" aria-label="语音消息"><Mic size={21}/></button><button type="button" aria-label="图片"><ImageIcon size={21}/></button><button type="button" aria-label="添加"><PlusCircle size={21}/></button>
+                {draft.trim() ? (
+                  <button type="submit" aria-label="发送消息" className="ig-dm-send">发送</button>
+                ) : (
+                  <>
+                    <button type="button" aria-label="语音消息"><Mic size={21}/></button><button type="button" aria-label="图片"><ImageIcon size={21}/></button><button type="button" aria-label="添加"><PlusCircle size={21}/></button>
+                  </>
+                )}
               </form>
             </section>
           ) : selected ? post(selected) : null}
