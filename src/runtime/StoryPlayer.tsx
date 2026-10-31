@@ -131,6 +131,14 @@ function StoryPlayer() {
           setLastSavedAt(savedAt);
           return savedAt;
         }}
+        onRestartGame={async () => {
+          await db.manualSaves.delete(work.id);
+          await db.saves.delete(work.id);
+          setLastSavedAt("");
+          setSelectedBoyfriend("");
+          setSelectedFriend("");
+          setSelectionComplete(false);
+        }}
       /> : <CharacterSelection onComplete={(boyfriend, friend) => {
         setSelectedBoyfriend(boyfriend);
         setSelectedFriend(friend);
