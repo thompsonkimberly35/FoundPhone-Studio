@@ -855,3 +855,24 @@
   .mymy-ui.mymy-instagram .ig-dm-row-copy b { font-size: 13px; }
   .mymy-ui.mymy-instagram .ig-dm-row-copy small { font-size: 12px; }
 }
+
+
+/* Instagram DM outgoing replies */
+.mymy-ui.mymy-instagram .ig-dm-message-out {
+  justify-content: flex-end;
+  padding-left: 48px;
+  margin-top: 8px;
+}
+.mymy-ui.mymy-instagram .ig-dm-message-out p {
+  max-width: min(82%, 290px);
+  border-radius: 20px 20px 5px 20px;
+  background: linear-gradient(135deg, #7b42e8, #405de6);
+  color: #fff;
+}
+.mymy-ui.mymy-instagram .ig-dm-compose .ig-dm-send {
+  width: auto;
+  min-width: 42px;
+  color: #3797f0;
+  font-size: 14px;
+  font-weight: 700;
+}
