@@ -65,6 +65,7 @@ import {
 import { makeItem } from "./schema";
 import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
+import { createInstagramBacklash } from "./instagramBacklash";
 export function AppIcon({
   id,
   name,
@@ -146,6 +147,8 @@ function PhoneRuntime({
   const [recent, setRecent] = useState<string[]>([]);
   const appSnapshots = useRef(new Map<string, HTMLElement>());
   const [banner, setBanner] = useState("");
+  const [igQueue, setIgQueue] = useState<Item[]>([]);
+  const [igBanner, setIgBanner] = useState<Item | null>(null);
   const noticesSeen = useRef(0);
   const [contextApp, setContextApp] = useState("");
   const [deviceScale, setDeviceScale] = useState(0.84);
@@ -201,6 +204,20 @@ function PhoneRuntime({
     setOwn(next);
     onRuntime?.(next);
   };
+  useEffect(() => {
+    if (igBanner || !igQueue.length) return;
+    const delay = igQueue.length > 45 ? 420 + Math.random() * 650 : 400 + Math.random() * 2100;
+    const timer = window.setTimeout(() => {
+      setIgBanner(igQueue[0]);
+      setIgQueue((items) => items.slice(1));
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [igQueue, igBanner]);
+  useEffect(() => {
+    if (!igBanner) return;
+    const timer = window.setTimeout(() => setIgBanner(null), 2800);
+    return () => window.clearTimeout(timer);
+  }, [igBanner]);
   useEffect(() => {
     let active = true;
     if (creator || external) return;
@@ -600,7 +617,14 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const stamp = Date.now();
                     const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
                     const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: true });
-                    update({ ...current, messages: { ...current.messages, kakao: [...(current.messages.kakao ?? []), outgoing, incomingReply] } });
+                    const nextMessages = [...(current.messages.kakao ?? []), outgoing, incomingReply];
+                    let messages = { ...current.messages, kakao: nextMessages };
+                    if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(current.messages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
+                      const backlash = createInstagramBacklash(time);
+                      messages = { ...messages, instagram: [...(current.messages.instagram ?? []), ...backlash] };
+                      setIgQueue(backlash);
+                    }
+                    update({ ...current, messages });
                   }}
                 />
               </AppWindow>
@@ -806,6 +830,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   </button>
                 )}
               </div>
+            </div>
+          )}
+          {igBanner && !locked && (
+            <div className="device-banner ig-backlash-banner" role="status" aria-live="polite">
+              <span className="ig-notice-icon" aria-hidden="true"><Send size={19} /></span>
+              <span className="ig-notice-copy"><strong>{igBanner.sender}</strong><span>{igBanner.body}</span></span>
+              <time>现在</time>
             </div>
           )}
           {banner && !locked && (
