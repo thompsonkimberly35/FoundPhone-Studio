@@ -517,39 +517,110 @@
   font-weight: 600;
 }
 .mymy-ui .kzm {
-  display: flex;
-  align-items: flex-end;
-  gap: 5px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  grid-template-areas: "avatar name time" ". bubble time";
+  align-items: start;
+  column-gap: 7px;
+  row-gap: 3px;
   max-width: 100%;
+  position: relative;
 }
 .mymy-ui .kzm.kzmy {
+  display: flex;
+  align-items: flex-end;
   justify-content: flex-end;
   padding-left: 40px;
 }
 .mymy-ui .kzm.kzot {
-  flex-wrap: wrap;
-  padding-left: 42px;
-  position: relative;
-  padding-right: 40px;
+  padding: 0 34px 0 0;
+  margin-right: 0;
 }
-.mymy-ui .kzm.first {
-  margin-top: 8px;
+.mymy-ui .kzm.kzot.first { margin-top: 9px; }
+.mymy-ui .kzm.kzot .kzmav {
+  grid-area: avatar;
+  position: static;
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  align-self: start;
 }
-.mymy-ui .kzbub {
-  padding: 8px 11px;
-  border-radius: 12px;
-  font-size: 14.5px;
-  line-height: 1.35;
-  word-break: break-word;
-  position: relative;
-  max-width: 78%;
+.mymy-ui .kzm.kzot .kzmav .kzka {
+  display: block;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+.mymy-ui .kzm.kzot .kzmav img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+.mymy-ui .kzm.kzot .kzmn {
+  grid-area: name;
+  width: auto;
+  margin: 0 0 1px;
+  align-self: end;
 }
 .mymy-ui .kzm.kzot .kzbub {
+  grid-area: bubble;
+  justify-self: start;
+  max-width: 100%;
+  width: fit-content;
+  min-width: 0;
   background: #fff;
 }
-.mymy-ui .kzm.kzmy .kzbub {
-  background: #fee500;
+.mymy-ui .kzm.kzot:not(.first) {
+  grid-template-areas: ". bubble time";
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  margin-top: 3px;
 }
+.mymy-ui .kzm.kzot:not(.first) .kzt { grid-area: time; align-self: end; }
+.mymy-ui .kzm.kzmy .kzbub { background: #fee500; }
+.mymy-ui .kzm.kzmy.first .kzbub { grid-area: auto; }
+.mymy-ui .kzm.kzot .kzt {
+  grid-area: time;
+  align-self: end;
+  font-size: 10px;
+  color: #66717c;
+  white-space: nowrap;
+  padding-bottom: 1px;
+}
+.mymy-ui .kzm.kzmy .kzt {
+  font-size: 10px;
+  color: #66717c;
+  white-space: nowrap;
+}
+.mymy-ui .kzm.kzot .kzt { justify-self: end; }
+.mymy-ui .kztyping {
+  margin-top: 4px;
+}
+.mymy-ui .kztyping .kzbub {
+  width: 56px;
+  min-width: 56px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 15px;
+}
+.mymy-ui .kztyping-bubble i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #8b9299;
+  animation: kzTypingBounce 1.05s ease-in-out infinite;
+}
+.mymy-ui .kztyping-bubble i:nth-child(2) { animation-delay: .14s; }
+.mymy-ui .kztyping-bubble i:nth-child(3) { animation-delay: .28s; }
+@keyframes kzTypingBounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .55; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+.mymy-ui .kzm .kzt { font-size: 10px; color: #66717c; white-space: nowrap; }
 .mymy-ui .kzbub.kzimg {
   padding: 0;
   overflow: hidden;
@@ -570,16 +641,10 @@
   white-space: nowrap;
 }
 .mymy-ui .kzmn {
-  width: 100%;
   font-size: 11.5px;
   color: #334;
-  margin: 0 0 3px 2px;
 }
-.mymy-ui .kzmav {
-  position: absolute;
-  left: 0;
-  top: 0;
-}
+.mymy-ui .kzmav { min-width: 0; }
 .mymy-ui .kzmav .kzka {
   width: 32px;
   height: 32px;
@@ -895,4 +960,43 @@
 }
 .mymy-ui .kzxx {
   white-space: pre-line;
+}
+
+/* KakaoTalk unread count: warm orange-red badge below the timestamp. */
+.mymy-ui .kzkr-meta {
+  display: flex;
+  flex: 0 0 42px;
+  min-width: 42px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 7px;
+  margin-left: auto;
+}
+.mymy-ui .kzkr-meta time {
+  color: #92979c;
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.mymy-ui .kz-unread-count {
+  display: inline-flex;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #ff5a36;
+  color: #fff;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1;
+}
+.mymy-ui .kzm.kzmy .kzt:first-child {
+  color: #e3a900;
+  font-weight: 700;
+  align-self: flex-end;
+  padding: 0 0 3px;
 }
