@@ -896,3 +896,12 @@
 .mymy-ui.mymy-instagram .ig-dm-section-head > .ig-dm-requests-back {
   justify-content:flex-start; color:#262626;
 }
+
+/* Keep KakaoTalk's sender portrait aligned with the sender label, not the message-group center. */
+.mymy-ui .kzm.kzot .kzmav { position: static; align-self: start; }
+.mymy-ui .kzm.kzot .kzmav .kzka { width: 38px; height: 38px; border-radius: 50%; }
+.mymy-ui .kzm.kzot .kzbub { max-width: 100%; }
+.mymy-ui .kzm.kzot:not(.first) { padding-left: 0; }
+.mymy-ui .kzkr { align-items: center; }
+.mymy-ui .kzkn { min-width: 0; flex: 1; }
+.mymy-ui .kzkn small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
