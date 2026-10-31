@@ -841,7 +841,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
               </div>
             </div>
           )}
-          {igBanner && !locked && (
+          {igBanner && (
             <button className="device-banner ig-backlash-banner" type="button" role="status" aria-live="polite" onClick={() => { const current = runtimeRef.current; update({ ...current, ui: { ...current.ui, instagram: { ...current.ui?.instagram, "ig-open-id": igBanner.id, mymyTab: "私信" } } }); setIgBanner(null); setApp("instagram"); }}>
               <span className="ig-notice-icon" aria-hidden="true"><Instagram size={19} /></span>
               <span className="ig-notice-copy"><strong>{igBanner.sender}</strong><span>{igBanner.body}</span></span>
