@@ -122,54 +122,58 @@ export function MymyKakao(p: SkinProps) {
           <div className="msgs kk" ref={scroll}>
             {messages.map((m, i) => {
               const run = messageRun(messages, i);
+              const bubble = (
+                <button
+                  className={"kzbub" + (m.media ? " kzimg" : "")}
+                  onClick={() => m.meta.local !== "true" && read(p, m)}
+                >
+                  {m.media ? <Media item={m} /> : m.body}
+                </button>
+              );
+              if (m.outgoing) {
+                return (
+                  <div key={m.id} className={"kzm kzmy" + (run.first ? " first" : "")}>
+                    {run.last && (
+                      <span className="kzt">
+                        {m.meta.unread || ""}
+                        <br />
+                        {m.time.slice(-5)}
+                      </span>
+                    )}
+                    {bubble}
+                  </div>
+                );
+              }
               return (
                 <div
                   key={m.id}
-                  className={
-                    "kzm " +
-                    (m.outgoing ? "kzmy" : "kzot") +
-                    (run.first ? " first" : "")
-                  }
+                  className={"kzm kzot" + (run.first ? " first" : " continuation")}
                 >
-                  {!m.outgoing && run.first && (
-                    <>
-                      <div className="kzmav">
-                        <span
-                          className="catalog-avatar kzka round"
-                        >
-                          <img
-                            src={memberAvatar(p.thread, memberAvatar(m.sender, m.avatar))}
-                            alt={p.thread}
-                            loading="lazy"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              display: "block",
-                              borderRadius: "50%",
-                            }}
-                          />
-                        </span>
-                      </div>
-                      <div className="kzmn">{m.sender}</div>
-                    </>
+                  {run.first && (
+                    <div className="kzmav">
+                      <span className="catalog-avatar kzka round">
+                        <img
+                          src={memberAvatar(p.thread, memberAvatar(m.sender, m.avatar))}
+                          alt={p.thread}
+                          loading="lazy"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                            borderRadius: "50%",
+                          }}
+                        />
+                      </span>
+                    </div>
                   )}
-                  {m.outgoing && run.last && (
-                    <span className="kzt">
-                      {m.meta.unread || ""}
-                      <br />
-                      {m.time.slice(-5)}
-                    </span>
-                  )}
-                  <button
-                    className={"kzbub" + (m.media ? " kzimg" : "")}
-                    onClick={() => m.meta.local !== "true" && read(p, m)}
-                  >
-                    {m.media ? <Media item={m} /> : m.body}
-                  </button>
-                  {!m.outgoing && run.last && (
-                    <span className="kzt">{m.time.slice(-5)}</span>
-                  )}
+                  <div className="kz-content">
+                    {run.first && <div className="kzmn">{m.sender}</div>}
+                    <div className="kz-message-line">
+                      {bubble}
+                      {run.last && <span className="kzt">{m.time.slice(-5)}</span>}
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -178,9 +182,17 @@ export function MymyKakao(p: SkinProps) {
               try { typing = JSON.parse(String(p.ui?.["typing-state"] || "null")); } catch { typing = null; }
               return typing?.title === p.thread && Number(typing.until) > Date.now() ? (
                 <div className="kzm kzot first kztyping" aria-label="正在输入">
-                  <div className="kzmav"><span className="catalog-avatar kzka round"><img src={memberAvatar(p.thread)} alt="" /></span></div>
-                  <div className="kzmn">{p.thread}</div>
-                  <div className="kzbub kztyping-bubble"><i/><i/><i/></div>
+                  <div className="kzmav">
+                    <span className="catalog-avatar kzka round">
+                      <img src={memberAvatar(p.thread)} alt="" />
+                    </span>
+                  </div>
+                  <div className="kz-content">
+                    <div className="kzmn">{p.thread}</div>
+                    <div className="kz-message-line">
+                      <div className="kzbub kztyping-bubble"><i/><i/><i/></div>
+                    </div>
+                  </div>
                 </div>
               ) : null;
             })()}
