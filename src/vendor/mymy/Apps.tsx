@@ -82,6 +82,14 @@ export function MymyKakao(p: SkinProps) {
     isTestItem = (item: Item) => /测试|test/i.test([item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" ")),
     chatItems = p.items.filter((item) => !isTestItem(item)),
     memberAvatar = (name: string, saved = "") => contacts.find((person) => person.name === name)?.avatar || saved,
+    kakaoAvatarImageStyle = {
+      width: "100%",
+      height: "100%",
+      objectFit: "cover" as const,
+      objectPosition: "center center",
+      display: "block",
+      borderRadius: "50%",
+    },
     messages: Item[] = chatItems.filter((item) => item.title === p.thread),
     scroll = useRef<HTMLDivElement>(null);
   const hasBacklashCheckin = messages.some((item) => item.id === "boyfriend-backlash-checkin");
@@ -157,13 +165,7 @@ export function MymyKakao(p: SkinProps) {
                           alt={p.thread}
                           loading="eager"
                           decoding="sync"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                            display: "block",
-                            borderRadius: "50%",
-                          }}
+                          style={kakaoAvatarImageStyle}
                         />
                       </span>
                     </div>
@@ -190,13 +192,7 @@ export function MymyKakao(p: SkinProps) {
                         alt=""
                         loading="eager"
                         decoding="sync"
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "contain",
-                          display: "block",
-                          borderRadius: "50%",
-                        }}
+                        style={kakaoAvatarImageStyle}
                       />
                     </span>
                   </div>
@@ -350,12 +346,7 @@ export function MymyKakao(p: SkinProps) {
                           alt={person.name}
                           loading="eager"
                           decoding="sync"
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "contain",
-                            display: "block",
-                          }}
+                          style={kakaoAvatarImageStyle}
                         />
                       </span>
                       <span className="kzkn">
@@ -395,13 +386,7 @@ export function MymyKakao(p: SkinProps) {
                             alt={title}
                             loading="eager"
                             decoding="sync"
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "contain",
-                              display: "block",
-                              borderRadius: "50%",
-                            }}
+                            style={kakaoAvatarImageStyle}
                           />
                         </span>
                         <span className="kzkn">
