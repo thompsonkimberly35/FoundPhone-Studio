@@ -1,1 +1,1 @@
-export const BOYFRIEND_STAGE2 = {} as const;
+export const BOYFRIEND_STAGE2 = {};
