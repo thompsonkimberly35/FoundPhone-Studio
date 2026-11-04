@@ -1097,6 +1097,37 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         return { item, typingAt, deliverAt };
                       });
                     };
+                    if (choiceId === "admirer:reconnect") {
+                      const boundary = String(currentUi["secret-admirer-boundary"] || "");
+                      const reconnectAt = Number(currentUi["secret-admirer-boundary-until-at"] || 0);
+                      if (!["distance", "rejected"].includes(boundary) || !reconnectAt || stamp < reconnectAt) return;
+                      const outgoing = makeItem({
+                        id: "secret-admirer-reconnect-player-" + stamp,
+                        title: character,
+                        sender: "我",
+                        body: "我想重新联系你。",
+                        time,
+                        outgoing: true,
+                        read: true,
+                      });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), secretAdmirerReconnect: "true" };
+                      const queued = queueLines(["……我没想到你会主动联系我。", "谢谢你愿意再给我一次自然相处的机会。", "我不会把这次重新联系，当成你已经答应了什么。"], "secret-admirer-reconnect-" + stamp);
+                      update({
+                        ...current,
+                        messages: { ...currentMessages, kakao: [...existing, outgoing] },
+                        ui: { ...current.ui, kakao: {
+                          ...currentUi,
+                          "secret-admirer-story-node": "A068",
+                          "secret-admirer-story-outcome": "",
+                          "secret-admirer-boundary": "open",
+                          "secret-admirer-boundary-until-at": "",
+                          "secret-admirer-player-interest": "reopened-by-player",
+                          "secret-admirer-history": JSON.stringify([...(() => { try { return JSON.parse(String(currentUi["secret-admirer-history"] || "[]")) as string[]; } catch { return []; } })(), "reconnect:" + stamp]),
+                          "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                        } },
+                      });
+                      return;
+                    }
                     if (choiceId?.startsWith("admirer:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["secret-admirer-story-node"] || "");
@@ -1146,6 +1177,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                           "secret-admirer-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
                           "secret-admirer-story-outcome": outcome || String(currentUi["secret-admirer-story-outcome"] || ""),
                           "secret-admirer-boundary": boundaryByOutcome[outcome] || String(currentUi["secret-admirer-boundary"] || "open"),
+                          "secret-admirer-boundary-until-at": outcome === "R03" ? String(stamp + 7 * 24 * 60 * 60 * 1000) : outcome === "R04" ? String(stamp + 30 * 24 * 60 * 60 * 1000) : String(currentUi["secret-admirer-boundary-until-at"] || ""),
                           "secret-admirer-affection": Number(currentUi["secret-admirer-affection"] || 0) + affectionDelta,
                           "secret-admirer-jealousy": Number(currentUi["secret-admirer-jealousy"] || 0) + jealousyDelta,
                           "secret-admirer-confession-known": confessionKnown,
