@@ -132,9 +132,9 @@ export function ThreadsReference(p: SkinProps) {
     activities = [
       ...p.items.filter((i) => i.meta.activityType),
       ...fanReplies.filter((reply) => reply.deliveredAt !== null).map((reply) => makeItem({
-        id: "activity-" + reply.id, title: "回复了你的串文", sender: reply.handle, avatar: reply.avatar,
+        id: "activity-" + reply.id, title: "回复了你的串文", sender: reply.displayName || reply.handle, avatar: reply.avatar,
         body: reply.text, time: formatGameDateTime(reply.deliveredAt || reply.scheduledAt),
-        meta: { activityType: reply.text.includes("@") ? "mention" : "reply", postId: reply.postId, replyId: reply.id,
+        meta: { activityType: reply.text.includes("@") ? "mention" : "reply", handle: reply.handle, postId: reply.postId, replyId: reply.id,
           originalPreview: playerPosts.find((post) => post.id === reply.postId)?.text || "",
           activityCreatedAt: String(reply.deliveredAt || 0) },
       })),
@@ -430,7 +430,7 @@ export function ThreadsReference(p: SkinProps) {
                       <Avatar name={i.sender} src={i.avatar} />
                       <div>
                         <b>{i.sender}</b>
-                        <small>{relativeTime(i)}</small>
+                        <small>@{i.meta.handle || i.sender} · {relativeTime(i)}</small>
                         <p className="tr-activity-original">{i.meta.originalPreview || "你關注的動態"}</p>
                         <p>{i.body}</p>
                         <div className="tr-actions"><Heart /><MessageCircleIcon /><Repeat2 /><Send /></div>
