@@ -8,7 +8,7 @@ permissions:
   pages: write
   id-token: write
 concurrency:
-  group: pages-deploy-recovery
+  group: pages-deploy-recovery-20261105
   cancel-in-progress: true
 jobs:
   build:
@@ -40,4 +40,4 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
-# Recovery trigger: rerun the latest main revision; concurrency cancels any stale run.
+# Recovery trigger: use a fresh concurrency group to bypass the stale queued run.
