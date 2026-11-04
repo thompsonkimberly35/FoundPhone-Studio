@@ -23,11 +23,13 @@ import {
   ArrowUp,
   CornerDownLeft,
   Pin,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { SkinProps } from "../AppSkins";
 import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
+import { generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
 import { useSkinState } from "../skinState";
 import { formatGameDateTime, formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
@@ -44,6 +46,21 @@ export function ThreadsReference(p: SkinProps) {
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
   const [localPostsJson, setLocalPostsJson] = useSkinState<string>(p, "threads-posts-timestamps-v1", "[]");
+  const [playerPostsJson, setPlayerPostsJson] = useSkinState<string>(p, "threads-player-posts-v1", "[]");
+  const [fanRepliesJson, setFanRepliesJson] = useSkinState<string>(p, "threads-fan-replies-v1", "[]");
+  const [activityReadAt, setActivityReadAt] = useSkinState<string>(p, "threads-activity-read-at", "0");
+  const playerPosts: ThreadsPlayerPost[] = useMemo(() => {
+    try { const value: unknown = JSON.parse(playerPostsJson); return Array.isArray(value) ? value : []; } catch { return []; }
+  }, [playerPostsJson]);
+  const fanReplies: ThreadsFanReply[] = useMemo(() => {
+    try { const value: unknown = JSON.parse(fanRepliesJson); return Array.isArray(value) ? value : []; } catch { return []; }
+  }, [fanRepliesJson]);
+  useEffect(() => {
+    const now = p.virtualTimestamp ?? 0;
+    if (!fanReplies.some((reply) => !reply.deliveredAt && reply.scheduledAt <= now)) return;
+    setFanRepliesJson(JSON.stringify(fanReplies.map((reply) => !reply.deliveredAt && reply.scheduledAt <= now ? { ...reply, deliveredAt: now } : reply)));
+  }, [fanRepliesJson, p.virtualTimestamp, setFanRepliesJson]);
+
   const localPostRecords = useMemo<Array<{ id: string; text: string; createdAt: number }>>(() => {
     try {
       const value: unknown = JSON.parse(localPostsJson);
@@ -78,6 +95,9 @@ export function ThreadsReference(p: SkinProps) {
     [options, setOptions] = useState(false),
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
+  const [draftMedia, setDraftMedia] = useState("");
+  const [replyTarget, setReplyTarget] = useState("");
+  const [highlightedReplyId, setHighlightedReplyId] = useState("");
   const local = posts
     .filter((body) => !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(body))
     .map((body, n) => {
@@ -93,13 +113,46 @@ export function ThreadsReference(p: SkinProps) {
         meta: { local: "true", handle: "allyz_1101" },
       });
     });
+  const playerItems = playerPosts.map((post) => makeItem({
+    id: post.id, title: "你的串文", body: post.text, sender: "allyz_1101",
+    time: formatGameDateTime(post.createdAt), kind: "post",
+    media: post.media || "",
+    comments: [],
+    meta: { local: "true", handle: "allyz_1101", playerPostId: post.id },
+  }));
+  useEffect(() => {
+    if (tab === "动态") setActivityReadAt(String(p.virtualTimestamp ?? 0));
+  }, [tab, p.virtualTimestamp, setActivityReadAt]);
   const feed = [
+      ...playerItems,
       ...local,
       ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
-    activities = p.items.filter((i) => i.meta.activityType),
+    activities = [
+      ...p.items.filter((i) => i.meta.activityType),
+      ...fanReplies.filter((reply) => reply.deliveredAt !== null).map((reply) => makeItem({
+        id: "activity-" + reply.id, title: "回复了你的串文", sender: reply.displayName || reply.handle, avatar: reply.avatar,
+        body: reply.text, time: formatGameDateTime(reply.deliveredAt || reply.scheduledAt),
+        meta: { activityType: reply.text.includes("@") ? "mention" : "reply", handle: reply.handle, postId: reply.postId, replyId: reply.id,
+          originalPreview: playerPosts.find((post) => post.id === reply.postId)?.text || "",
+          activityCreatedAt: String(reply.deliveredAt || 0) },
+      })),
+    ],
     playerReplies = p.items.filter((i) => i.folder === "threads-reply");
+  useEffect(() => {
+    if (!p.targetPostId) return;
+    const target = feed.find((item) => item.id === p.targetPostId);
+    if (target) { setSelected(target); setHighlightedReplyId(p.targetReplyId || ""); }
+    p.onTargetPostHandled?.();
+  }, [p.targetPostId, feed.map((item) => item.id).join("|")]);
+  useEffect(() => {
+    if (!highlightedReplyId) return;
+    const timer = window.setTimeout(() => {
+      document.querySelector(".tr-fan-reply.is-targeted")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [highlightedReplyId, selected?.id]);
   const toggle = (id: string, items: string[], set: (v: string[]) => void) =>
     set(items.includes(id) ? items.filter((v) => v !== id) : [...items, id]);
   const open = (i: Item) => {
@@ -148,7 +201,7 @@ export function ThreadsReference(p: SkinProps) {
           </button>
           <button aria-label={"回复" + i.title} onClick={() => open(i)}>
             <MessageCircleIcon />
-            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length + replyRecords.filter((r) => r.postId === i.id).length || ""}
+            {(i.meta.playerPostId ? fanReplies.filter((reply) => reply.postId === i.id && reply.deliveredAt !== null).length : i.comments.length) + replies.filter((v) => v.startsWith(i.id + "\t")).length + replyRecords.filter((r) => r.postId === i.id).length || ""}
           </button>
           <button
             aria-label={"转发" + i.title}
@@ -192,10 +245,28 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
-                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),
+                
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
+              ))}
+              {fanReplies.filter((reply) => reply.postId === selected.id && reply.deliveredAt !== null).map((reply) => (
+                <div className={"tr-fan-reply" + (highlightedReplyId === reply.id ? " is-targeted" : "")} key={reply.id}>
+                  <p><b>@{reply.handle}</b>：{reply.text}</p>
+                  <button type="button" onClick={() => setReplyTarget(reply.id)}>回覆</button>
+                  {replyRecords.filter((child) => child.parentReplyId === reply.id).map((child) => (
+                    <p className="tr-nested-reply" key={child.id}>{child.authorHandle}：{child.text}</p>
+                  ))}
+                </div>
+              ))}
+              {replyRecords.filter((record) => record.postId === selected.id && !record.parentReplyId).map((record) => (
+                <div className="tr-fan-reply" key={record.id}>
+                  <p>{record.authorHandle}：{record.text}</p>
+                  <button type="button" onClick={() => setReplyTarget(record.id)}>回覆</button>
+                  {replyRecords.filter((child) => child.parentReplyId === record.id).map((child) => (
+                    <p className="tr-nested-reply" key={child.id}>{child.authorHandle}：{child.text}</p>
+                  ))}
+                </div>
               ))}
             </div>
             <form
@@ -203,15 +274,16 @@ export function ThreadsReference(p: SkinProps) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (draft.trim()) {
-                  const record = createThreadsReplyRecord(selected.id, draft.trim(), p.virtualTimestamp ?? 0);
+                  const record = createThreadsReplyRecord(selected.id, draft.trim(), p.virtualTimestamp ?? 0, replyTarget || undefined);
                   setReplyRecordsJson(JSON.stringify([...replyRecords, record]));
                   setDraft("");
+                  setReplyTarget("");
                 }
               }}
             >
               <input
                 aria-label="Threads回复"
-                placeholder="回复串文"
+                placeholder={replyTarget ? "回覆這則留言" : "回复串文"}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
               />
@@ -354,18 +426,16 @@ export function ThreadsReference(p: SkinProps) {
                           : true,
                   )
                   .map((i) => (
-                    <div className="tr-activity" key={i.id}>
+                    <button className={`tr-activity ${Number(i.meta.activityCreatedAt || 0) > Number(activityReadAt) ? "is-unread" : ""}`} key={i.id} onClick={() => { const target = feed.find((post) => post.id === i.meta.postId); if (target) setSelected(target); }}>
                       <Avatar name={i.sender} src={i.avatar} />
                       <div>
                         <b>{i.sender}</b>
-                        <small>{relativeTime(i)}</small>
+                        <small>@{i.meta.handle || i.sender} · {relativeTime(i)}</small>
+                        <p className="tr-activity-original">{i.meta.originalPreview || "你關注的動態"}</p>
                         <p>{i.body}</p>
-                        <div className="tr-actions">
-                          <Heart />
-                          <Send />
-                        </div>
+                        <div className="tr-actions"><Heart /><MessageCircleIcon /><Repeat2 /><Send /></div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 {!activities.length && <p className="tr-empty">暂无动态</p>}
               </>
@@ -504,9 +574,22 @@ export function ThreadsReference(p: SkinProps) {
                 maxLength={2000}
               />
               <p className="tr-muted">添加到串文</p>
+              {draftMedia && <div className="tr-compose-photo"><img src={draftMedia} alt="待發布圖片" /><button type="button" onClick={() => setDraftMedia("")}>移除圖片</button></div>}
             </div>
           </div>
           <div className="tr-compose-actions">
+            <button type="button" onClick={() => document.getElementById("threads-player-photo")?.click()}>
+              <ImageIcon size={21} />
+              照片
+            </button>
+            <input id="threads-player-photo" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              if (file.size > 5 * 1024 * 1024) { window.alert("圖片請小於 5 MB"); event.target.value = ""; return; }
+              const reader = new FileReader();
+              reader.onload = () => { if (typeof reader.result === "string") setDraftMedia(reader.result); };
+              reader.readAsDataURL(file);
+            }} />
             <button onClick={() => setOptions(!options)}>
               <SlidersHorizontal size={21} />
               帖子选项
@@ -514,12 +597,17 @@ export function ThreadsReference(p: SkinProps) {
             <button
               disabled={!draft.trim()}
               onClick={() => {
-                const text = draft.trim();
                 const createdAt = p.virtualTimestamp ?? 0;
-                const record = { id: "local-thread-" + createdAt + "-" + Math.random().toString(36).slice(2, 8), text, createdAt };
-                setLocalPostsJson(JSON.stringify([record, ...localPostRecords]));
-                setPosts([text, ...posts]);
+                const post: ThreadsPlayerPost = {
+                  id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8),
+                  text: draft, createdAt, boyfriend: p.selectedBoyfriend || "", media: draftMedia || undefined,
+                  contextText: [p.storyContext || "", ...p.items.filter(item => item.kind === "post").slice(-2).map(item => item.body)].filter(Boolean).join(" ").slice(0, 1200),
+                };
+                setPlayerPostsJson(JSON.stringify([post, ...playerPosts]));
+                setFanRepliesJson(JSON.stringify([...fanReplies, ...generateThreadsFanReplies(post)]));
+                // Player posts are stored separately from legacy local posts to avoid duplicate feed cards.
                 setDraft("");
+                setDraftMedia("");
                 setCompose(false);
                 setKeyboard(false);
                 setTab("首页");

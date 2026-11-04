@@ -67,8 +67,9 @@ export type ThreadsReplyRecord = {
   text: string;
   createdAt: number;
   isPlayerReply: boolean;
+  parentReplyId?: string;
 };
-export function createThreadsReplyRecord(postId: string, text: string, createdAt = Date.now()): ThreadsReplyRecord {
+export function createThreadsReplyRecord(postId: string, text: string, createdAt = Date.now(), parentReplyId?: string): ThreadsReplyRecord {
   return {
     id: "threads-reply-" + crypto.randomUUID(),
     postId,
@@ -77,5 +78,6 @@ export function createThreadsReplyRecord(postId: string, text: string, createdAt
     text,
     createdAt,
     isPlayerReply: true,
+    ...(parentReplyId ? { parentReplyId } : {}),
   };
 }

@@ -241,6 +241,8 @@ function PhoneRuntime({
   const previousApp = useRef(app);
   const [targetKakaoThread, setTargetKakaoThread] = useState("");
   const [targetXPostId, setTargetXPostId] = useState("");
+  const [targetThreadsPostId, setTargetThreadsPostId] = useState("");
+  const [targetThreadsReplyId, setTargetThreadsReplyId] = useState("");
   useEffect(() => {
     if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
     previousApp.current = app;
@@ -267,6 +269,33 @@ function PhoneRuntime({
       };
     }
     if (!creator) {
+      const previousThreadsUi = previous.ui?.threads ?? {};
+      const nextThreadsUi = committed.ui?.threads ?? {};
+      const parseReplies = (value: unknown): Array<{id:string;postId:string;handle:string;text:string;deliveredAt:number|null}> => {
+        try { const parsed = JSON.parse(String(value || "[]")); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+      };
+      const previousFanReplies = parseReplies(previousThreadsUi["threads-fan-replies-v1"]);
+      const nextFanReplies = parseReplies(nextThreadsUi["threads-fan-replies-v1"]);
+      const newlyDelivered = nextFanReplies.filter(reply =>
+        reply.deliveredAt !== null && !previousFanReplies.some(old => old.id === reply.id && old.deliveredAt !== null)
+      );
+      if (newlyDelivered.length) {
+        const kakaoUi = committed.ui?.kakao ?? {};
+        let globalQueue: Item[] = [];
+        try { globalQueue = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+        const existingIds = new Set(globalQueue.map(item => item.id));
+        const notices = newlyDelivered.map(reply => makeItem({
+          id: "threads-fan-notice-" + reply.id,
+          title: "Threads",
+          sender: reply.handle,
+          body: reply.text,
+          time: formatGameTime(reply.deliveredAt || committed.gameClock?.currentGameTimestamp || Date.now(), committed.gameClock?.timezone || "Asia/Seoul"),
+          meta: { notificationAppId: "threads", notificationPostId: reply.postId, notificationReplyId: reply.id },
+        })).filter(item => !existingIds.has(item.id));
+        if (notices.length && app !== "threads") {
+          committed = { ...committed, ui: { ...committed.ui, kakao: { ...kakaoUi, "global-notification-queue": JSON.stringify([...globalQueue, ...notices].slice(-100)) } } };
+        }
+      }
       const kakaoUi = committed.ui?.kakao ?? {};
       let seenIds: string[] = [];
       let queued: Item[] = [];
@@ -280,6 +309,9 @@ function PhoneRuntime({
         app === "kakao" ? activeKakaoThread.current : "",
         work.phone.notifications,
       );
+      const notificationQueue = app === "kakao"
+        ? result.queue.filter(item => String(item.meta?.notificationAppId || "kakao") !== "kakao")
+        : result.queue;
       if (result.arrivals.length) {
         committed = {
           ...committed,
@@ -288,7 +320,7 @@ function PhoneRuntime({
             kakao: {
               ...kakaoUi,
               "global-notification-seen-ids": JSON.stringify(result.seenIds),
-              "global-notification-queue": JSON.stringify(result.queue),
+              "global-notification-queue": JSON.stringify(notificationQueue),
             },
           },
         };
@@ -319,35 +351,41 @@ function PhoneRuntime({
     if (changed) update({ ...current, messages: cleanedMessages });
   }, [creator, ready, s.messages]);
   useEffect(() => {
-    // Story notifications wait until the player unlocks the phone.
-    // KakaoTalk has priority; never overlap its banner with Instagram story notices.
+    if (app !== "instagram" || !igQueue.length) return;
+    const current = runtimeRef.current;
+    const currentUi = current.ui?.kakao || {};
+    update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "ig-backlash-notification-index": 60, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
+    setIgQueue([]);
+    setIgBanner(null);
+  }, [app, igQueue.length]);
+
+  useEffect(() => {
+    // Feed legacy Instagram story notices into the same persisted phone-wide queue.
     if (locked || igBanner || globalNotificationItem || hasPendingKakaoNotification || !igQueue.length) return;
     const timer = window.setTimeout(() => {
-      const next = igQueue[0];
-      setIgBanner(next);
-      setIgQueue((items) => items.slice(1));
+      const notice = igQueue[0];
       const current = runtimeRef.current;
-      const index = Number(next?.id.split("-").at(-1) || 0);
-      if (index > Number(current.ui?.kakao?.["ig-backlash-notification-index"] || 0)) {
-        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "ig-backlash-notification-index": index, "ig-backlash-notifications-started": true } } });
-      }
+      const currentUi = current.ui?.kakao || {};
+      let queue: Item[] = [];
+      try { queue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { queue = []; }
+      const queuedNotice = { ...notice, meta: { ...notice.meta, notificationAppId: "instagram", notificationMessageId: notice.id } };
+      const index = Number(notice.id.split("-").at(-1) || 0);
+      update({
+        ...current,
+        ui: { ...current.ui, kakao: {
+          ...currentUi,
+          "global-notification-queue": JSON.stringify(queue.some(item => item.id === queuedNotice.id) ? queue : [...queue, queuedNotice]),
+          "ig-backlash-notification-index": Math.max(index, Number(currentUi["ig-backlash-notification-index"] || 0)),
+          "ig-backlash-notifications-started": true,
+        } },
+      });
+      setIgQueue((items) => items.slice(1));
     }, 0);
     return () => window.clearTimeout(timer);
   }, [igQueue, igBanner, locked, globalNotificationItem, hasPendingKakaoNotification]);
   useEffect(() => {
-    // Keep the current banner paused while the phone is locked.
     if (!igBanner || locked) return;
-    const timer = window.setTimeout(() => {
-      setIgBanner(null);
-      if (igBanner.id === "ig-backlash-60") {
-        const current = runtimeRef.current;
-        const currentUi = current.ui?.kakao || {};
-        if (!currentUi["ig-backlash-notifications-finished-at"]) {
-          update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
-        }
-      }
-    }, 500);
-    return () => window.clearTimeout(timer);
+    setIgBanner(null);
   }, [igBanner, locked]);
   useEffect(() => {
     let active = true;
@@ -383,7 +421,15 @@ function PhoneRuntime({
     if (creator || !ready) return;
     const interval = setInterval(() => {
       const previous = runtimeRef.current;
-      const next = advance(work, previous, 1000);
+      let next = advance(work, previous, 1000);
+      const threadsUi = next.ui?.threads ?? {};
+      let scheduledFanReplies: Array<{id:string;scheduledAt:number;deliveredAt:number|null}> = [];
+      try { scheduledFanReplies = JSON.parse(String(threadsUi["threads-fan-replies-v1"] || "[]")); } catch { scheduledFanReplies = []; }
+      const gameNow = next.gameClock?.currentGameTimestamp ?? 0;
+      const dueFanReplies = scheduledFanReplies.some(reply => !reply.deliveredAt && reply.scheduledAt <= gameNow);
+      if (dueFanReplies) {
+        next = { ...next, ui: { ...next.ui, threads: { ...threadsUi, "threads-fan-replies-v1": JSON.stringify(scheduledFanReplies.map(reply => !reply.deliveredAt && reply.scheduledAt <= gameNow ? { ...reply, deliveredAt: gameNow } : reply)) } } };
+      }
       const changed =
         next.time !== previous.time ||
         next.trace.join() !== previous.trace.join() ||
@@ -545,6 +591,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
 
   useEffect(() => {
+    if (globalNotificationItem && String(globalNotificationItem.meta?.notificationAppId || "kakao") === app) {
+      setGlobalNotificationItem(null);
+    }
+  }, [app, globalNotificationItem]);
+
+  useEffect(() => {
     // Let an already-visible Instagram banner finish, then KakaoTalk takes priority.
     if (locked || creator || !work.phone.notifications || globalNotificationItem || igBanner) return;
     let queued: Item[] = [];
@@ -556,11 +608,39 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { latest = JSON.parse(String(current.ui?.kakao?.["global-notification-queue"] || "[]")); } catch { latest = []; }
       if (!latest.length) return;
       const [next, ...remaining] = latest;
+      const sourceAppId = String(next.meta?.notificationAppId || "kakao");
+      const batch = [next];
+      while (sourceAppId !== "instagram" && remaining.length && String(remaining[0].meta?.notificationAppId || "kakao") === sourceAppId) batch.push(remaining.shift()!);
+      if (sourceAppId === app) {
+        const dismissedPostIds = new Set(batch.map(item => String(item.meta?.notificationPostId || "")).filter(Boolean));
+        let dismissedStoryEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
+        try { dismissedStoryEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { dismissedStoryEvents = []; }
+        const currentUi = current.ui?.kakao || {};
+        const dismissedLastInstagramNotice = batch.some(item => item.id === "ig-backlash-60");
+        update({
+          ...current,
+          ui: { ...current.ui, kakao: {
+            ...currentUi,
+            "global-notification-queue": JSON.stringify(remaining),
+            ...(dismissedPostIds.size ? { "story-x-events": JSON.stringify(dismissedStoryEvents.map(event => dismissedPostIds.has(event.postId) ? { ...event, notificationDelivered: true } : event)) } : {}),
+            ...(dismissedLastInstagramNotice && !currentUi["ig-backlash-notifications-finished-at"] ? { "ig-backlash-notifications-finished-at": String(Date.now()) } : {}),
+          } },
+        });
+        return;
+      }
+      const bannerItem = batch.length > 1 ? makeItem({
+        id: "notification-batch-" + sourceAppId + "-" + batch.map(item => item.id).join("-").slice(0, 120),
+        title: next.title,
+        sender: sourceAppId === "threads" ? "Threads" : sourceAppId === "twitter" ? "𝕏" : sourceAppId === "kakao" ? "KakaoTalk" : next.sender,
+        body: sourceAppId === "threads" ? "你有 " + batch.length + " 則新留言" : sourceAppId === "twitter" ? "你有 " + batch.length + " 則新貼文通知" : "你有 " + batch.length + " 則新訊息",
+        time: next.time,
+        meta: { ...next.meta, notificationAppId: sourceAppId, notificationBatchCount: String(batch.length) },
+      }) : next;
       let storyEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
       try { storyEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { storyEvents = []; }
-      const notificationPostId = String(next.meta?.notificationPostId || "");
-      const updatedStoryEvents = notificationPostId
-        ? storyEvents.map(event => event.postId === notificationPostId ? { ...event, notificationDelivered: true } : event)
+      const notificationPostIds = new Set(batch.map(item => String(item.meta?.notificationPostId || "")).filter(Boolean));
+      const updatedStoryEvents = notificationPostIds.size
+        ? storyEvents.map(event => notificationPostIds.has(event.postId) ? { ...event, notificationDelivered: true } : event)
         : storyEvents;
       update({
         ...current,
@@ -569,14 +649,14 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           kakao: {
             ...current.ui?.kakao,
             "global-notification-queue": JSON.stringify(remaining),
-            ...(notificationPostId ? { "story-x-events": JSON.stringify(updatedStoryEvents) } : {}),
+            ...(notificationPostIds.size ? { "story-x-events": JSON.stringify(updatedStoryEvents) } : {}),
           },
         },
       });
-      setGlobalNotificationItem(next);
+      setGlobalNotificationItem(bannerItem);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications, igBanner]);
+  }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications, igBanner, app]);
   useEffect(() => {
     if (!ready || igQueue.length > 0 || igBanner) return;
     const currentUi = s.ui?.kakao || {};
@@ -1263,10 +1343,29 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           </div>
           <GlobalNotificationBanner
             item={globalNotificationItem}
-            onDismiss={() => setGlobalNotificationItem(null)}
+            onDismiss={() => {
+              const dismissed = globalNotificationItem;
+              setGlobalNotificationItem(null);
+              if (dismissed?.id === "ig-backlash-60") {
+                const current = runtimeRef.current;
+                const currentUi = current.ui?.kakao || {};
+                if (!currentUi["ig-backlash-notifications-finished-at"]) update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
+              }
+            }}
             onOpen={(item) => {
               setGlobalNotificationItem(null);
-              if (item.meta?.notificationAppId === "threads") { open("threads"); return; }
+              if (item.meta?.notificationAppId === "instagram") {
+                const current = runtimeRef.current;
+                update({ ...current, ui: { ...current.ui, instagram: { ...current.ui?.instagram, "ig-open-id": String(item.meta.notificationMessageId || item.id), mymyTab: "私信" } } });
+                open("instagram");
+                return;
+              }
+              if (item.meta?.notificationAppId === "threads") {
+                setTargetThreadsPostId(String(item.meta.notificationPostId || ""));
+                setTargetThreadsReplyId(String(item.meta.notificationReplyId || ""));
+                open("threads");
+                return;
+              }
               if (item.meta?.notificationAppId === "twitter") {
                 setTargetXPostId(String(item.meta.notificationPostId || item.id));
                 open("twitter");
@@ -1358,6 +1457,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   initialKakaoThread={targetKakaoThread}
                   targetXPostId={targetXPostId}
                   onTargetXPostHandled={() => setTargetXPostId("")}
+                  targetThreadsPostId={targetThreadsPostId}
+                  targetThreadsReplyId={targetThreadsReplyId}
+                  onTargetThreadsPostHandled={() => { setTargetThreadsPostId(""); setTargetThreadsReplyId(""); }}
                   onInstagramReply={(conversation, replyText) => {
                     const current = runtimeRef.current;
                     const threadsUi = current.ui?.threads || {};
@@ -2172,6 +2274,9 @@ function AppContent({
   onInstagramReply,
   targetXPostId,
   onTargetXPostHandled,
+  targetThreadsPostId,
+  targetThreadsReplyId,
+  onTargetThreadsPostHandled,
 }: {
   app: AppPlugin;
   name: string;
@@ -2196,6 +2301,9 @@ function AppContent({
   onInstagramReply?: (conversation: Item, replyText: string) => void;
   targetXPostId?: string;
   onTargetXPostHandled?: () => void;
+  targetThreadsPostId?: string;
+  targetThreadsReplyId?: string;
+  onTargetThreadsPostHandled?: () => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
   useEffect(() => {
@@ -2343,6 +2451,10 @@ function AppContent({
               selectedFriend={selectedFriend}
               onKakaoChoice={onKakaoChoice}
               onInstagramReply={onInstagramReply}
+              storyContext={[...(work.data.twitter ?? []), ...(state.messages.twitter ?? [])].slice(-3).map(item => item.sender + "：" + item.body).join("\n")}
+              targetPostId={targetThreadsPostId}
+              targetReplyId={targetThreadsReplyId}
+              onTargetPostHandled={onTargetThreadsPostHandled}
             />
           </Suspense>
         </div>
