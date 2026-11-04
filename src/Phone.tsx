@@ -1172,6 +1172,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             onDismiss={() => setGlobalNotificationItem(null)}
             onOpen={(item) => {
               setGlobalNotificationItem(null);
+              if (item.meta?.notificationAppId === "twitter") {
+                setDetail((runtimeRef.current.messages.twitter || []).find(post => post.id === item.meta.notificationPostId) || item);
+                open("twitter");
+                return;
+              }
               activeKakaoThread.current = item.title;
               setTargetKakaoThread(item.title);
               open("kakao");
