@@ -41,6 +41,7 @@ import type { Item } from "../../schema";
 import { getKakaoStoryNode } from "../../kakaoRomanceStory";
 import { getFriendStoryNode } from "../../kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, getSecretAdmirerNode } from "../../kakaoSecretAdmirer";
+import { getTeamConflictNode } from "../../kakaoTeamConflictStory";
 import "./ui.css";
 import "./adapter.css";
 export function messageRun(items: Item[], index: number) {
@@ -110,6 +111,11 @@ export function MymyKakao(p: SkinProps) {
   const secretAdmirerThread = Boolean(secretAdmirerMember && p.thread === secretAdmirerMember.name);
   const secretAdmirerNodeId = String(p.ui?.["secret-admirer-story-node"] || "");
   const secretAdmirerNode = secretAdmirerThread ? getSecretAdmirerNode(secretAdmirerNodeId) : undefined;
+  const teamConflictMemberId = String(p.ui?.["team-conflict-member-id"] || "");
+  const teamConflictMember = ALD1_SECRET_ADMIRER_MEMBERS.find((member) => member.id === teamConflictMemberId);
+  const teamConflictThread = Boolean(teamConflictMember && p.thread === teamConflictMember.name);
+  const teamConflictNodeId = String(p.ui?.["team-conflict-story-node"] || "");
+  const teamConflictNode = teamConflictThread ? getTeamConflictNode(teamConflictNodeId) : undefined;
   const queuePending = (() => {
     let pending: Array<{ item?: { title?: string }; typingAt?: number; deliverAt?: number }> = [];
     try { pending = JSON.parse(String(p.ui?.["delivery-queue"] || "[]")); } catch { pending = []; }
@@ -317,6 +323,24 @@ export function MymyKakao(p: SkinProps) {
                 </div>
               ) : (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一段暂时告一段落，后续消息会继续更新。</div>
+              )}
+            </div>
+          ) : teamConflictThread && teamConflictNode ? (
+            <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
+              {queuePending ? (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
+              ) : teamConflictNode.choices.length ? (
+                <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
+                  {teamConflictNode.choices.map((choice, index) => (
+                    <button key={choice.key} type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, maxWidth: "100%", width: "100%", minHeight: 42, borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", boxShadow: "0 2px 5px rgba(115, 87, 58, 0.06)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, letterSpacing: "0.1px", textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word", overflow: "visible" }}
+                      onClick={() => p.onKakaoChoice?.(p.thread, choice.text, "", "", "team-conflict:" + teamConflictNode.id + ":" + choice.key)}>
+                      <span style={{ display: "inline-block", marginRight: 7, color: "#c2a17c", fontSize: 11, fontWeight: 600 }}>{String(index + 1).padStart(2, "0")}</span>
+                      {choice.text}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一阶段已记录，后续消息会继续更新。</div>
               )}
             </div>
           ) : secretAdmirerThread && secretAdmirerNode ? (
