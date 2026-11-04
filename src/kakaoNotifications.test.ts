@@ -51,6 +51,15 @@ describe("global KakaoTalk notification queue", () => {
     expect(result.queue.map((item) => item.id)).toEqual(["a2", "b1"]);
   });
 
+  it("does not merge different senders in the same group conversation", () => {
+    const first = makeItem({ id: "group-first", title: "练习室群聊", sender: "A成员" });
+    const second = makeItem({ id: "group-second", title: "练习室群聊", sender: "B成员" });
+    const result = enqueueIncomingKakaoNotifications(
+      [], [first, second], [], [], "", true,
+    );
+    expect(result.queue.map((item) => item.sender)).toEqual(["A成员", "B成员"]);
+  });
+
   it("bounds a large backlog and records IDs even when notifications are disabled", () => {
     const messages = Array.from({ length: 45 }, (_, index) =>
       makeItem({ id: "message-" + index, title: "成员" + index }),
