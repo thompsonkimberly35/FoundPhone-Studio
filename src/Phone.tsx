@@ -582,6 +582,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             ...current.ui?.kakao,
             "ig-backlash-checkin-due-at": "",
             "ig-backlash-checkin-sent": false,
+            "ig-backlash-notifications-started": false,
+            "ig-backlash-notification-index": 0,
+            "ig-backlash-notifications-finished-at": "",
           },
         },
       });
