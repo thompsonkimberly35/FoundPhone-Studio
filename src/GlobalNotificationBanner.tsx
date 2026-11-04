@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AtSign, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import type { Item } from "./schema";
 
 type Props = {
