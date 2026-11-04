@@ -104,7 +104,12 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
   const clock = ensureGameClock(runtime, work);
   if (clock.migrationVersion >= 1 && runtime.gameClock) return runtime;
   const timezone = clock.timezone;
-  let cursor = zonedDateTimeToTimestamp(runtime.date || work.phone.date || "2026-10-25", "00:00", timezone) - 1;
+  const baseline = zonedDateTimeToTimestamp(runtime.date || work.phone.date || "2026-10-25", "00:00", timezone);
+  const explicitTimes = Object.values(runtime.messages || {}).flat().map((item) => {
+    const match = item.time.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{1,2}:\\d{2})/);
+    return match ? zonedDateTimeToTimestamp(match[1], match[2], timezone) : Number.POSITIVE_INFINITY;
+  });
+  let cursor = Math.min(baseline, ...explicitTimes) - 1;
   const messages: Runtime["messages"] = {};
   for (const [appId, items] of Object.entries(runtime.messages || {})) {
     messages[appId] = (items || []).map((item) => {
@@ -121,7 +126,7 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
   const migratedClock = {
     ...clock,
     currentGameTimestamp,
-    currentStoryDay: Math.max(clock.currentStoryDay, Math.floor((currentGameTimestamp - clock.currentGameTimestamp) / 86_400_000) + 1),
+    currentStoryDay: Math.max(clock.currentStoryDay, Math.floor((Date.UTC(Number(formatGameDate(currentGameTimestamp, timezone).slice(0, 4)), Number(formatGameDate(currentGameTimestamp, timezone).slice(5, 7)) - 1, Number(formatGameDate(currentGameTimestamp, timezone).slice(8, 10))) - Date.UTC(Number(formatGameDate(clock.currentGameTimestamp, timezone).slice(0, 4)), Number(formatGameDate(clock.currentGameTimestamp, timezone).slice(5, 7)) - 1, Number(formatGameDate(clock.currentGameTimestamp, timezone).slice(8, 10)))) / 86_400_000) + 1),
     lastRealTimestamp: Date.now(),
     migrationVersion: 1,
   };
@@ -192,10 +197,47 @@ export function setGameClockTime(clock: GameClockState, time: string, date?: str
   if (!date && timestamp < clock.currentGameTimestamp) {
     timestamp = zonedDateTimeToTimestamp(formatGameDate(clock.currentGameTimestamp + 86_400_000, clock.timezone), time, clock.timezone);
   }
+  timestamp = Math.max(clock.currentGameTimestamp, timestamp);
+  const nextDate = formatGameDate(timestamp, clock.timezone);
+  const dayNumber = (value: string) => {
+    const [year, month, day] = value.split("-").map(Number);
+    return Date.UTC(year, month - 1, day) / 86_400_000;
+  };
+  const dayDelta = Math.max(0, dayNumber(nextDate) - dayNumber(currentDate));
   return {
     ...clock,
-    currentGameTimestamp: Math.max(clock.currentGameTimestamp, timestamp),
-    currentStoryDay: Math.max(clock.currentStoryDay, Math.floor((timestamp - clock.currentGameTimestamp) / 86_400_000) + clock.currentStoryDay + 1),
+    currentGameTimestamp: timestamp,
+    currentStoryDay: clock.currentStoryDay + dayDelta,
     lastRealTimestamp: Date.now(),
   };
+}
+
+export type StoryTimeHint = {
+  period?: "morning" | "noon" | "afternoon" | "evening" | "night";
+  earliestTime?: string;
+  preferredTime?: string;
+  advanceToNextDay?: boolean;
+  minimumElapsedMinutes?: number;
+};
+
+export function applyStoryTimeHint(clock: GameClockState, hint: StoryTimeHint): GameClockState {
+  const targets: Record<NonNullable<StoryTimeHint["period"]>, string> = {
+    morning: "08:30", noon: "12:00", afternoon: "15:00", evening: "19:30", night: "22:30",
+  };
+  const current = clock.currentGameTimestamp;
+  let timestamp = current + Math.max(0, hint.minimumElapsedMinutes || 0) * 60_000;
+  const requested = hint.preferredTime || hint.earliestTime || (hint.period ? targets[hint.period] : "");
+  if (requested) {
+    const date = hint.advanceToNextDay
+      ? formatGameDate(timestamp + 86_400_000, clock.timezone)
+      : formatGameDate(timestamp, clock.timezone);
+    const target = zonedDateTimeToTimestamp(date, requested, clock.timezone);
+    timestamp = Math.max(timestamp, target);
+    if (!hint.advanceToNextDay && target < current) {
+      timestamp = zonedDateTimeToTimestamp(formatGameDate(current + 86_400_000, clock.timezone), requested, clock.timezone);
+    }
+  } else if (hint.advanceToNextDay) {
+    timestamp = Math.max(timestamp, zonedDateTimeToTimestamp(formatGameDate(current + 86_400_000, clock.timezone), "08:00", clock.timezone));
+  }
+  return setGameClockTime(clock, formatGameTime(timestamp, clock.timezone), formatGameDate(timestamp, clock.timezone));
 }
