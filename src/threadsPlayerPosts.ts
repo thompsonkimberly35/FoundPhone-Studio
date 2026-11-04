@@ -41,6 +41,17 @@ function classify(text: string): Mood {
   if (/(今天|蛋糕|吃了|天气|睡觉|晚安|早安|日常)/i.test(text)) return "daily";
   return "mention";
 }
+export function reconcileThreadsFanReplies(
+  posts: ThreadsPlayerPost[],
+  existing: ThreadsFanReply[],
+): ThreadsFanReply[] {
+  const knownIds = new Set(existing.map((reply) => reply.id));
+  const recovered = posts.flatMap((post) =>
+    generateThreadsFanReplies(post).filter((reply) => !knownIds.has(reply.id)),
+  );
+  return recovered.length ? [...existing, ...recovered] : existing;
+}
+
 export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanReply[] {
   const mood = classify(post.text);
   const order: Mood[] = [mood, "explain", "attack", "sad", "apology", "daily", "support", "mention", "claim"];
