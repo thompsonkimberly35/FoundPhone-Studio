@@ -581,6 +581,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
 
   useEffect(() => {
+    if (globalNotificationItem && String(globalNotificationItem.meta?.notificationAppId || "kakao") === app) {
+      setGlobalNotificationItem(null);
+    }
+  }, [app, globalNotificationItem]);
+
+  useEffect(() => {
     // Let an already-visible Instagram banner finish, then KakaoTalk takes priority.
     if (locked || creator || !work.phone.notifications || globalNotificationItem || igBanner) return;
     let queued: Item[] = [];
@@ -592,6 +598,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { latest = JSON.parse(String(current.ui?.kakao?.["global-notification-queue"] || "[]")); } catch { latest = []; }
       if (!latest.length) return;
       const [next, ...remaining] = latest;
+      if (String(next.meta?.notificationAppId || "kakao") === app) {
+        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "global-notification-queue": JSON.stringify(remaining) } } });
+        return;
+      }
       let storyEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
       try { storyEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { storyEvents = []; }
       const notificationPostId = String(next.meta?.notificationPostId || "");
