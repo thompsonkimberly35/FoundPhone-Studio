@@ -196,8 +196,8 @@ export function validateWork(input: unknown): Work {
   return workSchema.parse(input);
 }
 export function safeMedia(value: string) {
-  const prefix = "/" + "boyfriend-photos" + "/";
-  if (value.startsWith(prefix) && !value.includes("..") && [".png", ".jpg", ".jpeg", ".webp"].some((ext) => value.toLowerCase().endsWith(ext))) return value;
+  const isBoyfriendPhoto = /^(?:\.\/|\/[^/]+\/)?boyfriend-photos\/[^/]+\/[^/]+\.(?:png|jpe?g|webp)$/iu.test(value);
+  if (isBoyfriendPhoto && !value.includes("..")) return value;
   return /^data:(image\/(png|jpeg|webp|gif)|audio\/(mpeg|mp3|wav|ogg|webm|mp4)|video\/(mp4|webm));base64,[a-zA-Z0-9+/=\s]+$/.test(
     value,
   )
