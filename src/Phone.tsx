@@ -505,6 +505,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { latest = JSON.parse(String(current.ui?.kakao?.["global-notification-queue"] || "[]")); } catch { latest = []; }
       if (!latest.length) return;
       const [next, ...remaining] = latest;
+      let storyEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
+      try { storyEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { storyEvents = []; }
+      const notificationPostId = String(next.meta?.notificationPostId || "");
+      const updatedStoryEvents = notificationPostId
+        ? storyEvents.map(event => event.postId === notificationPostId ? { ...event, notificationDelivered: true } : event)
+        : storyEvents;
       update({
         ...current,
         ui: {
@@ -512,6 +518,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           kakao: {
             ...current.ui?.kakao,
             "global-notification-queue": JSON.stringify(remaining),
+            ...(notificationPostId ? { "story-x-events": JSON.stringify(updatedStoryEvents) } : {}),
           },
         },
       });
@@ -868,7 +875,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (events.some(saved => saved.eventId === event.eventId) || posts.some(post => post.id === event.postId)) continue;
       const post = makeItem({
         id: event.postId, title: event.title, sender: event.account, body: event.body,
-        richText: event.body, time: current.time || displayTime, kind: "post",
+        richText: event.body, time: event.time, kind: "post",
         likes: event.likes, comments: event.comments,
         meta: {
           handle: event.handle, verified: "true", reposts: String(event.reposts),
