@@ -6,6 +6,7 @@ import {
   getSecretAdmirerChoice,
   getSecretAdmirerNode,
   getSecretAdmirerNodeCount,
+  memberIdForName,
   secureRandomIndex,
 } from "./kakaoSecretAdmirer";
 
@@ -22,11 +23,13 @@ describe("KakaoTalk secret admirer", () => {
     expect(new Set(candidates.map((member) => member.id)).size).toBe(candidates.length);
   });
 
-  it("returns no selection when the eligible set is empty", () => {
+  it("handles empty candidate pools safely and rejects invalid random bounds", () => {
     const all = ALD1_SECRET_ADMIRER_MEMBERS;
     const none = getSecretAdmirerCandidates(all[0].id, all[1].id);
     expect(none).toHaveLength(all.length - 2);
     expect(chooseSecretAdmirer("unknown-boyfriend", "unknown-friend")).not.toBeNull();
+    expect(memberIdForName("张家豪")).toBe("ald1-zhang-jiahao");
+    expect(memberIdForName("張家豪")).toBe("ald1-zhang-jiahao");
     expect(() => secureRandomIndex(0)).toThrow(RangeError);
   });
 
