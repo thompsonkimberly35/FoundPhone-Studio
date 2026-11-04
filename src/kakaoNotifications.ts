@@ -31,7 +31,7 @@ export function enqueueIncomingKakaoNotifications(
   if (notificationsEnabled) {
     for (const item of fresh) {
       if (currentlyViewedThread && currentlyViewedThread === item.title) continue;
-      const sameSenderIndex = queue.findIndex((queued) => queued.title === item.title);
+      const sameSenderIndex = queue.findIndex((queued) => queued.title === item.title && queued.sender === item.sender);
       if (sameSenderIndex >= 0) queue[sameSenderIndex] = item;
       else queue.push(item);
     }
