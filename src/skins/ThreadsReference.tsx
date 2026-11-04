@@ -606,7 +606,6 @@ export function ThreadsReference(p: SkinProps) {
                 setDraft("");
                 setDraftMedia([]);
                 setCompose(false);
-                setKeyboard(false);
                 setTab("首页");
               }}
             >
