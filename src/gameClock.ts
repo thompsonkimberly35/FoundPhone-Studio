@@ -155,7 +155,7 @@ function applyTextTimeHint(item: Item, timestamp: number, timezone: string): num
   const hour = Number(time.slice(0, 2));
   const choose = (targetDate: string, targetTime: string) => zonedDateTimeToTimestamp(targetDate, targetTime, timezone);
   if (/晚安|睡吧|早点休息|准备睡觉|要睡了|先睡了/.test(body)) {
-    if (hour >= 22) return timestamp;
+    if (hour >= 23) return timestamp;
     const target = choose(date, "23:00");
     return target > timestamp ? target : choose(formatGameDate(timestamp + 86_400_000, timezone), "23:00");
   }
