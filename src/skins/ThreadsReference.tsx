@@ -37,7 +37,13 @@ export function ThreadsReference(p: SkinProps) {
   const relativeTime = (item: Item) => {
     const explicit = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
     const timestamp = item.sentAt ?? (explicit ? zonedDateTimeToTimestamp(explicit[1], explicit[2]) : p.virtualTimestamp || 0);
-    return formatRelativeGameTime(timestamp, p.virtualTimestamp ?? timestamp);
+    const isRecentWallClockItem =
+      (item.meta.local === "true" || typeof item.meta.replyId === "string") &&
+      timestamp > (p.virtualTimestamp ?? 0) + 60 * 60 * 1000;
+    return formatRelativeGameTime(
+      timestamp,
+      isRecentWallClockItem ? Date.now() : p.virtualTimestamp ?? timestamp,
+    );
   };
   const [tab, setTab] = useSkinState<string>(p, "threads-tab", "首页"),
     [liked, setLiked] = useSkinState<string[]>(p, "threads-liked", []),
@@ -56,10 +62,33 @@ export function ThreadsReference(p: SkinProps) {
     try { const value: unknown = JSON.parse(fanRepliesJson); return Array.isArray(value) ? value : []; } catch { return []; }
   }, [fanRepliesJson]);
   useEffect(() => {
-    const now = p.virtualTimestamp ?? 0;
-    if (!fanReplies.some((reply) => !reply.deliveredAt && reply.scheduledAt <= now)) return;
-    setFanRepliesJson(JSON.stringify(fanReplies.map((reply) => !reply.deliveredAt && reply.scheduledAt <= now ? { ...reply, deliveredAt: now } : reply)));
-  }, [fanRepliesJson, p.virtualTimestamp, setFanRepliesJson]);
+    const pending = fanReplies
+      .filter((reply) => reply.deliveredAt === null)
+      .sort((a, b) => a.scheduledAt - b.scheduledAt);
+    if (!pending.length) return;
+
+    // Fan replies use real elapsed time, not the paused story clock.
+    // Deliver one reply at a time; overdue replies catch up with a short gap.
+    const next = pending[0];
+    const lastDeliveredAt = fanReplies.reduce(
+      (latest, reply) => Math.max(latest, reply.deliveredAt ?? 0),
+      0,
+    );
+    const dueAt = Math.max(
+      next.scheduledAt,
+      lastDeliveredAt ? lastDeliveredAt + 1200 : 0,
+    );
+    const timer = window.setTimeout(() => {
+      const deliveredAt = Date.now();
+      setFanRepliesJson(JSON.stringify(fanReplies.map((reply) =>
+        reply.id === next.id && reply.deliveredAt === null
+          ? { ...reply, deliveredAt }
+          : reply,
+      )));
+    }, Math.max(0, dueAt - Date.now()));
+
+    return () => window.clearTimeout(timer);
+  }, [fanRepliesJson, setFanRepliesJson]);
 
   const localPostRecords = useMemo<Array<{ id: string; text: string; createdAt: number }>>(() => {
     try {
@@ -119,8 +148,8 @@ export function ThreadsReference(p: SkinProps) {
     meta: { local: "true", handle: "allyz_1101", playerPostId: post.id },
   }));
   useEffect(() => {
-    if (tab === "动态") setActivityReadAt(String(p.virtualTimestamp ?? 0));
-  }, [tab, p.virtualTimestamp, setActivityReadAt]);
+    if (tab === "动态") setActivityReadAt(String(Date.now()));
+  }, [tab, setActivityReadAt]);
   const feed = [
       ...playerItems,
       ...local,
@@ -609,7 +638,7 @@ export function ThreadsReference(p: SkinProps) {
             <button
               disabled={!draft.trim()}
               onClick={() => {
-                const createdAt = p.virtualTimestamp ?? 0;
+                const createdAt = Date.now();
                 const post: ThreadsPlayerPost = {
                   id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8),
                   text: draft, createdAt, boyfriend: p.selectedBoyfriend || "", media: draftMedia.length ? JSON.stringify(draftMedia) : undefined,
