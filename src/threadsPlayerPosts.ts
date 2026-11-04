@@ -65,7 +65,7 @@ export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanRe
   return selected.slice(0, 24).map(({ text: sourceText, category }, index) => {
     let text = sourceText.replace(/\{\{BOYFRIEND_NAME\}\}/g, post.boyfriend || "他");
     if (text.includes("{{MENTION_HANDLE}}")) text = text.replace(/\{\{MENTION_HANDLE\}\}/g, mentionHandle);
-    if (category === "mention" && !/@[\w.]+/.test(text)) text = "@" + mentionHandle + " " + text;
+    if (category === "mention" && !text.startsWith("@" + mentionHandle)) text = "@" + mentionHandle + " " + text;
     if (category === "support" && post.contextText && index === 0) text = "你前面提过「" + post.contextText.slice(0, 36) + "」，" + text;
     if (category === "claim" && post.boyfriend) text = text.replace(/正主真的出来回应了/g, post.boyfriend + " 的女友真的出来回应了");
     const handle = handles[index];
