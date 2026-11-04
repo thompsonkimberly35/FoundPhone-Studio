@@ -69,6 +69,7 @@ import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
+import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 export function AppIcon({
   id,
   name,
@@ -693,6 +694,121 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
 
   useEffect(() => {
+    if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const currentUi = current.ui?.kakao || {};
+    const boyfriendDone = /^E0[1-8]$/.test(String(currentUi["romance-result"] || ""));
+    const friendDone = /^H(0[1-9]|1[0-2])$/.test(String(currentUi["friend-story-outcome"] || ""));
+    let pendingMessages: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    try { pendingMessages = JSON.parse(String(currentUi["delivery-queue"] || "[]")); } catch { pendingMessages = []; }
+    if (!boyfriendDone || !friendDone || pendingMessages.length > 0 || currentUi["typing-state"] || currentUi["secret-admirer-selected-at"] || currentUi["secret-admirer-selection-error"]) return;
+    const boyfriendId = memberIdForName(selectedBoyfriend);
+    const friendId = memberIdForName(selectedFriend);
+    if (!boyfriendId || !friendId || boyfriendId === friendId) {
+      update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "secret-admirer-selection-error": "无法从已选择的角色资料中确认男友或好友 ID，秘密单恋剧情已安全停止。" } } });
+      return;
+    }
+    const picked = chooseSecretAdmirer(boyfriendId, friendId);
+    if (!picked) {
+      update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "secret-admirer-selection-error": "排除男友与好友后没有符合成年条件的候选成员，秘密单恋剧情已安全停止。" } } });
+      return;
+    }
+    const selectedAt = Date.now();
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...currentUi,
+        "secret-admirer-member-id": picked.id,
+        "secret-admirer-selected-at": String(selectedAt),
+        "secret-admirer-trigger-at": String(selectedAt + 60_000),
+        "secret-admirer-story-started": false,
+        "secret-admirer-story-node": "",
+        "secret-admirer-story-outcome": "",
+        "secret-admirer-completed-nodes": "[]",
+        "secret-admirer-history": "[]",
+        "secret-admirer-affection": 0,
+        "secret-admirer-boundary": "open",
+        "secret-admirer-jealousy": 0,
+        "secret-admirer-confession-known": false,
+        "secret-admirer-player-interest": "unknown",
+      } },
+    });
+  }, [ready, creator, selectedBoyfriend, selectedFriend, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["secret-admirer-selected-at"], s.ui?.kakao?.["secret-admirer-selection-error"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["typing-state"]]);
+
+  useEffect(() => {
+    if (!ready || creator) return;
+    const currentUi = runtimeRef.current.ui?.kakao || {};
+    const memberId = String(currentUi["secret-admirer-member-id"] || "");
+    const triggerAt = Number(currentUi["secret-admirer-trigger-at"] || 0);
+    if (!memberId || !triggerAt || currentUi["secret-admirer-story-started"] === true) return;
+    const member = ALD1_SECRET_ADMIRER_MEMBERS.find((entry) => entry.id === memberId);
+    if (!member) return;
+    const remaining = Math.max(0, triggerAt - Date.now());
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["secret-admirer-story-started"] === true) return;
+      const messages = latest.messages.kakao ?? [];
+      const existingOpening = messages.some((item) => item.id === "secret-admirer-A001-0");
+      if (existingOpening) {
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "secret-admirer-story-started": true, "secret-admirer-story-node": "A001" } } });
+        return;
+      }
+      const node = getSecretAdmirerNode("A001");
+      if (!node) return;
+      const avatar = import.meta.env.BASE_URL + "kakao/" + member.avatarFile;
+      const first = makeItem({
+        id: "secret-admirer-A001-0",
+        title: member.name,
+        sender: member.name,
+        avatar,
+        body: node.lines[0],
+        time: latest.time || displayTime,
+        outgoing: false,
+        read: false,
+        meta: { secretAdmirerNode: "A001" },
+      });
+      const start = Date.now();
+      const queued = node.lines.slice(1).map((body, index) => {
+        const item = makeItem({
+          id: "secret-admirer-A001-" + (index + 1),
+          title: member.name,
+          sender: member.name,
+          avatar,
+          body,
+          time: latest.time || displayTime,
+          outgoing: false,
+          read: false,
+          meta: { secretAdmirerNode: "A001" },
+        });
+        const typingAt = start + index * 5_000 + 2_000;
+        return { item, typingAt, deliverAt: typingAt + 3_000 };
+      });
+      let existingQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+      try { existingQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { existingQueue = []; }
+      if (existingQueue.length) {
+        const nextDue = Math.max(Date.now() + 1_000, Number(existingQueue.at(-1)?.deliverAt || 0));
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "secret-admirer-trigger-at": String(nextDue) } } });
+        return;
+      }
+      update({
+        ...latest,
+        messages: { ...latest.messages, kakao: [...messages, first] },
+        notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${member.name}：${first.body}`],
+        ui: { ...latest.ui, kakao: {
+          ...latestUi,
+          "secret-admirer-story-started": true,
+          "secret-admirer-story-node": "A001",
+          "secret-admirer-completed-nodes": "[]",
+          "delivery-queue": JSON.stringify([...existingQueue, ...queued]),
+        } },
+      });
+      if (app !== "kakao") setBanner(`KakaoTalk: ${member.name}：${first.body}`);
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, app, s.ui?.kakao?.["secret-admirer-member-id"], s.ui?.kakao?.["secret-admirer-trigger-at"], s.ui?.kakao?.["secret-admirer-story-started"]]);
+
+  useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
     const outcome = String(s.ui?.kakao?.["friend-story-outcome"] || "");
     const isCare = outcome === "H09" && s.ui?.kakao?.["friend-story-care-sent"] !== true;
@@ -981,6 +1097,96 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         return { item, typingAt, deliverAt };
                       });
                     };
+                    if (choiceId === "admirer:reconnect") {
+                      const boundary = String(currentUi["secret-admirer-boundary"] || "");
+                      const reconnectAt = Number(currentUi["secret-admirer-boundary-until-at"] || 0);
+                      if (!["distance", "rejected"].includes(boundary) || !reconnectAt || stamp < reconnectAt) return;
+                      const outgoing = makeItem({
+                        id: "secret-admirer-reconnect-player-" + stamp,
+                        title: character,
+                        sender: "我",
+                        body: "我想重新联系你。",
+                        time,
+                        outgoing: true,
+                        read: true,
+                      });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), secretAdmirerReconnect: "true" };
+                      const queued = queueLines(["……我没想到你会主动联系我。", "谢谢你愿意再给我一次自然相处的机会。", "我不会把这次重新联系，当成你已经答应了什么。"], "secret-admirer-reconnect-" + stamp);
+                      update({
+                        ...current,
+                        messages: { ...currentMessages, kakao: [...existing, outgoing] },
+                        ui: { ...current.ui, kakao: {
+                          ...currentUi,
+                          "secret-admirer-story-node": "A068",
+                          "secret-admirer-story-outcome": "",
+                          "secret-admirer-boundary": "open",
+                          "secret-admirer-boundary-until-at": "",
+                          "secret-admirer-player-interest": "reopened-by-player",
+                          "secret-admirer-history": JSON.stringify([...(() => { try { return JSON.parse(String(currentUi["secret-admirer-history"] || "[]")) as string[]; } catch { return []; } })(), "reconnect:" + stamp]),
+                          "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                        } },
+                      });
+                      return;
+                    }
+                    if (choiceId?.startsWith("admirer:")) {
+                      const [, nodeId, choiceKey] = choiceId.split(":");
+                      const activeNodeId = String(currentUi["secret-admirer-story-node"] || "");
+                      if (nodeId !== activeNodeId || currentUi["secret-admirer-boundary"] === "distance" || currentUi["secret-admirer-boundary"] === "rejected") return;
+                      const storyChoice = getSecretAdmirerChoice(nodeId, choiceKey);
+                      if (!storyChoice) return;
+                      let history: string[] = [];
+                      let completed: string[] = [];
+                      try { history = JSON.parse(String(currentUi["secret-admirer-history"] || "[]")); } catch { history = []; }
+                      try { completed = JSON.parse(String(currentUi["secret-admirer-completed-nodes"] || "[]")); } catch { completed = []; }
+                      const historyKey = nodeId + ":" + choiceKey;
+                      if (history.includes(historyKey)) return;
+                      const nextNode = getSecretAdmirerNode(storyChoice.next);
+                      if (!nextNode) return;
+                      const outgoing = makeItem({
+                        id: "secret-admirer-player-" + nodeId + "-" + choiceKey + "-" + stamp,
+                        title: character,
+                        sender: "我",
+                        body: storyChoice.text,
+                        time,
+                        outgoing: true,
+                        read: true,
+                      });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), secretAdmirerNode: nodeId, secretAdmirerChoice: choiceKey };
+                      const queued = queueLines(nextNode.lines, "secret-admirer-" + nodeId + "-" + choiceKey);
+                      const outcome = nextNode.result || "";
+                      const boundaryByOutcome: Record<string, string> = {
+                        R01: "friends", R02: "comfort", R03: "distance", R04: "rejected",
+                        R05: "pause", R06: "uncertain", R07: "protect-current",
+                        R08: "mutual-interest", R09: "future-possibility", R10: "meeting-consideration",
+                      };
+                      const interestByOutcome: Record<string, string> = {
+                        R01: "friendship", R02: "comfort", R03: "distance", R04: "no",
+                        R05: "unknown", R06: "uncertain", R07: "protect-current",
+                        R08: "yes", R09: "future", R10: "considering",
+                      };
+                      const affectionDelta = ["A009","A014","A025","A031","A034","A046","A050","A051","A053","A062","A064","A066","A068"].includes(nextNode.id) ? 1 : 0;
+                      const jealousyDelta = ["A023","A024","A035","A041","A055","A059","A069"].includes(nextNode.id) ? 1 : 0;
+                      const confessionKnown = currentUi["secret-admirer-confession-known"] === true || nextNode.id === "A032" || ["A033","A034","A035","A039","A048","A050","A052","A057","A063","A066","A069"].includes(nodeId);
+                      update({
+                        ...current,
+                        messages: { ...currentMessages, kakao: [...existing, outgoing] },
+                        ui: { ...current.ui, kakao: {
+                          ...currentUi,
+                          "secret-admirer-story-node": nextNode.id,
+                          "secret-admirer-history": JSON.stringify([...history, historyKey]),
+                          "secret-admirer-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
+                          "secret-admirer-story-outcome": outcome || String(currentUi["secret-admirer-story-outcome"] || ""),
+                          "secret-admirer-boundary": boundaryByOutcome[outcome] || String(currentUi["secret-admirer-boundary"] || "open"),
+                          "secret-admirer-boundary-until-at": outcome === "R03" ? String(stamp + 7 * 24 * 60 * 60 * 1000) : outcome === "R04" ? String(stamp + 30 * 24 * 60 * 60 * 1000) : String(currentUi["secret-admirer-boundary-until-at"] || ""),
+                          "secret-admirer-affection": Number(currentUi["secret-admirer-affection"] || 0) + affectionDelta,
+                          "secret-admirer-jealousy": Number(currentUi["secret-admirer-jealousy"] || 0) + jealousyDelta,
+                          "secret-admirer-confession-known": confessionKnown,
+                          "secret-admirer-player-interest": interestByOutcome[outcome] || String(currentUi["secret-admirer-player-interest"] || "unknown"),
+                          "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                        } },
+                      });
+                      return;
+                    }
                     if (choiceId?.startsWith("friend-link:")) {
                       const [, linkType, linkKey] = choiceId.split(":");
                       const nodeId = String(currentUi["romance-node"] || "");

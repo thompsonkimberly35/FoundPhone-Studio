@@ -40,6 +40,7 @@ import { useSkinState } from "../../skinState";
 import type { Item } from "../../schema";
 import { getKakaoStoryNode } from "../../kakaoRomanceStory";
 import { getFriendStoryNode } from "../../kakaoFriendStory";
+import { ALD1_SECRET_ADMIRER_MEMBERS, getSecretAdmirerNode } from "../../kakaoSecretAdmirer";
 import "./ui.css";
 import "./adapter.css";
 export function messageRun(items: Item[], index: number) {
@@ -104,6 +105,11 @@ export function MymyKakao(p: SkinProps) {
   const romanceNode = getKakaoStoryNode(romanceNodeId);
   const friendStoryNodeId = String(p.ui?.["friend-story-node"] || "");
   const friendStoryNode = getFriendStoryNode(friendStoryNodeId);
+  const secretAdmirerMemberId = String(p.ui?.["secret-admirer-member-id"] || "");
+  const secretAdmirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find((member) => member.id === secretAdmirerMemberId);
+  const secretAdmirerThread = Boolean(secretAdmirerMember && p.thread === secretAdmirerMember.name);
+  const secretAdmirerNodeId = String(p.ui?.["secret-admirer-story-node"] || "");
+  const secretAdmirerNode = secretAdmirerThread ? getSecretAdmirerNode(secretAdmirerNodeId) : undefined;
   const queuePending = (() => { try { return (JSON.parse(String(p.ui?.["delivery-queue"] || "[]")) as unknown[]).length > 0; } catch { return false; } })() || Boolean(p.ui?.["typing-state"]);
   const romancePaused = romanceNodeId === "K014" && p.ui?.["romance-pending-node"] === "K030";
   useEffect(() => {
@@ -289,6 +295,33 @@ export function MymyKakao(p: SkinProps) {
                 </div>
               ) : (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一段暂时告一段落，后续消息会继续更新。</div>
+              )}
+            </div>
+          ) : secretAdmirerThread && secretAdmirerNode ? (
+            <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
+              {queuePending ? (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
+              ) : secretAdmirerNode.choices.length ? (
+                <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
+                  {secretAdmirerNode.choices.map((choice, index) => (
+                    <button key={choice.key} type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, maxWidth: "100%", width: "100%", minHeight: 42, borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", boxShadow: "0 2px 5px rgba(115, 87, 58, 0.06)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, letterSpacing: "0.1px", textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word", overflow: "visible" }}
+                      onClick={() => p.onKakaoChoice?.(p.thread, choice.text, "", "", "admirer:" + secretAdmirerNode.id + ":" + choice.key)}>
+                      <span style={{ display: "inline-block", marginRight: 7, color: "#c2a17c", fontSize: 11, fontWeight: 600 }}>{String(index + 1).padStart(2, "0")}</span>
+                      {choice.text}
+                    </button>
+                  ))}
+                </div>
+              ) : ["distance", "rejected"].includes(String(p.ui?.["secret-admirer-boundary"] || "")) ? (
+                Date.now() >= Number(p.ui?.["secret-admirer-boundary-until-at"] || 0) ? (
+                  <button type="button" className="go" style={{ display: "block", boxSizing: "border-box", width: "100%", borderRadius: 14, padding: "11px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, whiteSpace: "normal" }}
+                    onClick={() => p.onKakaoChoice?.(p.thread, "我想重新联系你。", "", "", "admirer:reconnect")}>
+                    我想重新联系你
+                  </button>
+                ) : (
+                  <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>他会尊重你的决定，不会主动打扰你。</div>
+                )
+              ) : (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一阶段暂时告一段落。</div>
               )}
             </div>
           ) : friendThread && friendStoryNode ? (
