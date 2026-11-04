@@ -25,17 +25,18 @@ export function GlobalNotificationBanner({ item, onDismiss, onOpen }: Props) {
   }, [item?.id]);
 
   if (!item) return null;
+  const notificationAppId = String(item.meta?.notificationAppId || "kakao");
 
   return (
     <div className="global-notification-layer" aria-live="polite">
       <button
         type="button"
-        className={`global-kakao-notification ${leaving ? "is-leaving" : ""}`}
+        className={`global-kakao-notification global-notification-${notificationAppId} ${leaving ? "is-leaving" : ""}`}
         aria-label={`${item.sender}：${item.body}。点击打开应用`}
         onClick={() => onOpen(item)}
       >
         <span className="global-kakao-app-icon" aria-hidden="true">
-          {item.meta?.notificationAppId === "threads" ? <AtSign size={19} /> : <MessageCircle size={18} fill="currentColor" strokeWidth={1.8} />}
+          {notificationAppId === "threads" ? <AtSign size={19} /> : notificationAppId === "twitter" ? <span className="global-x-glyph">𝕏</span> : <MessageCircle size={18} fill="currentColor" strokeWidth={1.8} />}
         </span>
         <span className="global-kakao-copy">
           <strong className="global-kakao-sender">{item.sender}</strong>
