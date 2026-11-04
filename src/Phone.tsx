@@ -74,6 +74,16 @@ import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
+const boyfriendAvatarPath = (name: string) => {
+  const files: Record<string, string> = {
+    "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+    "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+    "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+    "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+  };
+  return files[name] ? import.meta.env.BASE_URL + "kakao/" + files[name] : "";
+};
+
 export function AppIcon({
   id,
   name,
@@ -222,6 +232,7 @@ function PhoneRuntime({
   const activeKakaoThread = useRef("");
   const previousApp = useRef(app);
   const [targetKakaoThread, setTargetKakaoThread] = useState("");
+  const [targetXPostId, setTargetXPostId] = useState("");
   useEffect(() => {
     if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
     previousApp.current = app;
@@ -395,7 +406,7 @@ function PhoneRuntime({
           return files[name] ? import.meta.env.BASE_URL + "kakao/" + files[name] : "";
         };
         const incoming = [
-          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "你看到x了吗？", time: displayTime }) : null,
+          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: "你看到x了吗？", time: displayTime }) : null,
           selectedFriend ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, avatar: avatarFor(selectedFriend), body: "你们还好吗？", time: displayTime }) : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
         const xPosts = current.messages.twitter ?? [];
@@ -925,10 +936,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (existing.some(item => item.id === "boyfriend-stage2-K046-0")) return;
       const node = getBoyfriendStage2Node("K046");
       if (!node) return;
-      const first = makeItem({ id: "boyfriend-stage2-K046-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: node.lines[0], time: latest.time || displayTime, outgoing: false, read: false });
+      const first = makeItem({ id: "boyfriend-stage2-K046-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: node.lines[0], time: latest.time || displayTime, outgoing: false, read: false });
       const start = Date.now();
       const queued = node.lines.slice(1).map((body, index) => {
-        const item = makeItem({ id: "boyfriend-stage2-K046-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K046" } });
+        const item = makeItem({ id: "boyfriend-stage2-K046-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K046" } });
         const typingAt = start + index * 5000 + 2000;
         return { item, typingAt, deliverAt: typingAt + 3000 };
       });
@@ -1205,7 +1216,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             onOpen={(item) => {
               setGlobalNotificationItem(null);
               if (item.meta?.notificationAppId === "twitter") {
-                setDetail((runtimeRef.current.messages.twitter || []).find(post => post.id === item.meta.notificationPostId) || item);
+                setTargetXPostId(String(item.meta.notificationPostId || item.id));
                 open("twitter");
                 return;
               }
@@ -1293,6 +1304,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   selectedBoyfriend={selectedBoyfriend}
                   selectedFriend={selectedFriend}
                   initialKakaoThread={targetKakaoThread}
+                  targetXPostId={targetXPostId}
+                  onTargetXPostHandled={() => setTargetXPostId("")}
                   onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; if (targetKakaoThread) setTargetKakaoThread(""); }}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
@@ -2047,6 +2060,8 @@ function AppContent({
   initialKakaoThread,
   onKakaoThreadChange,
   onKakaoChoice,
+  targetXPostId,
+  onTargetXPostHandled,
 }: {
   app: AppPlugin;
   name: string;
@@ -2068,8 +2083,16 @@ function AppContent({
   initialKakaoThread?: string;
   onKakaoThreadChange?: (thread: string) => void;
   onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
+  targetXPostId?: string;
+  onTargetXPostHandled?: () => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
+  useEffect(() => {
+    if (app.id !== "twitter" || !targetXPostId) return;
+    const target = items.find(item => item.id === targetXPostId);
+    if (target) setDetail(target);
+    onTargetXPostHandled?.();
+  }, [app.id, targetXPostId, items, onTargetXPostHandled]);
   const [thread, setThread] = useState(initialKakaoThread || "");
   useEffect(() => {
     if (app.id === "kakao" && initialKakaoThread) {
