@@ -318,7 +318,7 @@ function PhoneRuntime({
         const avatarFor = (name: string) => {
           const files: Record<string, string> = {
             "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
-            "李理悟": "李理悟-kakao.jpg", "李相沅": "李相沅-kakao.png",
+            "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
             "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
             "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
           };
@@ -516,7 +516,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (existing.some((item) => item.id === "boyfriend-backlash-checkin")) return;
       const files: Record<string, string> = {
         "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
-        "李理悟": "李理悟-kakao.jpg", "李相沅": "李相沅-kakao.png",
+        "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
         "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
         "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
       };
@@ -757,7 +757,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const stamp = Date.now();
                     const files: Record<string, string> = {
                       "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
-                      "李理悟": "李理悟-kakao.jpg", "李相沅": "李相沅-kakao.png",
+                      "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
                       "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
                       "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
                     };
