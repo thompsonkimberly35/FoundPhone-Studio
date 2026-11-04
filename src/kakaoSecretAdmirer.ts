@@ -20,9 +20,9 @@ export const ALD1_SECRET_ADMIRER_MEMBERS: readonly SecretAdmirerMember[] = [
 
 export function memberIdForName(name: string): string | undefined {
   const aliases: Record<string, string> = {
-    "张家豪": "張家豪",
-    "贺鑫隆": "賀鑫隆",
-    "郑相炫": "鄭相炫",
+    "張家豪": "张家豪",
+    "賀鑫隆": "贺鑫隆",
+    "鄭相炫": "郑相炫",
   };
   const canonical = aliases[name] ?? name;
   return ALD1_SECRET_ADMIRER_MEMBERS.find((member) => member.name === canonical)?.id;
