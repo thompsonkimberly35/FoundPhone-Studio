@@ -1311,7 +1311,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     work.apps.find((a) => a.id === app)?.name ?? plugin.name
                   }
                   items={[
-                    ...normalizeStoryItems(work.data[app] ?? [], s.date || work.phone.date || "2026-10-25", s.gameClock?.timezone || "Asia/Seoul"),
+                    ...normalizeStoryItems(work.data[app] ?? [], work.phone.date || "2026-10-25", s.gameClock?.timezone || "Asia/Seoul"),
                     ...(s.messages[app] ?? []),
                   ]}
                   creator={creator}
