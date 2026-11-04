@@ -32,6 +32,7 @@ import "./ios/reference.css";
 import "./ios/status-bar.css";
 import { WeChatSkin, WhatsAppSkin } from "./AppSkins";
 import { RichText } from "./RichText";
+import { getBoyfriendStage2Node, getBoyfriendStage2Choice, STAGE2_X001, STAGE2_X002, STAGE2_X003 } from "./kakaoBoyfriendStage2";
 import {
   useEffect,
   useState,
@@ -73,6 +74,16 @@ import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
+const boyfriendAvatarPath = (name: string) => {
+  const files: Record<string, string> = {
+    "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+    "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+    "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+    "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+  };
+  return files[name] ? import.meta.env.BASE_URL + "kakao/" + files[name] : "";
+};
+
 export function AppIcon({
   id,
   name,
@@ -221,6 +232,7 @@ function PhoneRuntime({
   const activeKakaoThread = useRef("");
   const previousApp = useRef(app);
   const [targetKakaoThread, setTargetKakaoThread] = useState("");
+  const [targetXPostId, setTargetXPostId] = useState("");
   useEffect(() => {
     if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
     previousApp.current = app;
@@ -394,7 +406,7 @@ function PhoneRuntime({
           return files[name] ? import.meta.env.BASE_URL + "kakao/" + files[name] : "";
         };
         const incoming = [
-          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: avatarFor(selectedBoyfriend), body: "你看到x了吗？", time: displayTime }) : null,
+          selectedBoyfriend ? makeItem({ id: "selection-boyfriend-first-message", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: "你看到x了吗？", time: displayTime }) : null,
           selectedFriend ? makeItem({ id: "selection-friend-first-message", title: selectedFriend, sender: selectedFriend, avatar: avatarFor(selectedFriend), body: "你们还好吗？", time: displayTime }) : null,
         ].filter((item): item is NonNullable<typeof item> => item !== null);
         const xPosts = current.messages.twitter ?? [];
@@ -504,6 +516,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { latest = JSON.parse(String(current.ui?.kakao?.["global-notification-queue"] || "[]")); } catch { latest = []; }
       if (!latest.length) return;
       const [next, ...remaining] = latest;
+      let storyEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
+      try { storyEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { storyEvents = []; }
+      const notificationPostId = String(next.meta?.notificationPostId || "");
+      const updatedStoryEvents = notificationPostId
+        ? storyEvents.map(event => event.postId === notificationPostId ? { ...event, notificationDelivered: true } : event)
+        : storyEvents;
       update({
         ...current,
         ui: {
@@ -511,6 +529,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           kakao: {
             ...current.ui?.kakao,
             "global-notification-queue": JSON.stringify(remaining),
+            ...(notificationPostId ? { "story-x-events": JSON.stringify(updatedStoryEvents) } : {}),
           },
         },
       });
@@ -846,6 +865,107 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
 
   useEffect(() => {
     if (!ready || creator) return;
+    const deliveredNodes = new Set((s.messages.kakao || [])
+      .map(item => String(item.meta?.boyfriendStage2Node || ""))
+      .filter(Boolean));
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    const posts = [...(current.messages.twitter || [])];
+    let queue: Item[] = [];
+    let events: Array<{eventId:string;triggeredByNode:string;postId:string;deliveredAt:number;notificationDelivered:boolean}> = [];
+    try { queue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { queue = []; }
+    try { events = JSON.parse(String(ui["story-x-events"] || "[]")); } catch { events = []; }
+    const definitions = [
+      { ...STAGE2_X001, triggeredByNodes: STAGE2_X001.triggeredByNodes },
+      { ...STAGE2_X002, triggeredByNodes: STAGE2_X002.triggeredByNodes },
+      { ...STAGE2_X003, triggeredByNodes: ["K117"] },
+    ];
+    const added: typeof events = [];
+    for (const event of definitions) {
+      if (!event.triggeredByNodes.some(node => deliveredNodes.has(node))) continue;
+      if (events.some(saved => saved.eventId === event.eventId) || posts.some(post => post.id === event.postId)) continue;
+      const postBody = event.eventId === "X001" ? event.body.replace("{{boyfriend}}", selectedBoyfriend) : event.body;
+      const post = makeItem({
+        id: event.postId, title: event.title, sender: event.account, body: postBody,
+        richText: postBody, time: event.time, kind: "post",
+        likes: event.likes, comments: event.comments,
+        meta: {
+          handle: event.handle, verified: "true", reposts: String(event.reposts),
+          views: event.eventId === "X001" ? "68.4万" : event.eventId === "X002" ? "326万" : "248万",
+          translation: event.translation, storyEventId: event.eventId,
+        }
+      });
+      posts.push(post);
+      queue.push({ ...post, meta: { ...post.meta, notificationAppId: "twitter", notificationPostId: post.id } });
+      added.push({
+        eventId: event.eventId,
+        triggeredByNode: event.triggeredByNodes.find(node => deliveredNodes.has(node)) || event.triggeredByNodes[0],
+        postId: event.postId, deliveredAt: Date.now(), notificationDelivered: false,
+      });
+    }
+    if (!added.length) return;
+    update({
+      ...current,
+      messages: { ...current.messages, twitter: posts },
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        ...Object.fromEntries(added.map(event => ["x-event-" + event.eventId + "-created", true])),
+        "story-x-events": JSON.stringify([...events, ...added]),
+        "global-notification-queue": JSON.stringify(queue),
+      } }
+    });
+  }, [ready, creator, s.messages.kakao, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"]]);
+
+  useEffect(() => {
+    if (!ready || creator || !selectedBoyfriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (!/^E0[1-8]$/.test(String(ui["romance-result"] || "")) || !/_END$/.test(String(ui["romance-node"] || "")) || ui["boyfriend-stage2-started"] === true) return;
+    let pending: Array<{item?: Item; deliverAt?: number}> = [];
+    try { pending = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { pending = []; }
+    if (pending.some(entry => entry.item?.title === selectedBoyfriend)) return;
+    const due = Number(ui["boyfriend-stage2-trigger-at"] || 0);
+    if (!due) {
+      update({ ...current, ui: { ...current.ui, kakao: { ...ui, "boyfriend-stage2-trigger-at": String(Date.now() + 90_000) } } });
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["boyfriend-stage2-started"] === true) return;
+      const existing = latest.messages.kakao ?? [];
+      if (existing.some(item => item.id === "boyfriend-stage2-K046-0")) return;
+      const node = getBoyfriendStage2Node("K046");
+      if (!node) return;
+      const result = String(latestUi["romance-result"] || "");
+      const openings: Record<string, string[]> = {
+        E03: ["我知道我们前几天说好先给彼此一点空间。","这几天我没有想用沉默逼你做决定。","今天有新的消息，我想先问你愿不愿意听我说。","如果你现在还不想谈，我也会尊重。"],
+        E04: ["我和团员谈过了。","有些问题还没有答案，但至少大家开始把担心说出来。","我想把今天的进展告诉你。","你现在方便听我说吗？"],
+        E05: ["我知道之前的隐瞒还没有过去。","我不会假装只要事情有新进展，你就应该立刻相信我。","但今天发生了一些变化，我想如实告诉你。","你可以按自己的节奏回应。"],
+        E06: ["我记得我们说过要重新想一想未来。","我没有把这段时间当成你必须等我的理由。","只是有新的事情需要让你知道。","如果你还没有准备好，我们也可以慢慢来。"],
+        E07: ["那天的见面最后还是改了安排。","我有点遗憾，但很庆幸我们没有为了见面冒险。","今天工作上又有了新的变化。","我想先和你确认再继续说。"],
+        E08: ["我把之前没有告诉你的线索重新整理了一遍。","这次我不想再让你从别人那里听到消息。","今天团队和公司的情况也有了变化。","我会把我知道的部分讲清楚。"],
+      };
+      const openingLines = openings[result] || node.lines;
+      const first = makeItem({ id: "boyfriend-stage2-K046-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: openingLines[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K046" } });
+      const start = Date.now();
+      const queued = openingLines.slice(1).map((body, index) => {
+        const item = makeItem({ id: "boyfriend-stage2-K046-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K046" } });
+        const typingAt = start + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      });
+      let queue: Array<{item: Item; typingAt: number; deliverAt: number}> = [];
+      try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
+      update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
+        notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${selectedBoyfriend}：${first.body}`],
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-started": true, "boyfriend-stage2-node": "K046", "boyfriend-stage2-history": "[]", "boyfriend-stage2-trigger-at": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+      });
+    }, Math.max(0, due - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, selectedBoyfriend, app, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["romance-node"], s.ui?.kakao?.["boyfriend-stage2-started"], s.ui?.kakao?.["boyfriend-stage2-trigger-at"], s.ui?.kakao?.["delivery-queue"]]);
+
+  useEffect(() => {
+    if (!ready || creator) return;
     const currentUi = runtimeRef.current.ui?.kakao || {};
     const memberId = String(currentUi["secret-admirer-member-id"] || "");
     const triggerAt = Number(currentUi["secret-admirer-trigger-at"] || 0);
@@ -1106,6 +1226,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             onDismiss={() => setGlobalNotificationItem(null)}
             onOpen={(item) => {
               setGlobalNotificationItem(null);
+              if (item.meta?.notificationAppId === "twitter") {
+                setTargetXPostId(String(item.meta.notificationPostId || item.id));
+                open("twitter");
+                return;
+              }
               activeKakaoThread.current = item.title;
               setTargetKakaoThread(item.title);
               open("kakao");
@@ -1190,6 +1315,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   selectedBoyfriend={selectedBoyfriend}
                   selectedFriend={selectedFriend}
                   initialKakaoThread={targetKakaoThread}
+                  targetXPostId={targetXPostId}
+                  onTargetXPostHandled={() => setTargetXPostId("")}
                   onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; if (targetKakaoThread) setTargetKakaoThread(""); }}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
@@ -1230,6 +1357,25 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         return { item, typingAt, deliverAt };
                       });
                     };
+                    if (choiceId?.startsWith("boyfriend-stage2:")) {
+                      const [, nodeId, choiceKey] = choiceId.split(":");
+                      const activeNodeId = String(currentUi["boyfriend-stage2-node"] || "");
+                      if (character !== selectedBoyfriend || nodeId !== activeNodeId) return;
+                      const choice = getBoyfriendStage2Choice(nodeId, choiceKey);
+                      if (!choice) return;
+                      let history: string[] = [];
+                      try { history = JSON.parse(String(currentUi["boyfriend-stage2-history"] || "[]")); } catch { history = []; }
+                      const historyKey = nodeId + ":" + choiceKey;
+                      if (history.includes(historyKey)) return;
+                      const nextNode = getBoyfriendStage2Node(choice.next);
+                      if (!nextNode) return;
+                      const outgoing = makeItem({ id: "boyfriend-stage2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), boyfriendStage2Node: nodeId, boyfriendStage2Choice: choiceKey };
+                      const queued = queueLines(nextNode.lines, "boyfriend-stage2-" + nodeId + "-" + choiceKey).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, boyfriendStage2Node: nextNode.id } } }));
+                      const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
+                      update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
+                      return;
+                    }
                     if (choiceId?.startsWith("team-conflict:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["team-conflict-story-node"] || "");
@@ -1925,6 +2071,8 @@ function AppContent({
   initialKakaoThread,
   onKakaoThreadChange,
   onKakaoChoice,
+  targetXPostId,
+  onTargetXPostHandled,
 }: {
   app: AppPlugin;
   name: string;
@@ -1946,8 +2094,16 @@ function AppContent({
   initialKakaoThread?: string;
   onKakaoThreadChange?: (thread: string) => void;
   onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
+  targetXPostId?: string;
+  onTargetXPostHandled?: () => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
+  useEffect(() => {
+    if (app.id !== "twitter" || !targetXPostId) return;
+    const target = items.find(item => item.id === targetXPostId);
+    if (target) setDetail(target);
+    onTargetXPostHandled?.();
+  }, [app.id, targetXPostId, items, onTargetXPostHandled]);
   const [thread, setThread] = useState(initialKakaoThread || "");
   useEffect(() => {
     if (app.id === "kakao" && initialKakaoThread) {

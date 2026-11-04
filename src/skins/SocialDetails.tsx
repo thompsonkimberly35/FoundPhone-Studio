@@ -152,6 +152,7 @@ export function SocialDetail(p: {
         </div>
         <div className="post-detail-body">
           <RichText value={item.richText} fallback={item.body} />
+          {meta(item, "translation") && <p className="x-post-translation">{meta(item, "translation")}</p>}
           {item.media && <Media item={item} />}
         </div>
         {weibo ? (
