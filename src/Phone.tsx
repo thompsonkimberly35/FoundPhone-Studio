@@ -1177,7 +1177,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     if (choiceId?.startsWith("team-conflict:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["team-conflict-story-node"] || "");
-                      if (nodeId !== activeNodeId || currentUi["team-conflict-breakup-pressure"] === false || currentUi["team-conflict-no-contact"] === true) return;
+                      if (nodeId !== activeNodeId || currentUi["team-conflict-breakup-pressure"] === false || String(currentUi["team-conflict-no-contact"]) === "true") return;
                       const storyChoice = getTeamConflictChoice(nodeId, choiceKey);
                       if (!storyChoice) return;
                       let history: string[] = [];
@@ -1203,7 +1203,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "team-conflict-anger": Number(currentUi["team-conflict-anger"] || 0) + (["B017","B025","B043","B088"].includes(nextNode.id) ? 1 : 0),
                         "team-conflict-regret": Number(currentUi["team-conflict-regret"] || 0) + (["B052","B063","B076","B092","B101"].includes(nextNode.id) ? 1 : 0),
                         "team-conflict-secret-revealed": currentUi["team-conflict-secret-revealed"] === true || ["B051","B063","B076","B091","B099"].includes(nextNode.id),
-                        "team-conflict-breakup-pressure": outcome ? !stopPressure : currentUi["team-conflict-breakup-pressure"] !== false,
+                        "team-conflict-breakup-pressure": outcome ? !stopPressure : String(currentUi["team-conflict-breakup-pressure"]) !== "false",
                         "team-conflict-no-contact": noContact || currentUi["team-conflict-no-contact"] === true,
                         "team-conflict-last-choice": historyKey,
                         "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
