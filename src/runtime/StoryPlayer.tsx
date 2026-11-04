@@ -87,8 +87,13 @@ function StoryPlayer() {
         // A manual save is the only progress that survives a fresh page visit.
         // Restore it before mounting the phone; otherwise discard the previous run.
         const manual = await db.manualSaves.get(w.id).catch(() => undefined);
-        if (manual && manual.state.workId === w.id && manual.state.revision === w.updatedAt) {
-          await db.saves.put({ id: w.id, state: manual.state });
+        // Keep manual saves across story-data revisions. A content update changes
+        // work.updatedAt, but it must not invalidate a player's locally saved run.
+        if (manual && manual.state.workId === w.id) {
+          const restoredState = { ...manual.state, revision: w.updatedAt };
+          const restoredSave = { ...manual, state: restoredState };
+          await db.manualSaves.put(restoredSave);
+          await db.saves.put({ id: w.id, state: restoredState });
           if (!abort.signal.aborted) {
             setSelectedBoyfriend(manual.selectedBoyfriend);
             setSelectedFriend(manual.selectedFriend);
@@ -96,6 +101,7 @@ function StoryPlayer() {
             setSelectionComplete(true);
           }
         } else {
+          // Only start a fresh run when there is no usable manual save.
           if (manual) await db.manualSaves.delete(w.id).catch(() => undefined);
           await db.saves.delete(w.id).catch(() => undefined);
           if (!abort.signal.aborted) {
