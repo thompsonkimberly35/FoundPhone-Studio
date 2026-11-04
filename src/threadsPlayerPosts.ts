@@ -27,7 +27,7 @@ export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanRe
  const categories: Mood[] = ["claim","explain","attack","sad","apology","daily","support","mention"];
  let seed = [...post.id + post.text].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7);
  const random = () => { seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
- const mention = post.text.match(/@([\\w.]+)/);
+ const mention = post.text.match(/@([\w.]+)/);
  const mentionHandle = mention?.[1] || "allyz_1101";
  const generated = categories.flatMap((category, categoryIndex) => {
    const pool = [...pools[category]];
