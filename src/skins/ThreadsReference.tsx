@@ -16,8 +16,6 @@ import {
   BellOff,
   ChevronRight,
   X,
-  Globe,
-  Mic,
   Pin,
   Image as ImageIcon,
 } from "lucide-react";
