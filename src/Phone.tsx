@@ -2451,6 +2451,7 @@ function AppContent({
               selectedFriend={selectedFriend}
               onKakaoChoice={onKakaoChoice}
               onInstagramReply={onInstagramReply}
+              storyContext={[...(work.data.twitter ?? []), ...(state.messages.twitter ?? [])].slice(-3).map(item => item.sender + "：" + item.body).join("\n")}
               targetPostId={targetThreadsPostId}
               targetReplyId={targetThreadsReplyId}
               onTargetPostHandled={onTargetThreadsPostHandled}
