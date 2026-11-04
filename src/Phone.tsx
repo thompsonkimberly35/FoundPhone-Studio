@@ -211,6 +211,13 @@ function PhoneRuntime({
   const s = external ?? own;
   const runtimeRef = useRef(s);
   runtimeRef.current = s;
+  const globalNotificationQueue = String(s.ui?.kakao?.["global-notification-queue"] || "[]");
+  let hasPendingKakaoNotification = false;
+  try {
+    hasPendingKakaoNotification = (JSON.parse(globalNotificationQueue) as Item[]).length > 0;
+  } catch {
+    hasPendingKakaoNotification = false;
+  }
   const activeKakaoThread = useRef("");
   const previousApp = useRef(app);
   const [targetKakaoThread, setTargetKakaoThread] = useState("");
@@ -261,7 +268,8 @@ function PhoneRuntime({
   }, [creator, ready, work.id, work.updatedAt, external]);
   useEffect(() => {
     // Story notifications wait until the player unlocks the phone.
-    if (locked || igBanner || !igQueue.length) return;
+    // KakaoTalk has priority; never overlap its banner with Instagram story notices.
+    if (locked || igBanner || globalNotificationItem || hasPendingKakaoNotification || !igQueue.length) return;
     const timer = window.setTimeout(() => {
       const next = igQueue[0];
       setIgBanner(next);
@@ -273,7 +281,7 @@ function PhoneRuntime({
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [igQueue, igBanner, locked]);
+  }, [igQueue, igBanner, locked, globalNotificationItem, hasPendingKakaoNotification]);
   useEffect(() => {
     // Keep the current banner paused while the phone is locked.
     if (!igBanner || locked) return;
@@ -483,9 +491,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   const checkinDueAt = s.ui?.kakao?.["ig-backlash-checkin-due-at"];
   const checkinSent = s.ui?.kakao?.["ig-backlash-checkin-sent"] === true;
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
-  const globalNotificationQueue = String(s.ui?.kakao?.["global-notification-queue"] || "[]");
+
   useEffect(() => {
-    if (locked || creator || !work.phone.notifications || globalNotificationItem) return;
+    // Let an already-visible Instagram banner finish, then KakaoTalk takes priority.
+    if (locked || creator || !work.phone.notifications || globalNotificationItem || igBanner) return;
     let queued: Item[] = [];
     try { queued = JSON.parse(globalNotificationQueue); } catch { queued = []; }
     if (!queued.length) return;
@@ -508,7 +517,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       setGlobalNotificationItem(next);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications]);
+  }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications, igBanner]);
   useEffect(() => {
     if (!ready || igQueue.length > 0 || igBanner) return;
     const currentUi = s.ui?.kakao || {};
