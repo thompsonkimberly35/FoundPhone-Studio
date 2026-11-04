@@ -699,7 +699,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const currentUi = current.ui?.kakao || {};
     const boyfriendDone = /^E0[1-8]$/.test(String(currentUi["romance-result"] || ""));
     const friendDone = /^H(0[1-9]|1[0-2])$/.test(String(currentUi["friend-story-outcome"] || ""));
-    if (!boyfriendDone || !friendDone || currentUi["secret-admirer-selected-at"] || currentUi["secret-admirer-selection-error"]) return;
+    let pendingMessages: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    try { pendingMessages = JSON.parse(String(currentUi["delivery-queue"] || "[]")); } catch { pendingMessages = []; }
+    if (!boyfriendDone || !friendDone || pendingMessages.length > 0 || currentUi["typing-state"] || currentUi["secret-admirer-selected-at"] || currentUi["secret-admirer-selection-error"]) return;
     const boyfriendId = memberIdForName(selectedBoyfriend);
     const friendId = memberIdForName(selectedFriend);
     if (!boyfriendId || !friendId || boyfriendId === friendId) {
@@ -731,7 +733,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "secret-admirer-player-interest": "unknown",
       } },
     });
-  }, [ready, creator, selectedBoyfriend, selectedFriend, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["secret-admirer-selected-at"], s.ui?.kakao?.["secret-admirer-selection-error"]]);
+  }, [ready, creator, selectedBoyfriend, selectedFriend, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["secret-admirer-selected-at"], s.ui?.kakao?.["secret-admirer-selection-error"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["typing-state"]]);
 
   useEffect(() => {
     if (!ready || creator) return;
@@ -784,6 +786,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
       let existingQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
       try { existingQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { existingQueue = []; }
+      if (existingQueue.length) {
+        const nextDue = Math.max(Date.now() + 1_000, Number(existingQueue.at(-1)?.deliverAt || 0));
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "secret-admirer-trigger-at": String(nextDue) } } });
+        return;
+      }
       update({
         ...latest,
         messages: { ...latest.messages, kakao: [...messages, first] },
