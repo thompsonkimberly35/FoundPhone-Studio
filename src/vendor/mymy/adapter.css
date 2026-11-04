@@ -999,3 +999,16 @@
 .mymy-ui.mymy-kakao .msgs.kk .kztyping .kz-message-line {
   align-items: center;
 }
+
+
+.mymy-ui.mymy-kakao .msgs.kk .kz-date {
+  display: table;
+  margin: 12px auto 10px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e9edf1;
+  color: #66717c;
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: center;
+}
