@@ -23,7 +23,7 @@ describe("KakaoTalk secret admirer", () => {
     expect(new Set(candidates.map((member) => member.id)).size).toBe(candidates.length);
   });
 
-  it("handles empty candidate pools safely and rejects invalid random bounds", () => {
+  it("checks candidate exclusion, name aliases and invalid random bounds", () => {
     const all = ALD1_SECRET_ADMIRER_MEMBERS;
     const none = getSecretAdmirerCandidates(all[0].id, all[1].id);
     expect(none).toHaveLength(all.length - 2);
@@ -31,6 +31,17 @@ describe("KakaoTalk secret admirer", () => {
     expect(memberIdForName("张家豪")).toBe("ald1-zhang-jiahao");
     expect(memberIdForName("張家豪")).toBe("ald1-zhang-jiahao");
     expect(() => secureRandomIndex(0)).toThrow(RangeError);
+  });
+
+  it("excludes the selected pair for every valid distinct member combination", () => {
+    for (const boyfriend of ALD1_SECRET_ADMIRER_MEMBERS) {
+      for (const friend of ALD1_SECRET_ADMIRER_MEMBERS) {
+        if (boyfriend.id === friend.id) continue;
+        const candidates = getSecretAdmirerCandidates(boyfriend.id, friend.id);
+        expect(candidates).toHaveLength(ALD1_SECRET_ADMIRER_MEMBERS.length - 2);
+        expect(candidates.some((member) => member.id === boyfriend.id || member.id === friend.id)).toBe(false);
+      }
+    }
   });
 
   it("uses unbiased bounded indexes and samples multiple independent members", () => {
