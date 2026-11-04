@@ -56,5 +56,7 @@ describe("Threads player replies", () => {
       createdAt: 1234,
       isPlayerReply: true,
     });
+    const nested = createThreadsReplyRecord("threads-backlash-t001", "回覆粉絲留言", 1236, first.id);
+    expect(nested.parentReplyId).toBe(first.id);
   });
 });
