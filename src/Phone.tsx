@@ -884,9 +884,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     for (const event of definitions) {
       if (!event.triggeredByNodes.some(node => deliveredNodes.has(node))) continue;
       if (events.some(saved => saved.eventId === event.eventId) || posts.some(post => post.id === event.postId)) continue;
+      const postBody = event.eventId === "X001" ? event.body.replace("{{boyfriend}}", selectedBoyfriend) : event.body;
       const post = makeItem({
-        id: event.postId, title: event.title, sender: event.account, body: event.body,
-        richText: event.body, time: event.time, kind: "post",
+        id: event.postId, title: event.title, sender: event.account, body: postBody,
+        richText: postBody, time: event.time, kind: "post",
         likes: event.likes, comments: event.comments,
         meta: {
           handle: event.handle, verified: "true", reposts: String(event.reposts),
