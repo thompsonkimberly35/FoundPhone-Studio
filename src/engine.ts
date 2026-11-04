@@ -33,7 +33,11 @@ export function testCondition(c: Condition, s: Runtime): boolean {
 function apply(a: Action, s: Runtime, w: Work) {
   switch (a.type) {
     case "date":
-      if (/^\d{4}-\d{2}-\d{2}$/.test(String(a.value))) s.date = String(a.value);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(a.value))) {
+        s.gameClock = setGameClockTime(s.gameClock || ensureGameClock(s, w), s.time, String(a.value));
+        s.date = formatGameDate(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
+        s.time = formatGameTime(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
+      }
       break;
     case "variable":
       s.variables[a.key] = a.value;
