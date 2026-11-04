@@ -28,6 +28,7 @@ import type { SkinProps } from "../AppSkins";
 import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
+import { generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
 import { useSkinState } from "../skinState";
 import "./threads-reference.css";
 export function ThreadsReference(p: SkinProps) {
@@ -37,6 +38,24 @@ export function ThreadsReference(p: SkinProps) {
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
+  const [playerPostsJson, setPlayerPostsJson] = useSkinState<string>(p, "threads-player-posts-v1", "[]");
+  const [fanRepliesJson, setFanRepliesJson] = useSkinState<string>(p, "threads-fan-replies-v1", "[]");
+  const playerPosts: ThreadsPlayerPost[] = (() => { try { const v: unknown = JSON.parse(playerPostsJson); return Array.isArray(v) ? v : []; } catch { return []; } })();
+  const fanReplies: ThreadsFanReply[] = (() => { try { const v: unknown = JSON.parse(fanRepliesJson); return Array.isArray(v) ? v : []; } catch { return []; } })();
+  useEffect(() => {
+    const now = Date.now();
+    if (!fanReplies.some((r) => !r.deliveredAt && r.scheduledAt <= now)) return;
+    setFanRepliesJson(JSON.stringify(fanReplies.map((r) => !r.deliveredAt && r.scheduledAt <= now ? { ...r, deliveredAt: now } : r)));
+  }, [fanRepliesJson, fanReplies, setFanRepliesJson]);
+  useEffect(() => {
+    const nextDue = fanReplies.filter((r) => !r.deliveredAt).reduce((n, r) => Math.min(n, r.scheduledAt), Infinity);
+    if (!Number.isFinite(nextDue)) return;
+    const timer = window.setTimeout(() => {
+      const now = Date.now();
+      setFanRepliesJson(JSON.stringify(fanReplies.map((r) => !r.deliveredAt && r.scheduledAt <= now ? { ...r, deliveredAt: now } : r)));
+    }, Math.max(100, Math.min(5000, nextDue - Date.now())));
+    return () => window.clearTimeout(timer);
+  }, [fanRepliesJson, fanReplies, setFanRepliesJson]);
   useEffect(() => {
     const cleanPosts = posts.filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body));
     if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
@@ -169,7 +188,7 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
-                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),
+                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),\n                ...fanReplies.filter((r) => r.postId === selected.id && r.deliveredAt).map((r) => "@"+r.handle+"："+r.text),
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
