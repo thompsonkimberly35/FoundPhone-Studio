@@ -77,7 +77,6 @@ for (let i=1;i<=101;i++) {
   const nextA=i<101?"B"+String(i+1).padStart(3,"0"):"S12";
   const nextB=i<100?"B"+String(i+2).padStart(3,"0"):"S11";
   const nextC=resultId || (i<99?"B"+String(i+3).padStart(3,"0"):"S10");
-  const choices = prompts[(i-1)%prompts.length];
   const replies = followUps[(i-1)%followUps.length];
   const lines = i===1
     ? ["你现在有空吗？","我有些话想跟你说。","可能不太好听，但我觉得今天一定要说清楚。"]
