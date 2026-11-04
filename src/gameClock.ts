@@ -104,7 +104,7 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
   const clock = ensureGameClock(runtime, work);
   if (clock.migrationVersion >= 1 && runtime.gameClock) return runtime;
   const timezone = clock.timezone;
-  let cursor = clock.currentGameTimestamp;
+  let cursor = zonedDateTimeToTimestamp(runtime.date || work.phone.date || "2026-10-25", "00:00", timezone) - 1;
   const messages: Runtime["messages"] = {};
   for (const [appId, items] of Object.entries(runtime.messages || {})) {
     messages[appId] = (items || []).map((item) => {
@@ -139,13 +139,15 @@ export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
   const clock = ensureGameClock(next, { phone: { date: next.date, time: next.time } } as Work);
   let cursor = Math.max(clock.currentGameTimestamp, ...Object.values(previous.messages || {}).flat().map((item) => Number(item.sentAt || 0)));
   let changed = false;
+  let hasStampedMessage = false;
   const messages: Runtime["messages"] = {};
   for (const [appId, items] of Object.entries(next.messages || {})) {
     const oldIds = new Set((previous.messages?.[appId] || []).map((item) => item.id));
     messages[appId] = (items || []).map((item) => {
       if (oldIds.has(item.id) || Number.isFinite(item.sentAt)) return item;
-      cursor += cursor === clock.currentGameTimestamp ? 0 : 60_000;
+      if (hasStampedMessage) cursor += 60_000;
       const sentAt = cursor;
+      hasStampedMessage = true;
       changed = true;
       return { ...item, sentAt, time: formatGameDateTime(sentAt, clock.timezone) };
     });
