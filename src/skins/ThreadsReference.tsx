@@ -40,6 +40,7 @@ export function ThreadsReference(p: SkinProps) {
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
   const [playerPostsJson, setPlayerPostsJson] = useSkinState<string>(p, "threads-player-posts-v1", "[]");
   const [fanRepliesJson, setFanRepliesJson] = useSkinState<string>(p, "threads-fan-replies-v1", "[]");
+  const [activityReadAt, setActivityReadAt] = useSkinState<string>(p, "threads-activity-read-at", "0");
   const playerPosts: ThreadsPlayerPost[] = (() => { try { const v: unknown = JSON.parse(playerPostsJson); return Array.isArray(v) ? v : []; } catch { return []; } })();
   const fanReplies: ThreadsFanReply[] = (() => { try { const v: unknown = JSON.parse(fanRepliesJson); return Array.isArray(v) ? v : []; } catch { return []; } })();
   useEffect(() => {
