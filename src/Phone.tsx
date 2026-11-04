@@ -645,6 +645,53 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
 
   useEffect(() => {
+    if (!ready || !friendStoryTriggered || !selectedFriend) return;
+    const outcome = String(s.ui?.kakao?.["friend-story-outcome"] || "");
+    const isCare = outcome === "H09" && s.ui?.kakao?.["friend-story-care-sent"] !== true;
+    const isReconnect = outcome === "H04" && s.ui?.kakao?.["friend-story-reconnect-sent"] !== true;
+    if (!isCare && !isReconnect) return;
+    const dueAt = Number(isCare ? s.ui?.kakao?.["friend-story-care-due-at"] : s.ui?.kakao?.["friend-story-reconnect-due-at"]);
+    if (!Number.isFinite(dueAt) || dueAt <= 0) return;
+    const timer = window.setTimeout(() => {
+      const current = runtimeRef.current;
+      const currentUi = current.ui?.kakao || {};
+      const care = outcome === "H09";
+      const sentKey = care ? "friend-story-care-sent" : "friend-story-reconnect-sent";
+      if (currentUi[sentKey] === true) return;
+      const prefix = care ? "friend-story-followup-H09-" : "friend-story-followup-H04-";
+      const existing = current.messages.kakao ?? [];
+      if (existing.some(item => item.id === prefix + "0")) return;
+      const files: Record<string, string> = {
+        "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+        "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+        "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+        "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+      };
+      const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
+      const lines = care
+        ? ["我刚刚去看过他了。", "他现在比刚才冷静一点。", "但他问我，你是不是还在生他的气。"]
+        : ["昨天的事，我想了很久。", "我不想因为一次争执就失去你这个朋友。", "如果你愿意，我们可以重新把话说开。"];
+      const first = makeItem({ id: prefix + "0", title: selectedFriend, sender: selectedFriend, avatar, body: lines[0], time: current.time || displayTime, outgoing: false, read: false });
+      const now = Date.now();
+      const queue = lines.slice(1).map((body, index) => {
+        const item = makeItem({ id: prefix + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: current.time || displayTime, outgoing: false, read: false });
+        const typingAt = now + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      });
+      let currentQueue: Array<{item: Item; typingAt: number; deliverAt: number}> = [];
+      try { currentQueue = JSON.parse(String(currentUi["delivery-queue"] || "[]")); } catch { currentQueue = []; }
+      update({
+        ...current,
+        messages: { ...current.messages, kakao: [...existing, first] },
+        notifications: [...current.notifications, `KakaoTalk: ${selectedFriend}：${first.body}`],
+        ui: { ...current.ui, kakao: { ...currentUi, [sentKey]: true, "friend-story-node": care ? "F070" : "F071", "delivery-queue": JSON.stringify([...currentQueue, ...queue]) } },
+      });
+      setBanner(`KakaoTalk: ${selectedFriend}：${first.body}`);
+    }, Math.max(0, dueAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, friendStoryTriggered, selectedFriend, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-care-due-at"], s.ui?.kakao?.["friend-story-reconnect-due-at"], s.ui?.kakao?.["friend-story-care-sent"], s.ui?.kakao?.["friend-story-reconnect-sent"]]);
+
+  useEffect(() => {
     const count = s.notifications.length;
     if (!locked && work.phone.notifications && count > noticesSeen.current) {
       setBanner(s.notifications.at(-1) || "");
@@ -944,6 +991,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-completed-nodes": JSON.stringify([...new Set([...completed, friendNodeId])]),
                         "friend-story-last-choice": historyKey,
                         "friend-story-outcome": outcome,
+                        "friend-story-care-due-at": nextNode.id === "H09" ? String(stamp + 5 * 60 * 1000) : String(currentUi["friend-story-care-due-at"] || ""),
+                        "friend-story-reconnect-due-at": nextNode.id === "H04" ? String(stamp + 24 * 60 * 60 * 1000) : String(currentUi["friend-story-reconnect-due-at"] || ""),
                         "friend-story-trust": friendState.trust,
                         "friend-story-conflict": friendState.conflict,
                         "friend-story-team-concern": friendState.teamConcern,
