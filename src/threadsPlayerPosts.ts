@@ -1,4 +1,4 @@
-export type ThreadsPlayerPost = { id: string; text: string; createdAt: number; boyfriend: string };
+export type ThreadsPlayerPost = { id: string; text: string; createdAt: number; boyfriend: string; media?: string };
 export type ThreadsFanReply = { id: string; postId: string; authorId: string; handle: string; avatar: string; text: string; scheduledAt: number; deliveredAt: number | null; readAt: number | null };
 type Mood = "claim" | "explain" | "attack" | "sad" | "apology" | "daily" | "support" | "neutral";
 const pools: Record<Mood, string[]> = {
