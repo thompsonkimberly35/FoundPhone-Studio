@@ -190,10 +190,8 @@ export function ThreadsReference(p: SkinProps) {
             <MoreHorizontal />
           </button>
         </div>
-        <button className="tr-body" onClick={() => open(i)}>
-          {i.body}
-          {getPostImages(i.media).length > 0 && <div className="tr-post-media" onClick={(event) => event.stopPropagation()}>{getPostImages(i.media).map((src, index) => <button type="button" className="tr-post-media-item" key={src + index} aria-label="放大图片" onClick={() => setLightboxImage(src)}><img src={src} alt={"贴文图片 " + (index + 1)} loading="lazy" /></button>)}</div>}
-        </button>
+        <button className="tr-body" onClick={() => open(i)}>{i.body}</button>
+        {getPostImages(i.media).length > 0 && <div className="tr-post-media" aria-label="贴文图片" onClick={(event) => event.stopPropagation()}>{getPostImages(i.media).map((src, index) => <button type="button" className="tr-post-media-item" key={src + index} aria-label="放大图片" onClick={() => setLightboxImage(src)}><img src={src} alt={"贴文图片 " + (index + 1)} loading="lazy" /></button>)}</div>}
         {i.meta.evidenceId === "ig-first-reply-evidence" && <button type="button" className="tr-ig-evidence" aria-label="查看Instagram私信截图" onClick={() => open(i)}><div className="tr-ig-evidence-head">Instagram · 私信对话截图</div><div className="tr-ig-evidence-user">@{i.meta.evidenceAttackerHandle || "unknown"}</div><div className="tr-ig-evidence-bubble">{i.meta.evidenceAttackerText || "Instagram 私信内容"}</div><div className="tr-ig-evidence-player">{i.meta.evidencePlayerReplyText || "玩家回复"}</div><small>游戏内对话引用</small></button>}
         <div className="tr-actions">
           <button
