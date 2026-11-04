@@ -794,6 +794,22 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const node = getSecretAdmirerNode("A001");
       if (!node) return;
       const avatar = import.meta.env.BASE_URL + "kakao/" + member.avatarFile;
+      const teamConflictMemberId = String(latestUi["team-conflict-member-id"] || "");
+      const teamConflictMember = ALD1_SECRET_ADMIR_MEMBERS.find((entry) => entry.id === teamConflictMemberId);
+      const teamConflictOpening = teamConflictMember && !messages.some((item) => item.id === "team-conflict-B001-0")
+        ? getTeamConflictNode("B001")
+        : undefined;
+      const teamConflictFirst = teamConflictMember && teamConflictOpening ? makeItem({
+        id: "team-conflict-B001-0",
+        title: teamConflictMember.name,
+        sender: teamConflictMember.name,
+        avatar: import.meta.env.BASE_URL + "kakao/" + teamConflictMember.avatarFile,
+        body: teamConflictOpening.lines[0],
+        time: latest.time || displayTime,
+        outgoing: false,
+        read: false,
+        meta: { teamConflictNode: "B001" },
+      }) : undefined;
       const first = makeItem({
         id: "secret-admirer-A001-0",
         title: member.name,
@@ -825,13 +841,23 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { existingQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { existingQueue = []; }
       update({
         ...latest,
-        messages: { ...latest.messages, kakao: [...messages, first] },
-        notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${member.name}：${first.body}`],
+        messages: { ...latest.messages, kakao: [...messages, first, ...(teamConflictFirst ? [teamConflictFirst] : [])] },
+        notifications: app === "kakao" ? latest.notifications : [
+          ...latest.notifications,
+          `KakaoTalk: ${member.name}：${first.body}`,
+          ...(teamConflictFirst ? [`KakaoTalk: ${teamConflictMember?.name}：${teamConflictFirst.body}`] : []),
+        ],
         ui: { ...latest.ui, kakao: {
           ...latestUi,
           "secret-admirer-story-started": true,
           "secret-admirer-story-node": "A001",
           "secret-admirer-completed-nodes": "[]",
+          ...(teamConflictFirst ? {
+            "team-conflict-story-started": true,
+            "team-conflict-story-node": "B001",
+            "team-conflict-completed-nodes": "[]",
+            "team-conflict-history": "[]",
+          } : {}),
           "delivery-queue": JSON.stringify([...existingQueue, ...queued]),
         } },
       });
@@ -839,44 +865,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }, remaining);
     return () => window.clearTimeout(timer);
   }, [ready, creator, app, s.ui?.kakao?.["secret-admirer-member-id"], s.ui?.kakao?.["secret-admirer-trigger-at"], s.ui?.kakao?.["secret-admirer-story-started"]]);
-
-  useEffect(() => {
-    if (!ready || creator) return;
-    const currentUi = runtimeRef.current.ui?.kakao || {};
-    const memberId = String(currentUi["team-conflict-member-id"] || "");
-    const triggerAt = Number(currentUi["team-conflict-trigger-at"] || 0);
-    if (!memberId || !triggerAt || currentUi["team-conflict-story-started"] === true) return;
-    const member = ALD1_SECRET_ADMIRER_MEMBERS.find((entry) => entry.id === memberId);
-    if (!member) return;
-    const timer = window.setTimeout(() => {
-      const latest = runtimeRef.current;
-      const latestUi = latest.ui?.kakao || {};
-      if (latestUi["team-conflict-story-started"] === true) return;
-      const messages = latest.messages.kakao ?? [];
-      if (messages.some((item) => item.id === "team-conflict-B001-0")) {
-        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "team-conflict-story-started": true, "team-conflict-story-node": "B001" } } });
-        return;
-      }
-      const opening = getTeamConflictNode("B001");
-      if (!opening) return;
-      const avatar = import.meta.env.BASE_URL + "kakao/" + member.avatarFile;
-      const first = makeItem({
-        id: "team-conflict-B001-0", title: member.name, sender: member.name, avatar,
-        body: opening.lines[0], time: latest.time || displayTime, outgoing: false, read: false,
-        meta: { teamConflictNode: "B001" },
-      });
-      let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
-      try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
-      update({
-        ...latest,
-        messages: { ...latest.messages, kakao: [...messages, first] },
-        notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${member.name}：${first.body}`],
-        ui: { ...latest.ui, kakao: { ...latestUi, "team-conflict-story-started": true, "team-conflict-story-node": "B001", "team-conflict-completed-nodes": "[]", "team-conflict-history": "[]", "delivery-queue": JSON.stringify(queue) } },
-      });
-      if (app !== "kakao") setBanner(`KakaoTalk: ${member.name}：${first.body}`);
-    }, Math.max(0, triggerAt - Date.now()));
-    return () => window.clearTimeout(timer);
-  }, [ready, creator, app, s.ui?.kakao?.["team-conflict-member-id"], s.ui?.kakao?.["team-conflict-trigger-at"], s.ui?.kakao?.["team-conflict-story-started"]]);
 
   useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
