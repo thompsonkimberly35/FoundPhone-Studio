@@ -24,6 +24,11 @@ export function createThreadsAvatar(seedText: string): string {
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="' + bg + '"/><circle cx="48" cy="37" r="17" fill="' + fg + '" opacity=".82"/><path d="M16 91c3-22 15-33 32-33s29 11 32 33" fill="' + fg + '" opacity=".82"/><text x="48" y="43" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#fff">' + initials + '</text></svg>';
   return "data:image/svg+xml," + encodeURIComponent(svg);
 }
+export function createThreadsCommentIdentity(seedText: string): { handle: string; avatar: string } {
+  const hash = hashSeed(seedText);
+  const handle = "softreply_" + hash.toString(36).slice(0, 5) + "x";
+  return { handle, avatar: createThreadsAvatar(handle) };
+}
 function classify(text: string): Mood {
   if (/(对不起|抱歉|很抱歉|道歉|让大家失望)/i.test(text)) return "apology";
   if (/(难过|很累|委屈|哭|讨厌我|不要再骂|受伤)/i.test(text)) return "sad";
