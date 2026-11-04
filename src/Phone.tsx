@@ -898,7 +898,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const outgoing = makeItem({ id: "kakao-choice-" + character + "-" + stamp, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
                     outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), ...(choiceId ? { storyCheckinChoice: choiceId } : {}) };
                     const nextMessages = [...existing, outgoing];
-                    let messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
+                    const messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
                     const queuedReply = queueLines([reply], "kakao-reply-" + character + "-" + stamp);
                     const queueAfterReply = [...currentQueue, ...queuedReply];
                     const queuedFollowUp = followUpReply ? queueLines([followUpReply], "kakao-reply-followup-" + character + "-" + stamp, queueAfterReply) : [];
