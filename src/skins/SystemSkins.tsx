@@ -183,59 +183,83 @@ export function ContactsSkin(p: Props) {
   );
 }
 export function PhotosSkin(p: Props) {
-  const { tab, setTab, q, setQ, items } = useContent(p, "图库");
+  const { tab, setTab, q, setQ } = useContent(p, "图库");
   const [album, setAlbum] = useState("");
+  // Photos are explicitly assigned to one boyfriend. Never fall back to another
+  // character's photos when the selected boyfriend has no matching media.
+  const boyfriend = p.selectedBoyfriend?.trim() || "";
+  const items = boyfriend
+    ? p.items.filter((item) => {
+        const owner = String(
+          item.meta?.boyfriend ?? item.meta?.character ?? item.folder ?? "",
+        ).trim();
+        return (
+          owner === boyfriend &&
+          item.kind !== "video" &&
+          item.kind !== "audio" &&
+          Boolean(safeMedia(item.media))
+        );
+      })
+    : [];
+  const searched = items.filter((item) =>
+    (item.title + item.body + item.sender).toLowerCase().includes(q.toLowerCase()),
+  );
   const list =
     tab === "收藏"
-      ? items.filter((i) => i.favorite)
+      ? searched.filter((item) => item.favorite)
       : album
-        ? items.filter((i) => (i.folder || "未分类") === album)
-        : items;
+        ? searched.filter((item) => (item.folder || boyfriend) === album)
+        : searched;
+  const albumName = boyfriend || "男友照片";
   return (
     <div className="catalog-skin native-photos">
       <Header p={p} />
       <div className="catalog-scroll">
-        <h1>{album || tab}</h1>
-        {tab === "相簿" && !album ? (
+        <h1>{album || (boyfriend ? tab : "尚未选择男友")}</h1>
+        {!boyfriend ? (
+          <div className="catalog-empty">选择男友后，这里会显示他的专属照片</div>
+        ) : tab === "相簿" && !album ? (
           <div className="album-grid">
-            {groupItems(items, "未分类").map((g) => (
-              <button key={g} onClick={() => setAlbum(g)}>
-                <Media
-                  item={items.find((i) => (i.folder || "未分类") === g)!}
-                />
-                <strong>{g}</strong>
-                <small>
-                  {items.filter((i) => (i.folder || "未分类") === g).length} 项
-                </small>
-              </button>
-            ))}
+            <button onClick={() => setAlbum(albumName)}>
+              {items[0] && <Media item={items[0]} />}
+              <strong>{albumName}</strong>
+              <small>{items.length} 张照片</small>
+            </button>
           </div>
         ) : (
           <>
+            {album && (
+              <button className="catalog-back-link" onClick={() => setAlbum("")}>
+                <ChevronLeft size={17} /> 所有相簿
+              </button>
+            )}
             <SearchBox value={q} set={setQ} />
             <div className="photo-mosaic">
-              {list.map((i) => (
+              {list.map((item) => (
                 <button
-                  aria-label={`查看${i.title}`}
-                  key={i.id}
-                  onClick={() => p.onItem(i)}
+                  aria-label={`查看${item.title}`}
+                  key={item.id}
+                  onClick={() => p.onItem(item)}
                 >
-                  <Media item={i} />
-                  {i.favorite && <Heart size={12} fill="white" />}
+                  <Media item={item} />
+                  {item.favorite && <Heart size={12} fill="white" />}
                 </button>
               ))}
             </div>
-            <p className="media-count">{list.length} 个项目</p>
+            <p className="media-count">{list.length} 张照片</p>
           </>
         )}
-        <Empty items={list} />
+        {boyfriend && !items.length && (
+          <p className="catalog-empty">还没有上传{boyfriend}的照片</p>
+        )}
       </div>
       <Tabs
         tabs={["图库", "相簿", "收藏"]}
         value={tab}
-        set={(t) => {
-          setTab(t);
+        set={(nextTab) => {
+          setTab(nextTab);
           setAlbum("");
+          setQ("");
         }}
         icons={[<Image />, <Folder />, <Heart />]}
       />
