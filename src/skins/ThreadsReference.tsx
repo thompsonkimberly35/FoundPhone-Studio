@@ -110,7 +110,7 @@ export function ThreadsReference(p: SkinProps) {
           </button>
           <button aria-label={"回复" + i.title} onClick={() => open(i)}>
             <MessageCircleIcon />
-            {i.comments.length + playerReplies.filter((r) => r.meta.postId === i.meta.postId).length || ""}
+            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length || ""}
           </button>
           <button
             aria-label={"转发" + i.title}
@@ -153,7 +153,7 @@ export function ThreadsReference(p: SkinProps) {
                 ...selected.comments,
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
-                  .map((v) => v.split("\t").slice(1).join("\t")),
+                  .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
