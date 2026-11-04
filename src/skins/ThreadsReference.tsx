@@ -190,7 +190,8 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
-                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),\n                ...fanReplies.filter((r) => r.postId === selected.id && r.deliveredAt).map((r) => "@"+r.handle+"："+r.text),
+                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),
+                ...fanReplies.filter((r) => r.postId === selected.id && r.deliveredAt).map((r) => "@"+r.handle+"："+r.text),
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
