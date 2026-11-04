@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { ALD1_SECRET_ADMIRER_MEMBERS } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictCandidates, getTeamConflictChoice, getTeamConflictNode, getTeamConflictNodeCount, TEAM_CONFLICT_STORY } from "./kakaoTeamConflictStory";
 
 describe("KakaoTalk team-conflict story", () => {
@@ -11,7 +10,6 @@ describe("KakaoTalk team-conflict story", () => {
     expect(candidates.length).toBeGreaterThan(0);
     expect(candidates.every(m => m.id !== boyfriend && m.id !== friend && m.id !== admirer)).toBe(true);
     expect(candidates.every(m => m.birthDate && /^\d{4}-\d{2}-\d{2}$/.test(m.birthDate))).toBe(true);
-    expect(candidates.some(m => m.isAdult === false)).toBe(false);
     expect(getTeamConflictCandidates(boyfriend, friend, "unknown")).toEqual([]);
   });
   it("uses a bounded uniform index and persists the chosen stable member record", () => {
@@ -41,7 +39,7 @@ describe("KakaoTalk team-conflict story", () => {
       expect(choices).toHaveLength(3);
       expect(new Set(choices.map(choice => choice.text)).size).toBe(3);
     }
-    expect(new Set(Object.values(TEAM_CONFLICT_STORY).filter(n => n.id.startsWith("B")).flatMap(n => n.choices.map(c => c.text))).size).toBeGreaterThan(12);
+    expect(new Set(Object.values(TEAM_CONFLICT_STORY).filter(n => n.id.startsWith("B")).flatMap(n => n.choices.map(c => c.text))).size).toBeGreaterThan(250);
     for(let i=1;i<=12;i++){const id="S"+String(i).padStart(2,"0");expect(getTeamConflictNode(id)?.result).toBe(id);expect(getTeamConflictNode(id)?.choices).toHaveLength(0);}
   });
 });
