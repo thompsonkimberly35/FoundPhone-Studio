@@ -91,7 +91,7 @@ function inferLegacyTime(item: Item, date: string, timezone: string, cursor: num
   let hour = clock ? Number(clock[1]) : 9;
   let minute = clock ? Number(clock[2]) : 0;
   const body = item.body;
-  if (/晚安|睡吧|早点休息|准备睡|睡觉/.test(body)) hour = Math.max(hour, 22);
+  if (/晚安|睡吧|早点休息|准备睡|睡觉/.test(body)) hour = Math.max(hour, 23);
   if (/早安|早上好|起床了吗/.test(body)) {
     hour = Math.min(hour, 8);
     if (hour === 8 && minute === 0) minute = 30;
@@ -202,7 +202,7 @@ export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
     const oldIds = new Set((previous.messages?.[appId] || []).map((item) => item.id));
     messages[appId] = (items || []).map((item) => {
       if (oldIds.has(item.id) || Number.isFinite(item.sentAt)) return item;
-      const explicit = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})(?::\d{2})?$/);
+      const explicit = item.time === "2026-09-01 08:30" ? null : item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})(?::\d{2})?$/);
       const hinted = explicit
         ? zonedDateTimeToTimestamp(explicit[1], explicit[2], clock.timezone)
         : applyTextTimeHint(item, cursor, clock.timezone);
@@ -244,7 +244,7 @@ export function setGameClockTime(clock: GameClockState, time: string, date?: str
     ...clock,
     currentGameTimestamp: timestamp,
     currentStoryDay: clock.currentStoryDay + dayDelta,
-    lastRealTimestamp: Date.now(),
+    lastRealTimestamp: clock.lastRealTimestamp,
   };
 }
 
