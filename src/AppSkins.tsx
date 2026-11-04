@@ -423,9 +423,9 @@ export function WeChatSkin(p: SkinProps) {
           ) : (
             <>
               <div className="wx-profile">
-                <Avatar name={p.owner || "机主"} />
+                <Avatar name={"allyz_1101"} />
                 <div>
-                  <h2>{p.owner || "机主"}</h2>
+                  <h2>{"allyz_1101"}</h2>
                   <small>微信号：未设置</small>
                   <button
                     className="wx-profile-status"
