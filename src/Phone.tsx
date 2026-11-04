@@ -360,35 +360,32 @@ function PhoneRuntime({
   }, [app, igQueue.length]);
 
   useEffect(() => {
-    // Story notifications wait until the player unlocks the phone.
-    // KakaoTalk has priority; never overlap its banner with Instagram story notices.
+    // Feed legacy Instagram story notices into the same persisted phone-wide queue.
     if (locked || igBanner || globalNotificationItem || hasPendingKakaoNotification || !igQueue.length) return;
     const timer = window.setTimeout(() => {
-      const next = igQueue[0];
-      setIgBanner(next);
-      setIgQueue((items) => items.slice(1));
+      const notice = igQueue[0];
       const current = runtimeRef.current;
-      const index = Number(next?.id.split("-").at(-1) || 0);
-      if (index > Number(current.ui?.kakao?.["ig-backlash-notification-index"] || 0)) {
-        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "ig-backlash-notification-index": index, "ig-backlash-notifications-started": true } } });
-      }
+      const currentUi = current.ui?.kakao || {};
+      let queue: Item[] = [];
+      try { queue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { queue = []; }
+      const queuedNotice = { ...notice, meta: { ...notice.meta, notificationAppId: "instagram", notificationMessageId: notice.id } };
+      const index = Number(notice.id.split("-").at(-1) || 0);
+      update({
+        ...current,
+        ui: { ...current.ui, kakao: {
+          ...currentUi,
+          "global-notification-queue": JSON.stringify(queue.some(item => item.id === queuedNotice.id) ? queue : [...queue, queuedNotice]),
+          "ig-backlash-notification-index": Math.max(index, Number(currentUi["ig-backlash-notification-index"] || 0)),
+          "ig-backlash-notifications-started": true,
+        } },
+      });
+      setIgQueue((items) => items.slice(1));
     }, 0);
     return () => window.clearTimeout(timer);
   }, [igQueue, igBanner, locked, globalNotificationItem, hasPendingKakaoNotification]);
   useEffect(() => {
-    // Keep the current banner paused while the phone is locked.
     if (!igBanner || locked) return;
-    const timer = window.setTimeout(() => {
-      setIgBanner(null);
-      if (igBanner.id === "ig-backlash-60") {
-        const current = runtimeRef.current;
-        const currentUi = current.ui?.kakao || {};
-        if (!currentUi["ig-backlash-notifications-finished-at"]) {
-          update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
-        }
-      }
-    }, 500);
-    return () => window.clearTimeout(timer);
+    setIgBanner(null);
   }, [igBanner, locked]);
   useEffect(() => {
     let active = true;
@@ -613,7 +610,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const [next, ...remaining] = latest;
       const sourceAppId = String(next.meta?.notificationAppId || "kakao");
       const batch = [next];
-      while (remaining.length && String(remaining[0].meta?.notificationAppId || "kakao") === sourceAppId) batch.push(remaining.shift()!);
+      while (sourceAppId !== "instagram" && remaining.length && String(remaining[0].meta?.notificationAppId || "kakao") === sourceAppId) batch.push(remaining.shift()!);
       if (sourceAppId === app) {
         update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "global-notification-queue": JSON.stringify(remaining) } } });
         return;
@@ -1333,9 +1330,23 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           </div>
           <GlobalNotificationBanner
             item={globalNotificationItem}
-            onDismiss={() => setGlobalNotificationItem(null)}
+            onDismiss={() => {
+              const dismissed = globalNotificationItem;
+              setGlobalNotificationItem(null);
+              if (dismissed?.id === "ig-backlash-60") {
+                const current = runtimeRef.current;
+                const currentUi = current.ui?.kakao || {};
+                if (!currentUi["ig-backlash-notifications-finished-at"]) update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
+              }
+            }}
             onOpen={(item) => {
               setGlobalNotificationItem(null);
+              if (item.meta?.notificationAppId === "instagram") {
+                const current = runtimeRef.current;
+                update({ ...current, ui: { ...current.ui, instagram: { ...current.ui?.instagram, "ig-open-id": String(item.meta.notificationMessageId || item.id), mymyTab: "私信" } } });
+                open("instagram");
+                return;
+              }
               if (item.meta?.notificationAppId === "threads") {
                 setTargetThreadsPostId(String(item.meta.notificationPostId || ""));
                 setTargetThreadsReplyId(String(item.meta.notificationReplyId || ""));
