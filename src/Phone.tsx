@@ -656,7 +656,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       setGlobalNotificationItem(bannerItem);
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications, igBanner]);
+  }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications, igBanner, app]);
   useEffect(() => {
     if (!ready || igQueue.length > 0 || igBanner) return;
     const currentUi = s.ui?.kakao || {};
