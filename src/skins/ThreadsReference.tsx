@@ -33,7 +33,7 @@ import { formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
 export function ThreadsReference(p: SkinProps) {
   const relativeTime = (item: Item) => {
-    const explicit = item.time.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{1,2}:\\d{2})/);
+    const explicit = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
     const timestamp = item.sentAt ?? (explicit ? zonedDateTimeToTimestamp(explicit[1], explicit[2]) : p.virtualTimestamp || 0);
     return formatRelativeGameTime(timestamp, p.virtualTimestamp ?? timestamp);
   };
