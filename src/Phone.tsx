@@ -241,6 +241,19 @@ function PhoneRuntime({
   const update = (next: Runtime) => {
     const previous = runtimeRef.current;
     let committed = next;
+    const x002Published = hasThreadsX002(next.messages.twitter ?? []);
+    const x002WasPublished = hasThreadsX002(previous.messages.twitter ?? []);
+    if (x002Published && !x002WasPublished) {
+      committed = {
+        ...committed,
+        messages: {
+          ...committed.messages,
+          threads: (committed.messages.threads ?? []).map((post) =>
+            post.meta?.postId === "T025" ? { ...post, hidden: false } : post,
+          ),
+        },
+      };
+    }
     if (!creator) {
       const kakaoUi = next.ui?.kakao ?? {};
       let seenIds: string[] = [];

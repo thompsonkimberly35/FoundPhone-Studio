@@ -5,7 +5,7 @@ export type InstagramReplyEvidence = {
   attackerMessageId: string; playerReplyMessageId: string;
   attackerText: string; playerReplyText: string; capturedAt: number;
 };
-type PostSeed = { id:string; handle:string; body:string; comments:[string,string,string][] };
+type PostSeed = { id:string; handle:string; body:string; comments:[string,string][] };
 const seeds: PostSeed[] = [
 {id:"T001",handle:"petalafterglow_7q",body:"我在演唱会上碰不到{{BOYFRIEND_NAME}}。\n只能在散场以后，蹲在地上捡一片他曾经站过的舞台上落下的纸花。\n我把那片纸花夹在日记里，珍惜得像什么宝物。\n可是她不需要纸花。\n她可以牵他的手，可以抱他，可以听见他在没有麦克风的时候说话。\n突然觉得我们之间的距离，原来从来都不只是舞台和观众席。",comments:[["@bluehour_m8","最后一句真的让我哭了。"],["@allyzsky_4p","我理解难过，但她也不是做错了什么才被喜欢。"],["@filmcloud_9r","那片纸花我也一直留着，现在不知道该怎么面对。"]]},
 {id:"T002",handle:"moonreceipt_3v",body:"我每天睡前都会看他的照片。\n把手机亮度调到最低，怕明天上班起不来，却还是舍不得关掉。\n我以为这已经是我能离他最近的距离。\n结果有人根本不用透过屏幕，就能看见他刚睡醒的样子。\n原来我每天反复看的日常，对另一个人来说，只是普通的一天。",comments:[["@winterpage_6x","追星最难过的就是突然意识到距离。"],["@tinyorbit_2k","但偶像本来就有自己的私人生活啊。"],["@softlight_8n","不是不懂，只是还没办法接受。"]]},
