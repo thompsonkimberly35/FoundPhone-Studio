@@ -26,6 +26,7 @@ describe("player-authored Threads posts", () => {
     const first = generateThreadsFanReplies(post);
     const second = generateThreadsFanReplies(post);
     expect(first.map((reply) => reply.handle)).toEqual(second.map((reply) => reply.handle));
+    expect(first.map((reply) => reply.personality)).toEqual(second.map((reply) => reply.personality));
     expect(first.map((reply) => reply.text)).toEqual(second.map((reply) => reply.text));
     expect(first[0].scheduledAt - post.createdAt).toBe(3_000);
     expect(first.at(-1)!.scheduledAt - post.createdAt).toBeGreaterThanOrEqual(60_000);
