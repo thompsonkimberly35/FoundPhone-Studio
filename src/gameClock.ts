@@ -134,6 +134,26 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
   };
 }
 
+function applyTextTimeHint(item: Item, timestamp: number, timezone: string): number {
+  const body = item.body;
+  const date = formatGameDate(timestamp, timezone);
+  const time = formatGameTime(timestamp, timezone);
+  const hour = Number(time.slice(0, 2));
+  const choose = (targetDate: string, targetTime: string) => zonedDateTimeToTimestamp(targetDate, targetTime, timezone);
+  if (/晚安|睡吧|早点休息|准备睡觉|要睡了|先睡了/.test(body)) {
+    const target = choose(date, "23:00");
+    return target > timestamp ? target : choose(formatGameDate(timestamp + 86_400_000, timezone), "23:00");
+  }
+  if (/早安|早上好|起床了吗|醒了吗/.test(body)) {
+    const targetDate = hour >= 18 ? formatGameDate(timestamp + 86_400_000, timezone) : date;
+    const target = choose(targetDate, "08:30");
+    return target > timestamp ? target : timestamp + 60_000;
+  }
+  if (/午安|午餐|午饭|中午/.test(body) && hour < 12) return choose(date, "12:00");
+  if (/晚上好|晚餐|下班了|练习结束|夜宵/.test(body) && hour < 19) return choose(date, "19:00");
+  return timestamp;
+}
+
 /** Stamp only newly appended messages, once, in deterministic cross-App order. */
 export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
   const clock = ensureGameClock(next, { phone: { date: next.date, time: next.time } } as Work);
@@ -146,6 +166,7 @@ export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
     messages[appId] = (items || []).map((item) => {
       if (oldIds.has(item.id) || Number.isFinite(item.sentAt)) return item;
       if (hasStampedMessage) cursor += 60_000;
+      else cursor = applyTextTimeHint(item, cursor, clock.timezone);
       const sentAt = cursor;
       hasStampedMessage = true;
       changed = true;
