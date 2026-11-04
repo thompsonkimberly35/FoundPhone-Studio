@@ -69,6 +69,7 @@ import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
+import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 export function AppIcon({
   id,
   name,
@@ -691,6 +692,114 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
+
+  useEffect(() => {
+    if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const currentUi = current.ui?.kakao || {};
+    const boyfriendDone = /^E0[1-8]$/.test(String(currentUi["romance-result"] || ""));
+    const friendDone = /^H(0[1-9]|1[0-2])$/.test(String(currentUi["friend-story-outcome"] || ""));
+    if (!boyfriendDone || !friendDone || currentUi["secret-admirer-selected-at"] || currentUi["secret-admirer-selection-error"]) return;
+    const boyfriendId = memberIdForName(selectedBoyfriend);
+    const friendId = memberIdForName(selectedFriend);
+    if (!boyfriendId || !friendId || boyfriendId === friendId) {
+      update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "secret-admirer-selection-error": "无法从已选择的角色资料中确认男友或好友 ID，秘密单恋剧情已安全停止。" } } });
+      return;
+    }
+    const picked = chooseSecretAdmirer(boyfriendId, friendId);
+    if (!picked) {
+      update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "secret-admirer-selection-error": "排除男友与好友后没有符合成年条件的候选成员，秘密单恋剧情已安全停止。" } } });
+      return;
+    }
+    const selectedAt = Date.now();
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...currentUi,
+        "secret-admirer-member-id": picked.id,
+        "secret-admirer-selected-at": String(selectedAt),
+        "secret-admirer-trigger-at": String(selectedAt + 60_000),
+        "secret-admirer-story-started": false,
+        "secret-admirer-story-node": "",
+        "secret-admirer-story-outcome": "",
+        "secret-admirer-completed-nodes": "[]",
+        "secret-admirer-history": "[]",
+        "secret-admirer-affection": 0,
+        "secret-admirer-boundary": "open",
+        "secret-admirer-jealousy": 0,
+        "secret-admirer-confession-known": false,
+        "secret-admirer-player-interest": "unknown",
+      } },
+    });
+  }, [ready, creator, selectedBoyfriend, selectedFriend, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["secret-admirer-selected-at"], s.ui?.kakao?.["secret-admirer-selection-error"]]);
+
+  useEffect(() => {
+    if (!ready || creator) return;
+    const currentUi = runtimeRef.current.ui?.kakao || {};
+    const memberId = String(currentUi["secret-admirer-member-id"] || "");
+    const triggerAt = Number(currentUi["secret-admirer-trigger-at"] || 0);
+    if (!memberId || !triggerAt || currentUi["secret-admirer-story-started"] === true) return;
+    const member = ALD1_SECRET_ADMIRER_MEMBERS.find((entry) => entry.id === memberId);
+    if (!member) return;
+    const remaining = Math.max(0, triggerAt - Date.now());
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["secret-admirer-story-started"] === true) return;
+      const messages = latest.messages.kakao ?? [];
+      const existingOpening = messages.some((item) => item.id === "secret-admirer-A001-0");
+      if (existingOpening) {
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "secret-admirer-story-started": true, "secret-admirer-story-node": "A001" } } });
+        return;
+      }
+      const node = getSecretAdmirerNode("A001");
+      if (!node) return;
+      const avatar = import.meta.env.BASE_URL + "kakao/" + member.avatarFile;
+      const first = makeItem({
+        id: "secret-admirer-A001-0",
+        title: member.name,
+        sender: member.name,
+        avatar,
+        body: node.lines[0],
+        time: latest.time || displayTime,
+        outgoing: false,
+        read: false,
+        meta: { secretAdmirerNode: "A001" },
+      });
+      const start = Date.now();
+      const queued = node.lines.slice(1).map((body, index) => {
+        const item = makeItem({
+          id: "secret-admirer-A001-" + (index + 1),
+          title: member.name,
+          sender: member.name,
+          avatar,
+          body,
+          time: latest.time || displayTime,
+          outgoing: false,
+          read: false,
+          meta: { secretAdmirerNode: "A001" },
+        });
+        const typingAt = start + index * 5_000 + 2_000;
+        return { item, typingAt, deliverAt: typingAt + 3_000 };
+      });
+      let existingQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+      try { existingQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { existingQueue = []; }
+      update({
+        ...latest,
+        messages: { ...latest.messages, kakao: [...messages, first] },
+        notifications: [...latest.notifications, `KakaoTalk: ${member.name}：${first.body}`],
+        ui: { ...latest.ui, kakao: {
+          ...latestUi,
+          "secret-admirer-story-started": true,
+          "secret-admirer-story-node": "A001",
+          "secret-admirer-completed-nodes": "[]",
+          "delivery-queue": JSON.stringify([...existingQueue, ...queued]),
+        } },
+      });
+      if (app !== "kakao") setBanner(`KakaoTalk: ${member.name}：${first.body}`);
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, app, s.ui?.kakao?.["secret-admirer-member-id"], s.ui?.kakao?.["secret-admirer-trigger-at"], s.ui?.kakao?.["secret-admirer-story-started"]]);
 
   useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
