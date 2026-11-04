@@ -1176,7 +1176,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   selectedBoyfriend={selectedBoyfriend}
                   selectedFriend={selectedFriend}
                   initialKakaoThread={targetKakaoThread}
-                  onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; }}
+                  onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; if (targetKakaoThread) setTargetKakaoThread(""); }}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
                     const currentMessages = current.messages as Runtime["messages"];
