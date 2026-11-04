@@ -174,7 +174,8 @@ export function ThreadsReference(p: SkinProps) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (draft.trim()) {
-                  setReplies([...replies, selected.id + "\t" + draft.trim()]);
+                  const record = createThreadsReplyRecord(selected.id, draft.trim());
+                  setReplyRecordsJson(JSON.stringify([...replyRecords, record]));
                   setDraft("");
                 }
               }}
