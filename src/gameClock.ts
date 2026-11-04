@@ -58,6 +58,17 @@ export function formatGameDateTime(timestamp: number, timezone = DEFAULT_TIMEZON
   return `${formatGameDate(timestamp, timezone)} ${formatGameTime(timestamp, timezone)}`;
 }
 
+export function formatRelativeGameTime(timestamp: number, now: number, timezone = DEFAULT_TIMEZONE): string {
+  const minutes = Math.max(0, Math.floor((now - timestamp) / 60_000));
+  if (minutes < 1) return "刚刚";
+  if (minutes < 60) return `${minutes}分钟前`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}小时前`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}天前`;
+  return formatGameDate(timestamp, timezone).slice(5);
+}
+
 export function createGameClock(date: string | undefined, time: string, timezone = DEFAULT_TIMEZONE): GameClockState {
   const storyDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : "2026-10-25";
   const timestamp = zonedDateTimeToTimestamp(storyDate, /^\d{1,2}:\d{2}$/.test(time) ? time : "09:00", timezone);
