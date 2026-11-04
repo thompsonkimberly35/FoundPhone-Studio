@@ -146,6 +146,13 @@ export function ThreadsReference(p: SkinProps) {
     if (target) { setSelected(target); setHighlightedReplyId(p.targetReplyId || ""); }
     p.onTargetPostHandled?.();
   }, [p.targetPostId, feed.map((item) => item.id).join("|")]);
+  useEffect(() => {
+    if (!highlightedReplyId) return;
+    const timer = window.setTimeout(() => {
+      document.querySelector(".tr-fan-reply.is-targeted")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [highlightedReplyId, selected?.id]);
   const toggle = (id: string, items: string[], set: (v: string[]) => void) =>
     set(items.includes(id) ? items.filter((v) => v !== id) : [...items, id]);
   const open = (i: Item) => {
@@ -194,7 +201,7 @@ export function ThreadsReference(p: SkinProps) {
           </button>
           <button aria-label={"回复" + i.title} onClick={() => open(i)}>
             <MessageCircleIcon />
-            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length + replyRecords.filter((r) => r.postId === i.id).length || ""}
+            {(i.meta.playerPostId ? fanReplies.filter((reply) => reply.postId === i.id && reply.deliveredAt !== null).length : i.comments.length) + replies.filter((v) => v.startsWith(i.id + "\t")).length + replyRecords.filter((r) => r.postId === i.id).length || ""}
           </button>
           <button
             aria-label={"转发" + i.title}
