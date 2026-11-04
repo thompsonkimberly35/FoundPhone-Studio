@@ -128,6 +128,8 @@ it("restores Mail in existing saved layouts without moving other apps", () => {
   old.previewLayoutRevision = 4;
   old.apps.find((app) => app.id === "mail")!.visible = false;
   old.apps.find((app) => app.id === "mail")!.installed = false;
+  delete old.positions.mail;
+  old.order = old.order.filter((id) => id !== "mail");
   const beforePositions = structuredClone(old.positions);
   const migrated = validateLayout(old, w);
   expect(migrated.apps.find((app) => app.id === "mail")).toMatchObject({
