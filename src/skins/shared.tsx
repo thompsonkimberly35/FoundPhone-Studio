@@ -95,7 +95,7 @@ export function Avatar({
 }) {
   return (
     <span className={`catalog-avatar kzka ${round ? "round" : ""}`}>
-      {safeMedia(src)?.startsWith("data:image/") || src.startsWith("/") ? (
+      {safeMedia(src)?.startsWith("data:image/") || src.startsWith("/") || /^https:\/\/api\.dicebear\.com\//.test(src) ? (
         <img
           src={safeMedia(src) || src}
           alt=""
