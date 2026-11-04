@@ -795,7 +795,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (!node) return;
       const avatar = import.meta.env.BASE_URL + "kakao/" + member.avatarFile;
       const teamConflictMemberId = String(latestUi["team-conflict-member-id"] || "");
-      const teamConflictMember = ALD1_SECRET_ADMIRER_MEMBERS.find((entry) => entry.id === teamConflictMemberId);
+      const teamConflictMember = ALD1_SECRET_ADMIR_MEMBERS.find((entry) => entry.id === teamConflictMemberId);
       const teamConflictOpening = teamConflictMember && !messages.some((item) => item.id === "team-conflict-B001-0")
         ? getTeamConflictNode("B001")
         : undefined;
