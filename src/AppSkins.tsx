@@ -52,6 +52,7 @@ export type SkinProps = {
   selectedFriend?: string;
   onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
   onInstagramReply?: (conversation: Item, replyText: string) => void;
+  storyContext?: string;
   targetPostId?: string;
   targetReplyId?: string;
   onTargetPostHandled?: () => void;
