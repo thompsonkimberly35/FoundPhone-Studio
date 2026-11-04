@@ -16,8 +16,8 @@ export function GlobalNotificationBanner({ item, onDismiss, onOpen }: Props) {
   useEffect(() => {
     if (!item) return;
     setLeaving(false);
-    const leaveTimer = window.setTimeout(() => setLeaving(true), 3600);
-    const dismissTimer = window.setTimeout(() => dismissRef.current(), 4000);
+    const leaveTimer = window.setTimeout(() => setLeaving(true), 2200);
+    const dismissTimer = window.setTimeout(() => dismissRef.current(), 2500);
     return () => {
       window.clearTimeout(leaveTimer);
       window.clearTimeout(dismissTimer);
@@ -35,23 +35,13 @@ export function GlobalNotificationBanner({ item, onDismiss, onOpen }: Props) {
         onClick={() => onOpen(item)}
       >
         <span className="global-kakao-app-icon" aria-hidden="true">
-          <MessageCircle size={20} fill="currentColor" strokeWidth={1.8} />
-        </span>
-        <span className="global-kakao-avatar">
-          {item.avatar ? (
-            <img src={item.avatar} alt="" />
-          ) : (
-            <span>{item.sender.slice(0, 1)}</span>
-          )}
+          <MessageCircle size={18} fill="currentColor" strokeWidth={1.8} />
         </span>
         <span className="global-kakao-copy">
-          <span className="global-kakao-heading">
-            <strong>KakaoTalk</strong>
-            <time>现在</time>
-          </span>
           <strong className="global-kakao-sender">{item.sender}</strong>
           <span className="global-kakao-preview">{item.body}</span>
         </span>
+        <time className="global-kakao-time">现在</time>
       </button>
     </div>
   );
