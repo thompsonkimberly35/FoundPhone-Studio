@@ -3,7 +3,7 @@ import { FRIEND_STORY, getFriendStoryChoice, getFriendStoryNode, getFriendStoryN
 
 describe("KakaoTalk confidant friend story", () => {
   it("contains the full F001-F069 branch set and all twelve stage outcomes", () => {
-    expect(getFriendStoryNodeCount()).toBe(83);
+    expect(getFriendStoryNodeCount()).toBe(85);
     expect(getFriendStoryNode("F001")?.choices).toHaveLength(3);
     expect(getFriendStoryNode("F002A")?.choices).toHaveLength(3);
     for (const outcome of Array.from({ length: 12 }, (_, i) => "H" + String(i + 1).padStart(2, "0"))) {
@@ -31,7 +31,9 @@ describe("KakaoTalk confidant friend story", () => {
         }
       }
     }
-    for (const id of Object.keys(FRIEND_STORY)) expect(visited.has(id)).toBe(true);
+    for (const id of Object.keys(FRIEND_STORY).filter(id => id !== "F070" && id !== "F071")) expect(visited.has(id)).toBe(true);
+    expect(getFriendStoryNode("F070")?.choices).toHaveLength(3);
+    expect(getFriendStoryNode("F071")?.choices).toHaveLength(3);
   });
 
   it("keeps A/B/C choices separate and targets distinct branches", () => {
