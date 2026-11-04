@@ -350,6 +350,15 @@ function PhoneRuntime({
     if (changed) update({ ...current, messages: cleanedMessages });
   }, [creator, ready, s.messages]);
   useEffect(() => {
+    if (app !== "instagram" || !igQueue.length) return;
+    const current = runtimeRef.current;
+    const currentUi = current.ui?.kakao || {};
+    update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "ig-backlash-notification-index": 60, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
+    setIgQueue([]);
+    setIgBanner(null);
+  }, [app, igQueue.length]);
+
+  useEffect(() => {
     // Story notifications wait until the player unlocks the phone.
     // KakaoTalk has priority; never overlap its banner with Instagram story notices.
     if (locked || igBanner || globalNotificationItem || hasPendingKakaoNotification || !igQueue.length) return;
