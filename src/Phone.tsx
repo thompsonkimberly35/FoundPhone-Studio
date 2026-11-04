@@ -598,15 +598,26 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { latest = JSON.parse(String(current.ui?.kakao?.["global-notification-queue"] || "[]")); } catch { latest = []; }
       if (!latest.length) return;
       const [next, ...remaining] = latest;
-      if (String(next.meta?.notificationAppId || "kakao") === app) {
+      const sourceAppId = String(next.meta?.notificationAppId || "kakao");
+      const batch = [next];
+      while (remaining.length && String(remaining[0].meta?.notificationAppId || "kakao") === sourceAppId) batch.push(remaining.shift()!);
+      if (sourceAppId === app) {
         update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "global-notification-queue": JSON.stringify(remaining) } } });
         return;
       }
+      const bannerItem = batch.length > 1 ? makeItem({
+        id: "notification-batch-" + sourceAppId + "-" + batch.map(item => item.id).join("-").slice(0, 120),
+        title: next.title,
+        sender: sourceAppId === "threads" ? "Threads" : sourceAppId === "twitter" ? "𝕏" : sourceAppId === "kakao" ? "KakaoTalk" : next.sender,
+        body: sourceAppId === "threads" ? "你有 " + batch.length + " 則新留言" : sourceAppId === "twitter" ? "你有 " + batch.length + " 則新貼文通知" : "你有 " + batch.length + " 則新訊息",
+        time: next.time,
+        meta: { ...next.meta, notificationAppId: sourceAppId, notificationBatchCount: String(batch.length) },
+      }) : next;
       let storyEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
       try { storyEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { storyEvents = []; }
-      const notificationPostId = String(next.meta?.notificationPostId || "");
-      const updatedStoryEvents = notificationPostId
-        ? storyEvents.map(event => event.postId === notificationPostId ? { ...event, notificationDelivered: true } : event)
+      const notificationPostIds = new Set(batch.map(item => String(item.meta?.notificationPostId || "")).filter(Boolean));
+      const updatedStoryEvents = notificationPostIds.size
+        ? storyEvents.map(event => notificationPostIds.has(event.postId) ? { ...event, notificationDelivered: true } : event)
         : storyEvents;
       update({
         ...current,
@@ -615,11 +626,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           kakao: {
             ...current.ui?.kakao,
             "global-notification-queue": JSON.stringify(remaining),
-            ...(notificationPostId ? { "story-x-events": JSON.stringify(updatedStoryEvents) } : {}),
+            ...(notificationPostIds.size ? { "story-x-events": JSON.stringify(updatedStoryEvents) } : {}),
           },
         },
       });
-      setGlobalNotificationItem(next);
+      setGlobalNotificationItem(bannerItem);
     }, 0);
     return () => window.clearTimeout(timer);
   }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications, igBanner]);
