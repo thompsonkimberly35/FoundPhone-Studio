@@ -129,12 +129,6 @@ export function ThreadsReference(p: SkinProps) {
       ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
-  useEffect(() => {
-    if (!p.targetPostId) return;
-    const target = feed.find((item) => item.id === p.targetPostId);
-    if (target) { setSelected(target); setHighlightedReplyId(p.targetReplyId || ""); }
-    p.onTargetPostHandled?.();
-  }, [p.targetPostId, feed.map((item) => item.id).join("|")]);
     activities = [
       ...p.items.filter((i) => i.meta.activityType),
       ...fanReplies.filter((reply) => reply.deliveredAt !== null).map((reply) => makeItem({
@@ -146,6 +140,12 @@ export function ThreadsReference(p: SkinProps) {
       })),
     ],
     playerReplies = p.items.filter((i) => i.folder === "threads-reply");
+  useEffect(() => {
+    if (!p.targetPostId) return;
+    const target = feed.find((item) => item.id === p.targetPostId);
+    if (target) { setSelected(target); setHighlightedReplyId(p.targetReplyId || ""); }
+    p.onTargetPostHandled?.();
+  }, [p.targetPostId, feed.map((item) => item.id).join("|")]);
   const toggle = (id: string, items: string[], set: (v: string[]) => void) =>
     set(items.includes(id) ? items.filter((v) => v !== id) : [...items, id]);
   const open = (i: Item) => {
