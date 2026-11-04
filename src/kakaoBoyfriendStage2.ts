@@ -1,8 +1,9 @@
 import { STAGE2_A } from "./kakaoBoyfriendStage2A";
+import { STAGE2_MIDDLE } from "./kakaoBoyfriendStage2Middle";
 export type BoyfriendStage2Choice={key:string;text:string;next:string};
 export type BoyfriendStage2Node={id:string;lines:string[];choices:BoyfriendStage2Choice[];result?:string};
 const n=(id:string,lines:string[],choices:[string,string,string][]=[]):BoyfriendStage2Node=>({id,lines,choices:choices.map(([key,text,next])=>({key,text,next})),...(id.startsWith("E")?{result:id}:{})});
-export const BOYFRIEND_STAGE2:Record<string,BoyfriendStage2Node>={...STAGE2_A,
+export const BOYFRIEND_STAGE2:Record<string,BoyfriendStage2Node>={...STAGE2_A,...STAGE2_MIDDLE,
 K113:n("K113",["声明出来了。","我刚刚确认过。","他们有把私人资料跟恶意攻击的部分写进去。","但现在留言区又吵起来了。"],[["A","至少公司有正式表态。","K114"],["B","我看到有人说声明根本没有回答问题。","K115"],["C","你现在还好吗？","K116"]]),
 K114:n("K114",["嗯。","至少这次不是完全沉默。","可是我刚刚收到经纪人的讯息。","原本这周的公开活动，主办方决定先暂缓公告细节。"],[["A","是因为我们的事情吗？","K117"],["B","其他成员知道了吗？","K118"],["C","你是不是又在怪自己？","K119"]]),
 K115:n("K115",["我也看到了。","有人说公司在逃避问题。","也有人说我们不需要向任何人交代私人感情。","我以前很少看到 ALLYZ 吵成这样。"],[["A","你不可能让所有人都满意。","K119"],["B","我不想再看那些留言了。","K120"],["C","公司接下来打算怎么做？","K117"]]),
@@ -59,5 +60,42 @@ export const STAGE2_X003={
  "@cobalt_6s：又是因为恋爱新闻影响活动吗？真的很失望。",
  "@clearstar_2vx：不要把所有事情都推到一个人身上，官方也没有说原因。",
  "@orbitfilm_7h：拜托让大家好好完成活动吧。"
+ ]
+};
+
+export const STAGE2_X001={
+ eventId:"X001",postId:"x-story-X001",triggeredByNodes:["K047","K048","K049"],
+ account:"MIDNIGHT FILM",handle:"@midnightfilm_7q",time:"23:18",
+ title:"마지막으로 남기는 글",
+ body:"안녕하세요. MIDNIGHT FILM입니다.\n\n오랜 시간 한 사람의 무대를 기록하고 응원해 왔습니다. 처음 카메라를 들었던 날부터 지금까지, 그 순간들은 제게 쉽게 정리할 수 없는 소중한 기억입니다.\n\n최근 여러 상황을 지켜보며 제 마음과 앞으로의 활동을 오래 고민했습니다. 응원하는 마음이 누군가의 사생활을 확인하거나 설명을 요구할 권리가 되는 것은 아니라고 생각합니다.\n\n그동안 보내 주신 관심과 응원에 진심으로 감사드립니다. 당분간 촬영과 계정 운영을 중단하고, 보관 중인 사진과 기록은 개인적으로 정리하겠습니다.\n\n함께했던 시간은 고맙게 간직하겠습니다. 모두 건강하시길 바랍니다.\n\nMIDNIGHT FILM 드림.",
+ translation:"最后一篇公告。站姐表示，经过长期思考，决定暂时停止拍摄与账号运营。她感谢一路以来的支持，也强调支持不代表有权追问艺人的私人生活。过往记录将由她自行整理。",
+ likes:48200,reposts:12600,
+ comments:[
+ "@starry_4nq：真的陪了这么多年，看到这条还是很难受。谢谢你留下那么多舞台记录。",
+ "@allyzmoon_83：她有权利暂停，也希望大家不要去私信追问原因。",
+ "@vivid_7pk：我会尊重这个决定，但还是希望有一天能再看到你的照片。",
+ "@dawnfilm_x2：支持可以有很多种方式，不应该把私人感情当成审判一个人的理由。",
+ "@cloud_9rz：说实话我很失望，最近发生的事让我不知道该怎么继续喜欢。",
+ "@peachorbit_5m：失望可以理解，但不要把气撒到任何人的现实生活里。",
+ "@silverday_q8：谢谢你一直认真记录，也希望你接下来好好休息。",
+ "@hush_3vt：无论之后还更不更新，都希望不要有人去挖她的私人信息。"
+ ]
+};
+export const STAGE2_X002={
+ eventId:"X002",postId:"x-story-X002",triggeredByNodes:["K107","K108","K109","K112"],
+ account:"WAKEONE",handle:"@wakeone_offcl",time:"10:00",
+ title:"[NOTICE]",
+ body:"[NOTICE]\n\n안녕하세요. WAKEONE입니다.\n\n최근 ALPHA DRIVE ONE과 관련하여 확인되지 않은 정보의 확산과 사생활 침해, 악의적인 비방 및 인신공격이 이어지고 있는 점을 확인했습니다.\n\n당사는 아티스트와 관계자의 사생활을 침해하거나 확인되지 않은 추측을 사실처럼 유포하는 행위에 대해 엄중하게 대응할 예정입니다. 관련 게시물과 자료를 지속적으로 확인하고 있으며, 필요한 경우 법률 대리인과 협의하여 가능한 법적 조치를 검토하겠습니다.\n\n아티스트 및 주변인의 개인정보를 수집·공유하거나 근거 없는 추측을 확산하는 행위를 삼가 주시기 바랍니다.\n\n예정된 활동과 관련된 일정은 관계 기관 및 현장 운영 주체와 추가 협의를 진행하고 있습니다. 확정된 변경 사항이 있을 경우 공식 채널을 통해 안내드리겠습니다.\n\n항상 ALPHA DRIVE ONE과 ALLYZ를 응원해 주시는 여러분께 감사드립니다.\n\n감사합니다.\nWAKEONE",
+ translation:"【公告】近期出现与 ALPHA DRIVE ONE 相关的未经证实信息、侵犯隐私、恶意诋毁及人身攻击。公司将持续核查相关内容，并在必要时与法律代理人协商采取法律措施。请勿收集、传播艺人及相关人员的个人信息，也不要散布未经证实的猜测。既定活动仍在与相关单位及现场运营方进一步协商，确定变更后将通过官方渠道公告。感谢 ALLYZ 的支持。",
+ likes:236800,reposts:78400,
+ comments:[
+ "@allyzforever_8x：希望这次真的能保护成员和相关人员的隐私，不要只停留在公告。",
+ "@blueorbit_4r：活动安排请尽快说明，其他成员和工作人员也需要明确消息。",
+ "@softstar_92q：不管支持还是失望，都不应该去搜集普通人的个人资料。",
+ "@frame_6kp：声明没有回答所有问题，但至少把恶意攻击和隐私侵害说清楚了。",
+ "@moonlit_3h：我还是需要时间消化最近的事，不过反对人肉搜索。",
+ "@allnight_7vc：公司应该给团队一个明确的工作安排，不要让成员一直等通知。",
+ "@ribbon_5ty：私人感情不是粉丝可以要求公开审问的内容。",
+ "@starlane_2w：希望大家先停止传播未经证实的截图和所谓内部消息。"
  ]
 };
