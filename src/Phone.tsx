@@ -787,7 +787,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       update({
         ...latest,
         messages: { ...latest.messages, kakao: [...messages, first] },
-        notifications: [...latest.notifications, `KakaoTalk: ${member.name}：${first.body}`],
+        notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${member.name}：${first.body}`],
         ui: { ...latest.ui, kakao: {
           ...latestUi,
           "secret-admirer-story-started": true,
