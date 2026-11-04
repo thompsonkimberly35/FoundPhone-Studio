@@ -70,35 +70,6 @@ export function ThreadsReference(p: SkinProps) {
     });
     setFanRepliesJson(JSON.stringify(repaired));
   }, [fanRepliesJson, setFanRepliesJson]);
-  useEffect(() => {
-    const pending = fanReplies
-      .filter((reply) => reply.deliveredAt === null)
-      .sort((a, b) => a.scheduledAt - b.scheduledAt);
-    if (!pending.length) return;
-
-    // Fan replies use real elapsed time, not the paused story clock.
-    // Deliver one reply at a time; overdue replies catch up with a short gap.
-    const next = pending[0];
-    const lastDeliveredAt = fanReplies.reduce(
-      (latest, reply) => Math.max(latest, reply.deliveredAt ?? 0),
-      0,
-    );
-    const dueAt = Math.max(
-      next.scheduledAt,
-      lastDeliveredAt ? lastDeliveredAt + 1200 : 0,
-    );
-    const timer = window.setTimeout(() => {
-      const deliveredAt = Date.now();
-      setFanRepliesJson(JSON.stringify(fanReplies.map((reply) =>
-        reply.id === next.id && reply.deliveredAt === null
-          ? { ...reply, deliveredAt }
-          : reply,
-      )));
-    }, Math.max(0, dueAt - Date.now()));
-
-    return () => window.clearTimeout(timer);
-  }, [fanRepliesJson, setFanRepliesJson]);
-
   const localPostRecords = useMemo<Array<{ id: string; text: string; createdAt: number }>>(() => {
     try {
       const value: unknown = JSON.parse(localPostsJson);
