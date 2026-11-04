@@ -403,8 +403,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             notifications: [...current.notifications, ...notices],
           });
           setBanner(notices[0] || "");
-          window.setTimeout(() => setBanner(notices[1] || ""), 1500);
-          window.setTimeout(() => setBanner(""), 6000);
+          window.setTimeout(() => setBanner(notices[1] || ""), 2000);
+          window.setTimeout(() => setBanner(""), 4000);
         } else if (xPostsChanged) {
           update({ ...current, messages: { ...current.messages, twitter: nextXPosts } });
         }
@@ -491,8 +491,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const existing = current.messages.kakao ?? [];
       if (!existing.some((item) => item.id === head.item.id)) {
         const delivered = { ...head.item, read: false };
-        const startsBacklash = delivered.title === selectedBoyfriend
-          && delivered.body === "你的身份好像已经被扒出来了"
+        // This exact queued boyfriend reply is the sole trigger; fire only after it is added to chat.
+        const startsBacklash = delivered.body === "你的身份好像已经被扒出来了"
           && !(current.messages.instagram ?? []).some((item) => item.id === "ig-backlash-1");
         update({
           ...current,
@@ -514,6 +514,34 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }, Math.max(0, due - now));
     return () => window.clearTimeout(timer);
   }, [kakaoDeliveryQueue, s.ui?.kakao?.["typing-state"]]);
+  useEffect(() => {
+    if (!ready) return;
+    const kakao = s.messages.kakao ?? [];
+    const hasBoyfriendTrigger = kakao.some((item) => item.body === "你的身份好像已经被扒出来了");
+    const instagram = s.messages.instagram ?? [];
+    const hasPrematureBacklash = instagram.some((item) => item.id.startsWith("ig-backlash-"));
+    if (hasPrematureBacklash && !hasBoyfriendTrigger) {
+      const current = runtimeRef.current;
+      update({
+        ...current,
+        messages: {
+          ...current.messages,
+          instagram: (current.messages.instagram ?? []).filter((item) => !item.id.startsWith("ig-backlash-")),
+        },
+        ui: {
+          ...current.ui,
+          kakao: {
+            ...current.ui?.kakao,
+            "ig-backlash-checkin-due-at": "",
+            "ig-backlash-checkin-sent": false,
+          },
+        },
+      });
+      setIgQueue([]);
+      setIgBanner(null);
+    }
+  }, [ready, selectedBoyfriend]);
+
   useEffect(() => {
     if (!backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedBoyfriend || checkinSent) return;
     if (!checkinDueAt) {
@@ -570,7 +598,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const count = s.notifications.length;
     if (!locked && work.phone.notifications && count > noticesSeen.current) {
       setBanner(s.notifications.at(-1) || "");
-      const timer = setTimeout(() => setBanner(""), 4500);
+      const timer = setTimeout(() => setBanner(""), 2000);
       noticesSeen.current = count;
       return () => clearTimeout(timer);
     }
