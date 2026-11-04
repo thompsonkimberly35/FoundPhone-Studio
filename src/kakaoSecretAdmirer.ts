@@ -2,19 +2,19 @@ export type SecretAdmirerMember = {
   id: string;
   name: string;
   avatarFile: string;
-  adult: boolean;
+  birthDate: string;
 };
 
 // Stable IDs are deliberately independent of display names and asset filenames.
 export const ALD1_SECRET_ADMIRER_MEMBERS: readonly SecretAdmirerMember[] = [
-  { id: "ald1-zhou-anxin", name: "周安信", avatarFile: "周安信-kakao.png", adult: true },
-  { id: "ald1-zhang-jiahao", name: "张家豪", avatarFile: "張家豪-kakao.png", adult: true },
-  { id: "ald1-li-liwu", name: "李理悟", avatarFile: "李理悟-kakao-v2.jpg", adult: true },
-  { id: "ald1-li-xiangyuan", name: "李相沅", avatarFile: "李相沅-kakao.png", adult: true },
-  { id: "ald1-he-xinlong", name: "贺鑫隆", avatarFile: "賀鑫隆-kakao.png", adult: true },
-  { id: "ald1-zheng-xiangxuan", name: "郑相炫", avatarFile: "鄭相炫-kakao.png", adult: true },
-  { id: "ald1-jin-junshu", name: "金俊抒", avatarFile: "金俊抒-kakao.png", adult: true },
-  { id: "ald1-jin-qianyou", name: "金虔佑", avatarFile: "金虔佑-kakao.png", adult: true },
+  { id: "ald1-zhou-anxin", name: "周安信", avatarFile: "周安信-kakao.png", birthDate: "2006-12-25" },
+  { id: "ald1-zhang-jiahao", name: "张家豪", avatarFile: "張家豪-kakao.png", birthDate: "2002-07-07" },
+  { id: "ald1-li-liwu", name: "李理悟", avatarFile: "李理悟-kakao-v2.jpg", birthDate: "2002-08-22" },
+  { id: "ald1-li-xiangyuan", name: "李相沅", avatarFile: "李相沅-kakao.png", birthDate: "2003-05-08" },
+  { id: "ald1-he-xinlong", name: "贺鑫隆", avatarFile: "賀鑫隆-kakao.png", birthDate: "2005-03-11" },
+  { id: "ald1-zheng-xiangxuan", name: "郑相炫", avatarFile: "鄭相炫-kakao.png", birthDate: "2007-09-19" },
+  { id: "ald1-jin-junshu", name: "金俊抒", avatarFile: "金俊抒-kakao.png", birthDate: "2001-11-20" },
+  { id: "ald1-jin-qianyou", name: "金虔佑", avatarFile: "金虔佑-kakao.png", birthDate: "2003-04-11" },
 ] as const;
 
 export function memberIdForName(name: string): string | undefined {
@@ -27,10 +27,18 @@ export function memberIdForName(name: string): string | undefined {
   return ALD1_SECRET_ADMIRER_MEMBERS.find((member) => member.name === canonical)?.id;
 }
 
-export function getSecretAdmirerCandidates(boyfriendId: string, friendId: string) {
+export function isAdultMember(member: SecretAdmirerMember, asOf = new Date()): boolean {
+  const [year, month, day] = member.birthDate.split("-").map(Number);
+  let age = asOf.getUTCFullYear() - year;
+  const birthdayPending = asOf.getUTCMonth() + 1 < month || (asOf.getUTCMonth() + 1 === month && asOf.getUTCDate() < day);
+  if (birthdayPending) age -= 1;
+  return age >= 18;
+}
+
+export function getSecretAdmirerCandidates(boyfriendId: string, friendId: string, asOf = new Date()) {
   if (!boyfriendId || !friendId) return [];
   return ALD1_SECRET_ADMIRER_MEMBERS.filter(
-    (member) => member.adult && member.id !== boyfriendId && member.id !== friendId,
+    (member) => isAdultMember(member, asOf) && member.id !== boyfriendId && member.id !== friendId,
   );
 }
 
