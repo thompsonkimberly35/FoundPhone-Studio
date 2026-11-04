@@ -66,7 +66,8 @@ import {
 import { makeItem } from "./schema";
 import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
-import { createInstagramBacklash } from "./instagramBacklash";\nimport { makeThreadsBacklash, createThreadsPlayerReply, type InstagramReplyEvidence, hasThreadsX002 } from "./threadsBacklash";
+import { createInstagramBacklash } from "./instagramBacklash";
+import { makeThreadsBacklash, type InstagramReplyEvidence, hasThreadsX002 } from "./threadsBacklash";
 import { enqueueIncomingKakaoNotifications } from "./kakaoNotifications";
 import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
@@ -1316,7 +1317,60 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   selectedFriend={selectedFriend}
                   initialKakaoThread={targetKakaoThread}
                   targetXPostId={targetXPostId}
-                  onTargetXPostHandled={() => setTargetXPostId("")}\n                  onInstagramReply={(conversation, replyText) => {\n                    const current = runtimeRef.current;\n                    const threadsUi = current.ui?.threads || {};\n                    if (threadsUi["threads-backlash-event-id"] === "threads-backlash-after-first-ig-reply") return;\n                    const sent = (current.messages.instagram || []).filter(m => m.title === conversation.title && m.outgoing);\n                    const replyMessage = makeItem({ id: "ig-player-reply-" + Date.now(), title: conversation.title, sender: "allyz_1101", body: replyText, time: current.time || displayTime, outgoing: true, read: true, meta: { conversationId: conversation.id, platform: "instagram" } });\n                    const evidence: InstagramReplyEvidence = { conversationId: conversation.id, attackerUserId: conversation.meta?.userId || conversation.id, attackerHandle: conversation.sender, attackerMessageId: conversation.id, playerReplyMessageId: replyMessage.id, attackerText: conversation.body, playerReplyText: replyText, capturedAt: Date.now() };\n                    const x002 = hasThreadsX002(current.messages.twitter || []);\n                    const posts = makeThreadsBacklash(selectedBoyfriend || "ALPHA DRIVE ONE", evidence, current.time || displayTime, x002);\n                    const notice = makeItem({ id: "threads-backlash-notification", title: "Threads", sender: "Threads", body: "Threads上出现了大量关于" + (selectedBoyfriend || "ALPHA DRIVE ONE") + "恋情的讨论。", time: current.time || displayTime, meta: { notificationAppId: "threads", eventId: "threads-backlash-after-first-ig-reply" } });\n                    update({ ...current, messages: { ...current.messages, instagram: [...(current.messages.instagram || []), replyMessage], threads: [...(current.messages.threads || []), ...posts] }, ui: { ...current.ui, threads: { ...threadsUi, "threads-backlash-event-id": "threads-backlash-after-first-ig-reply", "threads-backlash-evidence": JSON.stringify(evidence), "threads-backlash-initialized-at": String(evidence.capturedAt) } } });\n                    if (app !== "threads") setGlobalNotificationItem(notice);\n                  }}
+                  onTargetXPostHandled={() => setTargetXPostId("")}
+                  onInstagramReply={(conversation, replyText) => {
+                    const current = runtimeRef.current;
+                    const threadsUi = current.ui?.threads || {};
+                    if (threadsUi["threads-backlash-event-id"] === "threads-backlash-after-first-ig-reply") return;
+                    const replyMessage = makeItem({
+                      id: "ig-player-reply-" + Date.now(),
+                      title: conversation.title,
+                      sender: "allyz_1101",
+                      body: replyText,
+                      time: current.time || displayTime,
+                      outgoing: true,
+                      read: true,
+                      meta: { conversationId: conversation.id, platform: "instagram" },
+                    });
+                    const evidence: InstagramReplyEvidence = {
+                      conversationId: conversation.id,
+                      attackerUserId: conversation.meta?.userId || conversation.id,
+                      attackerHandle: conversation.sender,
+                      attackerMessageId: conversation.id,
+                      playerReplyMessageId: replyMessage.id,
+                      attackerText: conversation.body,
+                      playerReplyText: replyText,
+                      capturedAt: Date.now(),
+                    };
+                    const x002 = hasThreadsX002(current.messages.twitter || []);
+                    const posts = makeThreadsBacklash(selectedBoyfriend || "ALPHA DRIVE ONE", evidence, current.time || displayTime, x002);
+                    const notice = makeItem({
+                      id: "threads-backlash-notification",
+                      title: "Threads",
+                      sender: "Threads",
+                      body: "Threads上出现了大量关于" + (selectedBoyfriend || "ALPHA DRIVE ONE") + "恋情的讨论。",
+                      time: current.time || displayTime,
+                      meta: { notificationAppId: "threads", eventId: "threads-backlash-after-first-ig-reply" },
+                    });
+                    update({
+                      ...current,
+                      messages: {
+                        ...current.messages,
+                        instagram: [...(current.messages.instagram || []), replyMessage],
+                        threads: [...(current.messages.threads || []), ...posts],
+                      },
+                      ui: {
+                        ...current.ui,
+                        threads: {
+                          ...threadsUi,
+                          "threads-backlash-event-id": "threads-backlash-after-first-ig-reply",
+                          "threads-backlash-evidence": JSON.stringify(evidence),
+                          "threads-backlash-initialized-at": String(evidence.capturedAt),
+                        },
+                      },
+                    });
+                    if (app !== "threads") setGlobalNotificationItem(notice);
+                  }}
                   onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; if (targetKakaoThread) setTargetKakaoThread(""); }}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
@@ -2071,6 +2125,7 @@ function AppContent({
   initialKakaoThread,
   onKakaoThreadChange,
   onKakaoChoice,
+  onInstagramReply,
   targetXPostId,
   onTargetXPostHandled,
 }: {
@@ -2094,6 +2149,7 @@ function AppContent({
   initialKakaoThread?: string;
   onKakaoThreadChange?: (thread: string) => void;
   onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
+  onInstagramReply?: (conversation: Item, replyText: string) => void;
   targetXPostId?: string;
   onTargetXPostHandled?: () => void;
 }) {
@@ -2242,6 +2298,7 @@ function AppContent({
               selectedBoyfriend={selectedBoyfriend}
               selectedFriend={selectedFriend}
               onKakaoChoice={onKakaoChoice}
+              onInstagramReply={onInstagramReply}
             />
           </Suspense>
         </div>
