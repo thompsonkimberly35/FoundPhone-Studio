@@ -75,6 +75,12 @@ import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
+const PLAYER_THREADS_ID = "allyz_1101";
+const isTestContentItem = (item: Item) =>
+  /测试用户|测试用戶|测试帖子|测试贴文|测试内容|测试账号|测试帳號|test\\s*(user|post|content|account)|demo\\s*(user|post|content|account)|sample\\s*(user|post|content|account)/i.test(
+    [item.id, item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" "),
+  );
+
 const boyfriendAvatarPath = (name: string) => {
   const files: Record<string, string> = {
     "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
@@ -249,7 +255,11 @@ function PhoneRuntime({
         messages: {
           ...committed.messages,
           threads: (committed.messages.threads ?? []).map((post) =>
-            post.meta?.postId === "T025" ? { ...post, hidden: false } : post,
+            ["T029", "T030"].includes(String(post.meta?.postId))
+              ? { ...post, hidden: false, unlock: "" }
+              : post.meta?.postId === "T025" && x002Published
+                ? { ...post, hidden: false, unlock: "" }
+                : post,
           ),
         },
       };
@@ -2192,13 +2202,12 @@ function AppContent({
   const [pwError, setPwError] = useState("");
   const [likes, setLikes] = useState<string[]>([]);
   const shown = items
-    .filter((i) => creator || visible(i, state))
     .filter((i) =>
-      app.id !== "twitter" ||
-      !/测试|test|demo|sample|测试用户|测试内容/i.test(
-        [i.id, i.title, i.body, i.sender, i.folder, ...Object.values(i.meta ?? {})].join(" "),
-      ),
+      creator ||
+      visible(i, state) ||
+      (app.id === "threads" && ["T029", "T030"].includes(String(i.meta?.postId))),
     )
+    .filter((i) => !isTestContentItem(i))
     .filter((i) =>
       (i.title + i.body + i.sender).toLowerCase().includes(q.toLowerCase()),
     );
@@ -2297,7 +2306,7 @@ function AppContent({
           <Suspense fallback={<div className="catalog-loading">正在打开…</div>}>
             <Skin
               appId={app.id}
-              owner={work.phone.owner}
+              owner={PLAYER_THREADS_ID}
               virtualTime={state.time}
               ui={state.ui?.[app.id]}
               onUi={creator ? undefined : onUi}
@@ -2327,7 +2336,7 @@ function AppContent({
               app={app.id}
               item={detail}
               back={back}
-              owner={work.phone.owner}
+              owner={PLAYER_THREADS_ID}
               ui={state.ui?.[app.id]}
               onUi={onUi}
             />
