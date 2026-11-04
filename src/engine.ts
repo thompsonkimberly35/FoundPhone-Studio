@@ -250,7 +250,7 @@ export function advance(
     }
     if (s.elapsedMs >= end) break;
   }
-  if (s.gameClock) s.gameClock = { ...s.gameClock, lastRealTimestamp: Date.now() };
+  if (s.gameClock) s.gameClock = { ...s.gameClock, lastRealTimestamp: (previous.gameClock?.lastRealTimestamp ?? s.gameClock.lastRealTimestamp) + delta };
   return s;
 }
 export function choose(w: Work, s: Runtime, id: string) {
