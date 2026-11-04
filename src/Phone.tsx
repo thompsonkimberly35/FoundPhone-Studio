@@ -829,7 +829,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         outgoing: true,
                         read: true,
                       });
-                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 8000), romanceNode: nodeId, romanceChoice: choiceId };
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 8000), romanceNode: nodeId, romanceChoice: String(choiceId) };
                       const replyLines = [...nextNode.lines];
                       if (nodeId === "K044" && choiceId === "C") replyLines.push("你刚刚说会跟着哭，我现在真的有点舍不得挂断。");
                       const queued = queueLines(replyLines, "kakao-romance-" + nodeId + "-" + choiceId);
