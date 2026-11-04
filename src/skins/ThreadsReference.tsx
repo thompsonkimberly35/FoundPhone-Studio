@@ -119,7 +119,7 @@ export function ThreadsReference(p: SkinProps) {
           </button>
           <button aria-label={"回复" + i.title} onClick={() => open(i)}>
             <MessageCircleIcon />
-            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length || ""}
+            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length + replyRecords.filter((r) => r.postId === i.id).length || ""}
           </button>
           <button
             aria-label={"转发" + i.title}
