@@ -1,6 +1,6 @@
 import type { Action, Condition, Runtime, StoryNode, Work } from "./schema";
 import { makeItem } from "./schema";
-import { ensureGameClock, formatGameDate, formatGameTime, setGameClockTime } from "./gameClock";
+import { applyStoryTimeHint, ensureGameClock, formatGameDate, formatGameTime, setGameClockTime } from "./gameClock";
 export function testCondition(c: Condition, s: Runtime): boolean {
   const [scope, ...rest] = c.key.split(":");
   const key = rest.join(":");
@@ -118,6 +118,12 @@ function runQueue(
         });
       s.trace.push(`delay:${n.delayMs ?? 1000}ms → ${n.label}`);
       continue;
+    }
+    if (n.timeHint) {
+      s.gameClock = applyStoryTimeHint(s.gameClock || ensureGameClock(s, w), n.timeHint);
+      s.date = formatGameDate(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
+      s.time = formatGameTime(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
+      s.clockRemainderMs = 0;
     }
     if (!s.completed.includes(id)) s.completed.push(id);
     s.trace.push(`${event}:${target} → ${n.label}`);
