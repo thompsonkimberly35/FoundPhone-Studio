@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createThreadsAvatar, generateThreadsFanReplies } from "./threadsPlayerPosts";
+import { createThreadsAvatar, generateThreadsFanReplies, reconcileThreadsFanReplies } from "./threadsPlayerPosts";
 
 describe("player-authored Threads posts", () => {
   it("generates 24 distinct replies across all eight reaction categories", () => {
@@ -54,6 +54,24 @@ describe("player-authored Threads posts", () => {
       contextText: "先前X事件：團體活動安排出現變化",
     });
     expect(replies.some((reply) => reply.text.includes("先前X事件"))).toBe(true);
+  });
+
+  it("recovers missing replies for saved player posts without duplicating existing replies", () => {
+    const post = { id: "player-post-recovery", text: "今天想和大家说说心里话。", createdAt: 500_000, boyfriend: "李理悟" };
+    const generated = generateThreadsFanReplies(post);
+    const firstDelivered = { ...generated[0], deliveredAt: 503_000, readAt: 504_000 };
+    const recovered = reconcileThreadsFanReplies([post], [firstDelivered]);
+    expect(recovered).toHaveLength(24);
+    expect(recovered.find((reply) => reply.id === firstDelivered.id)).toEqual(firstDelivered);
+    expect(new Set(recovered.map((reply) => reply.id)).size).toBe(24);
+    expect(reconcileThreadsFanReplies([post], recovered)).toBe(recovered);
+  });
+
+  it("reconstructs all fan replies when a saved post has no reply records", () => {
+    const post = { id: "player-post-empty-recovery", text: "今天想和大家说说心里话。", createdAt: 600_000, boyfriend: "" };
+    const recovered = reconcileThreadsFanReplies([post], []);
+    expect(recovered).toHaveLength(24);
+    expect(recovered.every((reply) => reply.postId === post.id && reply.deliveredAt === null)).toBe(true);
   });
 
 });
