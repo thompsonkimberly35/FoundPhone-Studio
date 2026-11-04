@@ -40,4 +40,4 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
-# Deployment refresh: rebuild Pages for the current main branch.
+# Recovery trigger: rerun the latest main revision; concurrency cancels any stale run.
