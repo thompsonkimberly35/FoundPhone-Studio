@@ -148,7 +148,7 @@ export function ThreadsReference(p: SkinProps) {
               <MoreHorizontal />
             </header>
             {card(selected)}
-            {(selected.meta.evidenceId === "ig-first-reply-evidence") && <button type="button" aria-label="放大或收起Instagram对话截图" className={`tr-ig-evidence ${evidenceExpanded ? "is-expanded" : ""}`} onClick={() => setEvidenceExpanded(!evidenceExpanded)}><div className="tr-ig-evidence-head">Instagram · 私信对话截图　{evidenceExpanded ? "点击收起" : "点击放大"}</div><div className="tr-ig-evidence-user">@{selected.meta.evidenceAttackerHandle}</div><div className="tr-ig-evidence-bubble">{selected.meta.evidenceAttackerText}</div><div className="tr-ig-evidence-player">{selected.meta.evidencePlayerReplyText}</div><small>游戏内对话引用 · 非真实账号资料</small></button>}
+            {(selected.meta.evidenceId === "ig-first-reply-evidence") && <button type="button" aria-label="放大或收起Instagram对话截图" className={`tr-ig-evidence ${evidenceExpanded ? "is-expanded" : ""}`} onClick={() => setEvidenceExpanded(!evidenceExpanded)}><div className="tr-ig-evidence-head">Instagram · 私信对话截图 · {evidenceExpanded ? "点击收起" : "点击放大"}</div><div className="tr-ig-evidence-user">@{selected.meta.evidenceAttackerHandle}</div><div className="tr-ig-evidence-bubble">{selected.meta.evidenceAttackerText}</div><div className="tr-ig-evidence-player">{selected.meta.evidencePlayerReplyText}</div><small>游戏内对话引用 · 非真实账号资料</small></button>}
             <div className="tr-comments">
               {[
                 ...selected.comments,
