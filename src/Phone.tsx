@@ -242,6 +242,7 @@ function PhoneRuntime({
   const [targetKakaoThread, setTargetKakaoThread] = useState("");
   const [targetXPostId, setTargetXPostId] = useState("");
   const [targetThreadsPostId, setTargetThreadsPostId] = useState("");
+  const [targetThreadsReplyId, setTargetThreadsReplyId] = useState("");
   useEffect(() => {
     if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
     previousApp.current = app;
@@ -1337,6 +1338,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
               setGlobalNotificationItem(null);
               if (item.meta?.notificationAppId === "threads") {
                 setTargetThreadsPostId(String(item.meta.notificationPostId || ""));
+                setTargetThreadsReplyId(String(item.meta.notificationReplyId || ""));
                 open("threads");
                 return;
               }
@@ -1432,7 +1434,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   targetXPostId={targetXPostId}
                   onTargetXPostHandled={() => setTargetXPostId("")}
                   targetThreadsPostId={targetThreadsPostId}
-                  onTargetThreadsPostHandled={() => setTargetThreadsPostId("")}
+                  targetThreadsReplyId={targetThreadsReplyId}
+                  onTargetThreadsPostHandled={() => { setTargetThreadsPostId(""); setTargetThreadsReplyId(""); }}
                   onInstagramReply={(conversation, replyText) => {
                     const current = runtimeRef.current;
                     const threadsUi = current.ui?.threads || {};
@@ -2248,6 +2251,7 @@ function AppContent({
   targetXPostId,
   onTargetXPostHandled,
   targetThreadsPostId,
+  targetThreadsReplyId,
   onTargetThreadsPostHandled,
 }: {
   app: AppPlugin;
@@ -2274,6 +2278,7 @@ function AppContent({
   targetXPostId?: string;
   onTargetXPostHandled?: () => void;
   targetThreadsPostId?: string;
+  targetThreadsReplyId?: string;
   onTargetThreadsPostHandled?: () => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
@@ -2427,6 +2432,7 @@ function AppContent({
               onKakaoChoice={onKakaoChoice}
               onInstagramReply={onInstagramReply}
               targetPostId={targetThreadsPostId}
+              targetReplyId={targetThreadsReplyId}
               onTargetPostHandled={onTargetThreadsPostHandled}
             />
           </Suspense>
