@@ -61,7 +61,7 @@ describe("KakaoTalk romance story", () => {
     const pause = getKakaoStoryNode("K014")!;
     expect(pause.choices).toHaveLength(0);
     expect(pause.pauseTo).toBe("K030");
-    expect(getKakaoStoryNode(pause.pauseTo)?.choices.length).toBeGreaterThan(0);
+    expect(getKakaoStoryNode(pause.pauseTo!)?.choices.length).toBeGreaterThan(0);
     expect(getKakaoStoryNode("K037")?.choices.every((choice) => choice.next !== "K037")).toBe(true);
     expect(getKakaoStoryNode("K040")?.choices.every((choice) => choice.next !== "K040")).toBe(true);
   });
