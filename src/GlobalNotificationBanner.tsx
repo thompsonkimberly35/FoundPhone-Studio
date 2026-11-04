@@ -36,7 +36,15 @@ export function GlobalNotificationBanner({ item, onDismiss, onOpen }: Props) {
         onClick={() => onOpen(item)}
       >
         <span className="global-kakao-app-icon" aria-hidden="true">
-          {notificationAppId === "threads" ? <AtSign size={19} /> : notificationAppId === "twitter" ? <span className="global-x-glyph">𝕏</span> : <MessageCircle size={18} fill="currentColor" strokeWidth={1.8} />}
+          {notificationAppId === "threads" ? (
+            <svg width="21" height="21" viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M48 17C42 5 17 8 14 25c-5 23 26 32 36 17 9-15-9-25-23-17-11 8 7 17 13 8 5-8 0-16-10-14M49 29c6 20-16 31-29 17" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+          ) : notificationAppId === "twitter" ? (
+            <span className="global-x-glyph">𝕏</span>
+          ) : (
+            <MessageCircle size={18} fill="currentColor" strokeWidth={1.8} />
+          )}
         </span>
         <span className="global-kakao-copy">
           <strong className="global-kakao-sender">{item.sender}</strong>
