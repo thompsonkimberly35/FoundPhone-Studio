@@ -464,7 +464,16 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const typingActive = now >= next.typingAt;
     if (typingActive && !typingRaw) {
       const current = runtimeRef.current;
-      update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": JSON.stringify({ title: next.item.title, until: next.deliverAt }) } } });
+      const clearedKakao = (current.messages.kakao ?? []).map((item) =>
+        item.outgoing && item.title === next.item.title && item.meta.unread === "1"
+          ? { ...item, meta: { ...item.meta, unread: "", readAt: String(now) } }
+          : item
+      );
+      update({
+        ...current,
+        messages: { ...current.messages, kakao: clearedKakao },
+        ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": JSON.stringify({ title: next.item.title, until: next.deliverAt }) } },
+      });
     }
     const due = typingActive ? next.deliverAt : next.typingAt;
     const timer = window.setTimeout(() => {
@@ -780,8 +789,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                           outgoing: false,
                           read: false,
                         });
-                        const typingAt = cursor + 500;
-                        const deliverAt = cursor + 1700;
+                        const typingAt = cursor + 2000;
+                        const deliverAt = cursor + 5000;
                         cursor = deliverAt;
                         return { item, typingAt, deliverAt };
                       });
@@ -829,7 +838,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         outgoing: true,
                         read: true,
                       });
-                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 8000), romanceNode: nodeId, romanceChoice: String(choiceId) };
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), romanceNode: nodeId, romanceChoice: String(choiceId) };
                       const replyLines = [...nextNode.lines];
                       if (nodeId === "K044" && choiceId === "C") replyLines.push("你刚刚说会跟着哭，我现在真的有点舍不得挂断。");
                       const queued = queueLines(replyLines, "kakao-romance-" + nodeId + "-" + choiceId);
@@ -874,13 +883,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       return;
                     }
                     const outgoing = makeItem({ id: "kakao-choice-" + character + "-" + stamp, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
-                    outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 8000), ...(choiceId ? { storyCheckinChoice: choiceId } : {}) };
-                    const incomingReply = makeItem({ id: "kakao-reply-" + character + "-" + stamp, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: false });
-                    const nextMessages = [...existing, outgoing, incomingReply];
+                    outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), ...(choiceId ? { storyCheckinChoice: choiceId } : {}) };
+                    const nextMessages = [...existing, outgoing];
                     let messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
-                    const lastDue = currentQueue.at(-1)?.deliverAt ?? stamp;
-                    const queuedFollowUp = followUpReply ? makeItem({ id: "kakao-reply-followup-" + character + "-" + stamp, title: character, sender: character, avatar, body: followUpReply, time, outgoing: false, read: false }) : null;
-                    const nextQueue = queuedFollowUp ? [...currentQueue, { item: queuedFollowUp, typingAt: Math.max(stamp, lastDue) + 1500, deliverAt: Math.max(stamp, lastDue) + 4500 }] : currentQueue;
+                    const queuedReply = queueLines([reply], "kakao-reply-" + character + "-" + stamp);
+                    const queuedFollowUp = followUpReply ? queueLines([followUpReply], "kakao-reply-followup-" + character + "-" + stamp) : [];
+                    const nextQueue = [...currentQueue, ...queuedReply, ...queuedFollowUp];
                     if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(currentMessages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
                       const backlash = createInstagramBacklash(time);
                       messages = { ...messages, instagram: [...(currentMessages.instagram ?? []), ...backlash] };
