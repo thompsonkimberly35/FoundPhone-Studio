@@ -302,11 +302,11 @@ export function MymyKakao(p: SkinProps) {
                 {playerReply}
               </button>
             </div>
-          ) : boyfriendThread && !romanceNode ? (
+          ) : boyfriendThread && !romanceNode && !boyfriendStage2Node ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>等待下一段消息…</div>
             </div>
-          ) : boyfriendThread && romanceNode ? (
+          ) : boyfriendThread && (romanceNode || boyfriendStage2Node) ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               {queuePending ? (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
