@@ -218,12 +218,6 @@ function PhoneRuntime({
     if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
     previousApp.current = app;
   }, [app]);
-  useEffect(() => {
-    if (creator || !ready) return;
-    const current = runtimeRef.current;
-    const seeded = ensureJapanLotteryMail(current);
-    if (seeded !== current) update(seeded);
-  }, [creator, ready, work.id, work.updatedAt, external]);
   const update = (next: Runtime) => {
     const previous = runtimeRef.current;
     let committed = next;
@@ -259,6 +253,12 @@ function PhoneRuntime({
     setOwn(committed);
     onRuntime?.(committed);
   };
+  useEffect(() => {
+    if (creator || !ready) return;
+    const current = runtimeRef.current;
+    const seeded = ensureJapanLotteryMail(current);
+    if (seeded !== current) update(seeded);
+  }, [creator, ready, work.id, work.updatedAt, external]);
   useEffect(() => {
     // Story notifications wait until the player unlocks the phone.
     if (locked || igBanner || !igQueue.length) return;
