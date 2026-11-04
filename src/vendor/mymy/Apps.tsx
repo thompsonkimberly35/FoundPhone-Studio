@@ -125,7 +125,19 @@ export function MymyKakao(p: SkinProps) {
   const friendThread = Boolean(p.selectedFriend && p.thread === p.selectedFriend);
   const boyfriendContext = romanceNode?.lines.join("") || "";
   const friendLinkOptions = boyfriendThread && romanceNode
-    ? p.ui?.["friend-story-knows-sacrifice"] === true && /公司|经纪人|活动/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-sacrifice"]
+    ? p.ui?.["friend-story-handoff"] === "H07" && /公司|经纪人|活动/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-handoff"]
+      ? (messages.some(item => /公司.{0,8}警告|警告.{0,8}公司/.test(item.body))
+          ? [
+              { key: "friend-link:handoff:A", text: "你之前说过的警告，我想再确认细节。" },
+              { key: "friend-link:handoff:B", text: "除了那件事，你还有其他没告诉我的事吗？" },
+              { key: "friend-link:handoff:C", text: "我听到了，我们可以一起想办法。" },
+            ]
+          : [
+              { key: "friend-link:handoff:A", text: "我知道你还有事情瞒着我，我们谈谈吧。" },
+              { key: "friend-link:handoff:B", text: "我想听你亲口说出那件事。" },
+              { key: "friend-link:handoff:C", text: "如果你现在还没准备好，我可以再等一会儿。" },
+            ])
+      : p.ui?.["friend-story-knows-sacrifice"] === true && /公司|经纪人|活动/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-sacrifice"]
       ? [
           { key: "friend-link:sacrifice:A", text: "你是不是想用暂停活动换公司不要追究我？" },
           { key: "friend-link:sacrifice:B", text: "我不希望你放弃自己的梦想。" },
