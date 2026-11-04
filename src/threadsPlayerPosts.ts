@@ -21,7 +21,9 @@ export function createThreadsAvatar(seedText: string): string {
   const hash = hashSeed(seedText);
   const [bg, fg] = palettes[hash % palettes.length];
   const initials = (seedText.replace(/[^a-z0-9]/gi, "").slice(0, 2) || "th").toUpperCase();
-  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="' + bg + '"/><circle cx="48" cy="37" r="17" fill="' + fg + '" opacity=".82"/><path d="M16 91c3-22 15-33 32-33s29 11 32 33" fill="' + fg + '" opacity=".82"/><text x="48" y="43" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#fff">' + initials + '</text></svg>';
+  const dotX = 12 + (hash % 72);
+  const dotY = 12 + ((hash >>> 8) % 72);
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="' + bg + '"/><circle cx="' + dotX + '" cy="' + dotY + '" r="5" fill="' + fg + '" opacity=".35"/><circle cx="48" cy="37" r="17" fill="' + fg + '" opacity=".82"/><path d="M16 91c3-22 15-33 32-33s29 11 32 33" fill="' + fg + '" opacity=".82"/><text x="48" y="43" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="700" fill="#fff">' + initials + '</text></svg>';
   return "data:image/svg+xml," + encodeURIComponent(svg);
 }
 export function createThreadsCommentIdentity(seedText: string): { handle: string; avatar: string } {
