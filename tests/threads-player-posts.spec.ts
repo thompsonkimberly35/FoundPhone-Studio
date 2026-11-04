@@ -11,7 +11,7 @@ async function start(page: Page) {
   story.content.threads = [];
   await page.route("**/work.json", (route) => route.fulfill({ json: compileStory(story).work }));
   await page.goto("/");
-  await page.getByRole("button", { name: "轻触解锁" }).click();
+  await page.locator("button.unlock-btn").click();
 }
 
 async function openThreads(page: Page) {
