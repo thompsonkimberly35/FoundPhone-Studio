@@ -253,9 +253,16 @@ export function MymyKakao(p: SkinProps) {
               );
             })}
             {(() => {
-              let typing: { title?: string; until?: number } | null = null;
-              try { typing = JSON.parse(String(p.ui?.["typing-state"] || "null")); } catch { typing = null; }
-              return typing?.title === p.thread && Number(typing.until) > Date.now() ? (
+              let typingUntil = 0;
+              try {
+                const typing = JSON.parse(String(p.ui?.["typing-state"] || "null"));
+                if (typing && typeof typing === "object" && "title" in typing) {
+                  if (typing.title === p.thread) typingUntil = Number(typing.until || 0);
+                } else if (typing && typeof typing === "object") {
+                  typingUntil = Number(typing[p.thread] || 0);
+                }
+              } catch { typingUntil = 0; }
+              return typingUntil > Date.now() ? (
                 <div className="kzm kzot first kztyping" aria-label="正在输入">
                   <div className="kzmav">
                     <span className="catalog-avatar kzka round">
