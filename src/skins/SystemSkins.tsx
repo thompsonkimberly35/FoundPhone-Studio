@@ -204,12 +204,9 @@ export function PhotosSkin(p: Props) {
   const searched = items.filter((item) =>
     (item.title + item.body + item.sender).toLowerCase().includes(q.toLowerCase()),
   );
-  const list =
-    tab === "收藏"
-      ? searched.filter((item) => item.favorite)
-      : album
-        ? searched.filter((item) => (item.folder || boyfriend) === album)
-        : searched;
+  const list = tab === "收藏"
+    ? searched.filter((item) => item.favorite)
+    : searched;
   const albumName = boyfriend || "男友照片";
   return (
     <div className="catalog-skin native-photos">
