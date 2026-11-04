@@ -241,6 +241,7 @@ function PhoneRuntime({
   const previousApp = useRef(app);
   const [targetKakaoThread, setTargetKakaoThread] = useState("");
   const [targetXPostId, setTargetXPostId] = useState("");
+  const [targetThreadsPostId, setTargetThreadsPostId] = useState("");
   useEffect(() => {
     if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
     previousApp.current = app;
@@ -267,6 +268,33 @@ function PhoneRuntime({
       };
     }
     if (!creator) {
+      const previousThreadsUi = previous.ui?.threads ?? {};
+      const nextThreadsUi = committed.ui?.threads ?? {};
+      const parseReplies = (value: unknown): Array<{id:string;postId:string;handle:string;text:string;deliveredAt:number|null}> => {
+        try { const parsed = JSON.parse(String(value || "[]")); return Array.isArray(parsed) ? parsed : []; } catch { return []; }
+      };
+      const previousFanReplies = parseReplies(previousThreadsUi["threads-fan-replies-v1"]);
+      const nextFanReplies = parseReplies(nextThreadsUi["threads-fan-replies-v1"]);
+      const newlyDelivered = nextFanReplies.filter(reply =>
+        reply.deliveredAt !== null && !previousFanReplies.some(old => old.id === reply.id && old.deliveredAt !== null)
+      );
+      if (newlyDelivered.length) {
+        const kakaoUi = committed.ui?.kakao ?? {};
+        let globalQueue: Item[] = [];
+        try { globalQueue = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+        const existingIds = new Set(globalQueue.map(item => item.id));
+        const notices = newlyDelivered.map(reply => makeItem({
+          id: "threads-fan-notice-" + reply.id,
+          title: "Threads",
+          sender: reply.handle,
+          body: reply.text,
+          time: formatGameTime(reply.deliveredAt || committed.gameClock?.currentGameTimestamp || Date.now(), committed.gameClock?.timezone || "Asia/Seoul"),
+          meta: { notificationAppId: "threads", notificationPostId: reply.postId, notificationReplyId: reply.id },
+        })).filter(item => !existingIds.has(item.id));
+        if (notices.length && app !== "threads") {
+          committed = { ...committed, ui: { ...committed.ui, kakao: { ...kakaoUi, "global-notification-queue": JSON.stringify([...globalQueue, ...notices].slice(-100)) } } };
+        }
+      }
       const kakaoUi = committed.ui?.kakao ?? {};
       let seenIds: string[] = [];
       let queued: Item[] = [];
@@ -383,7 +411,15 @@ function PhoneRuntime({
     if (creator || !ready) return;
     const interval = setInterval(() => {
       const previous = runtimeRef.current;
-      const next = advance(work, previous, 1000);
+      let next = advance(work, previous, 1000);
+      const threadsUi = next.ui?.threads ?? {};
+      let scheduledFanReplies: Array<{id:string;scheduledAt:number;deliveredAt:number|null}> = [];
+      try { scheduledFanReplies = JSON.parse(String(threadsUi["threads-fan-replies-v1"] || "[]")); } catch { scheduledFanReplies = []; }
+      const gameNow = next.gameClock?.currentGameTimestamp ?? 0;
+      const dueFanReplies = scheduledFanReplies.some(reply => !reply.deliveredAt && reply.scheduledAt <= gameNow);
+      if (dueFanReplies) {
+        next = { ...next, ui: { ...next.ui, threads: { ...threadsUi, "threads-fan-replies-v1": JSON.stringify(scheduledFanReplies.map(reply => !reply.deliveredAt && reply.scheduledAt <= gameNow ? { ...reply, deliveredAt: gameNow } : reply)) } } };
+      }
       const changed =
         next.time !== previous.time ||
         next.trace.join() !== previous.trace.join() ||
@@ -1266,7 +1302,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             onDismiss={() => setGlobalNotificationItem(null)}
             onOpen={(item) => {
               setGlobalNotificationItem(null);
-              if (item.meta?.notificationAppId === "threads") { open("threads"); return; }
+              if (item.meta?.notificationAppId === "threads") {
+                setTargetThreadsPostId(String(item.meta.notificationPostId || ""));
+                open("threads");
+                return;
+              }
               if (item.meta?.notificationAppId === "twitter") {
                 setTargetXPostId(String(item.meta.notificationPostId || item.id));
                 open("twitter");
@@ -1358,6 +1398,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   initialKakaoThread={targetKakaoThread}
                   targetXPostId={targetXPostId}
                   onTargetXPostHandled={() => setTargetXPostId("")}
+                  targetThreadsPostId={targetThreadsPostId}
+                  onTargetThreadsPostHandled={() => setTargetThreadsPostId("")}
                   onInstagramReply={(conversation, replyText) => {
                     const current = runtimeRef.current;
                     const threadsUi = current.ui?.threads || {};
@@ -2172,6 +2214,8 @@ function AppContent({
   onInstagramReply,
   targetXPostId,
   onTargetXPostHandled,
+  targetThreadsPostId,
+  onTargetThreadsPostHandled,
 }: {
   app: AppPlugin;
   name: string;
@@ -2196,6 +2240,8 @@ function AppContent({
   onInstagramReply?: (conversation: Item, replyText: string) => void;
   targetXPostId?: string;
   onTargetXPostHandled?: () => void;
+  targetThreadsPostId?: string;
+  onTargetThreadsPostHandled?: () => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
   useEffect(() => {
@@ -2343,6 +2389,8 @@ function AppContent({
               selectedFriend={selectedFriend}
               onKakaoChoice={onKakaoChoice}
               onInstagramReply={onInstagramReply}
+              targetPostId={targetThreadsPostId}
+              onTargetPostHandled={onTargetThreadsPostHandled}
             />
           </Suspense>
         </div>
