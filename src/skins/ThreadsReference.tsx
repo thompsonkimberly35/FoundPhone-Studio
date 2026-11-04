@@ -117,7 +117,7 @@ export function ThreadsReference(p: SkinProps) {
     id: post.id, title: "你的串文", body: post.text, sender: "allyz_1101",
     time: formatGameDateTime(post.createdAt), kind: "post",
     media: post.media || "",
-    comments: fanReplies.filter((reply) => reply.postId === post.id && reply.deliveredAt !== null).map((reply) => "@" + reply.handle + "：" + reply.text),
+    comments: [],
     meta: { local: "true", handle: "allyz_1101", playerPostId: post.id },
   }));
   useEffect(() => {
@@ -238,10 +238,28 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
-                ...replyRecords.filter((r) => r.postId === selected.id && !r.parentReplyId).map((r) => r.authorHandle + "：" + r.text),
+                
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
+              ))}
+              {fanReplies.filter((reply) => reply.postId === selected.id && reply.deliveredAt !== null).map((reply) => (
+                <div className={"tr-fan-reply" + (highlightedReplyId === reply.id ? " is-targeted" : "")} key={reply.id}>
+                  <p><b>@{reply.handle}</b>：{reply.text}</p>
+                  <button type="button" onClick={() => setReplyTarget(reply.id)}>回覆</button>
+                  {replyRecords.filter((child) => child.parentReplyId === reply.id).map((child) => (
+                    <p className="tr-nested-reply" key={child.id}>{child.authorHandle}：{child.text}</p>
+                  ))}
+                </div>
+              ))}
+              {replyRecords.filter((record) => record.postId === selected.id && !record.parentReplyId).map((record) => (
+                <div className="tr-fan-reply" key={record.id}>
+                  <p>{record.authorHandle}：{record.text}</p>
+                  <button type="button" onClick={() => setReplyTarget(record.id)}>回覆</button>
+                  {replyRecords.filter((child) => child.parentReplyId === record.id).map((child) => (
+                    <p className="tr-nested-reply" key={child.id}>{child.authorHandle}：{child.text}</p>
+                  ))}
+                </div>
               ))}
             </div>
             <form
