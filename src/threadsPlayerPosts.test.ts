@@ -31,4 +31,15 @@ describe("player-authored Threads posts", () => {
     expect(first.at(-1)!.scheduledAt - post.createdAt).toBeGreaterThanOrEqual(60_000);
     expect(first.every((reply) => reply.scheduledAt >= post.createdAt)).toBe(true);
   });
+  it("uses recent story context when shaping support replies", () => {
+    const replies = generateThreadsFanReplies({
+      id: "player-post-context",
+      text: "我會繼續支持 ALD1。",
+      createdAt: 300_000,
+      boyfriend: "李理悟",
+      contextText: "先前X事件：團體活動安排出現變化",
+    });
+    expect(replies.some((reply) => reply.text.includes("先前X事件"))).toBe(true);
+  });
+
 });
