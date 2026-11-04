@@ -226,7 +226,26 @@ export function MymyKakao(p: SkinProps) {
             })()}
             {!messages.length && <Blank />}
           </div>
-          {boyfriendThread && romanceNode ? (
+          {boyfriendThread && !hasBacklashCheckin && !replyAlreadySent ? (
+            <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
+              {showChoices ? (
+                <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
+                  onClick={() => {
+                    p.onKakaoChoice?.(p.thread, playerReply, "你的身份好像已经被扒出来了");
+                    setShowChoices(false);
+                  }}>
+                  {playerReply}
+                </button>
+              ) : (
+                <button type="button" aria-label="选择回复" onClick={() => setShowChoices(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 34, padding: "0 5px", color: "#777", textAlign: "left" }}>
+                  <Smile size={22} />
+                  <span style={{ flex: 1 }}>Aa</span>
+                  <Send size={20} />
+                </button>
+              )}
+            </div>
+          ) : boyfriendThread && romanceNode ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               {queuePending ? (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
