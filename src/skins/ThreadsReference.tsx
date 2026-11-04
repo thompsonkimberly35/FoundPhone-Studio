@@ -44,7 +44,8 @@ export function ThreadsReference(p: SkinProps) {
     [shift, setShift] = useState(false),
     [numbers, setNumbers] = useState(false),
     [options, setOptions] = useState(false),
-    [selected, setSelected] = useState<Item | null>(null),\n    [evidenceExpanded, setEvidenceExpanded] = useState(false);
+    [selected, setSelected] = useState<Item | null>(null),
+    [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const local = posts.map((body, n) =>
     makeItem({
       id: "local-thread-" + n,
