@@ -38,6 +38,7 @@ import type { SkinProps } from "../../AppSkins";
 import { Avatar, Media } from "../../skins/shared";
 import { useSkinState } from "../../skinState";
 import type { Item } from "../../schema";
+import { getKakaoStoryNode } from "../../kakaoRomanceStory";
 import "./ui.css";
 import "./adapter.css";
 export function messageRun(items: Item[], index: number) {
@@ -98,6 +99,10 @@ export function MymyKakao(p: SkinProps) {
     messages: Item[] = chatItems.filter((item) => item.title === p.thread),
     scroll = useRef<HTMLDivElement>(null);
   const hasBacklashCheckin = messages.some((item) => item.id === "boyfriend-backlash-checkin");
+  const romanceNodeId = String(p.ui?.["romance-node"] || "");
+  const romanceNode = getKakaoStoryNode(romanceNodeId);
+  const queuePending = (() => { try { return (JSON.parse(String(p.ui?.["delivery-queue"] || "[]")) as unknown[]).length > 0; } catch { return false; } })() || Boolean(p.ui?.["typing-state"]);
+  const romancePaused = romanceNodeId === "K014" && p.ui?.["romance-pending-node"] === "K030";
   useEffect(() => {
     if (!p.thread) return;
     messages.filter((item) => !item.outgoing && !item.read).forEach((item) => p.onRead(item.id));
@@ -116,6 +121,15 @@ export function MymyKakao(p: SkinProps) {
   const boyfriendThread = Boolean(p.selectedBoyfriend && p.thread === p.selectedBoyfriend);
   const friendThread = Boolean(p.selectedFriend && p.thread === p.selectedFriend);
   const playerReply = boyfriendThread ? "看到了，怎么办？" : "不好，我好害怕";
+  const previousThread = useRef(p.thread);
+  useEffect(() => {
+    const reopened = !previousThread.current && Boolean(p.thread);
+    previousThread.current = p.thread;
+    if (reopened && boyfriendThread && romancePaused) p.onKakaoChoice?.(p.thread, "", "", "", "__resume__");
+  }, [p.thread, romancePaused, boyfriendThread]);
+  useEffect(() => {
+    if (boyfriendThread && hasBacklashCheckin && !romanceNodeId) p.onKakaoChoice?.(p.thread, "", "", "", "__migrate__");
+  }, [boyfriendThread, hasBacklashCheckin, romanceNodeId]);
   const replyAlreadySent = hasBacklashCheckin
     ? messages.some((item) => item.meta.storyCheckinChoice === "1" || item.meta.storyCheckinChoice === "2")
     : messages.some((item) => item.outgoing && item.sender === "我" && item.body === playerReply);
@@ -212,57 +226,42 @@ export function MymyKakao(p: SkinProps) {
             })()}
             {!messages.length && <Blank />}
           </div>
-          {(boyfriendThread || friendThread) && !replyAlreadySent && (
+          {boyfriendThread && romanceNode ? (
+            <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
+              {queuePending ? (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
+              ) : romancePaused ? (
+                <button type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal" }} onClick={() => p.onThread("")}>
+                  先结束聊天，稍后重新打开继续
+                </button>
+              ) : romanceNode.choices.length ? (
+                <div style={{ display: "grid", gap: 8, width: "100%" }}>
+                  {romanceNode.choices.map((choice) => (
+                    <button key={choice.key} type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal", textAlign: "left" }}
+                      onClick={() => p.onKakaoChoice?.(p.thread, choice.text, "", "", choice.key)}>
+                      {choice.text}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一段暂时告一段落，后续消息会继续更新。</div>
+              )}
+            </div>
+          ) : friendThread && !replyAlreadySent ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               {showChoices ? (
-                hasBacklashCheckin ? (
-                  <div style={{ display: "grid", gap: 8, width: "100%" }}>
-                    <button type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal", textAlign: "left" }}
-                      onClick={() => {
-                        p.onKakaoChoice?.(
-                          p.thread,
-                          "有，非常多，都是你的粉丝来骂我",
-                          "你先不要回复他们，我来处理，我在，别害怕",
-                          "我很爱你，我不想失去ALD1，也不想失去你",
-                          "1",
-                        );
-                        setShowChoices(false);
-                      }}>
-                      1. 有，非常多，都是你的粉丝来骂我
-                    </button>
-                    <button type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal", textAlign: "left" }}
-                      onClick={() => {
-                        p.onKakaoChoice?.(
-                          p.thread,
-                          "没有，你不用担心我，你跟公司那边开会的如何？",
-                          "公司说会先压压看新闻，但不确定有没有效果",
-                          "你没事真是太好了，我好担心因为这样你选择离开我……",
-                          "2",
-                        );
-                        setShowChoices(false);
-                      }}>
-                      2. 没有，你不用担心我，你跟公司那边开会的如何？
-                    </button>
-                  </div>
-                ) : (
-                  <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
-                    onClick={() => {
-                      p.onKakaoChoice?.(p.thread, playerReply, boyfriendThread ? "你的身份好像已经被扒出来了" : "你先别紧张，他已经在和公司开会了");
-                      setShowChoices(false);
-                    }}>
-                    {playerReply}
-                  </button>
-                )
+                <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
+                  onClick={() => { p.onKakaoChoice?.(p.thread, playerReply, "你先别紧张，他已经在和公司开会了"); setShowChoices(false); }}>
+                  {playerReply}
+                </button>
               ) : (
                 <button type="button" aria-label="选择回复" onClick={() => setShowChoices(true)}
                   style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", minHeight: 34, padding: "0 5px", color: "#777", textAlign: "left" }}>
-                  <Smile size={22} />
-                  <span style={{ flex: 1 }}>Aa</span>
-                  <Send size={20} />
+                  <Smile size={22} /><span style={{ flex: 1 }}>Aa</span><Send size={20} />
                 </button>
               )}
             </div>
-          )}
+          ) : null}
           {menu && (
             <div className="mymy-local-menu">
               <strong>{p.thread}</strong>

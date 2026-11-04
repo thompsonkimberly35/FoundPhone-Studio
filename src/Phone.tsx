@@ -67,6 +67,7 @@ import { makeItem } from "./schema";
 import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
+import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 export function AppIcon({
   id,
   name,
@@ -520,7 +521,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
       };
       const avatar = files[selectedBoyfriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedBoyfriend] : "";
-      const body = "亲爱的，我在处理了，目前有粉丝去找你吗？";
+      const body = "你有收到粉丝的消息吗？";
       const message = makeItem({
         id: "boyfriend-backlash-checkin",
         title: selectedBoyfriend,
@@ -536,7 +537,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         messages: { ...current.messages, kakao: [...existing, message] },
         ui: {
           ...current.ui,
-          kakao: { ...current.ui?.kakao, "ig-backlash-checkin-sent": true },
+          kakao: { ...current.ui?.kakao, "ig-backlash-checkin-sent": true, "romance-node": "K001" },
         },
       });
       setBanner(`KakaoTalk: ${selectedBoyfriend}：${body}`);
@@ -749,6 +750,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   selectedFriend={selectedFriend}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
+                    const currentMessages = current.messages as Runtime["messages"];
+                    const existing = currentMessages.kakao ?? [];
+                    const currentUi = current.ui?.kakao ?? {};
+                    const time = current.time || displayTime;
+                    const stamp = Date.now();
                     const files: Record<string, string> = {
                       "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
                       "李理悟": "李理悟-kakao.jpg", "李相沅": "李相沅-kakao.png",
@@ -756,17 +762,124 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
                     };
                     const avatar = files[character] ? import.meta.env.BASE_URL + "kakao/" + files[character] : "";
-                    const time = current.time || displayTime;
-                    const stamp = Date.now();
-                    const outgoing = makeItem({ id: `kakao-choice-${character}-${stamp}`, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
+                    const readQueue = () => {
+                      try { return JSON.parse(String(currentUi["delivery-queue"] || "[]")) as Array<{ item: Item; typingAt: number; deliverAt: number }>; }
+                      catch { return []; }
+                    };
+                    const currentQueue = readQueue();
+                    const queueLines = (bodies: string[], prefix: string) => {
+                      let cursor = Math.max(stamp, currentQueue.at(-1)?.deliverAt ?? stamp);
+                      return bodies.map((body, index) => {
+                        const item = makeItem({
+                          id: prefix + "-" + index,
+                          title: character,
+                          sender: character,
+                          avatar,
+                          body,
+                          time,
+                          outgoing: false,
+                          read: false,
+                        });
+                        const typingAt = cursor + 500;
+                        const deliverAt = cursor + 1700;
+                        cursor = deliverAt;
+                        return { item, typingAt, deliverAt };
+                      });
+                    };
+                    if (choiceId === "__migrate__") {
+                      const checkinIndex = existing.findIndex((item) => item.id === "boyfriend-backlash-checkin");
+                      const cleaned = existing.filter((item, index) =>
+                        checkinIndex < 0 || index <= checkinIndex ||
+                        !(item.id.startsWith("kakao-choice-") || item.id.startsWith("kakao-reply-") || item.meta.storyCheckinChoice),
+                      ).map((item) => item.id === "boyfriend-backlash-checkin" ? { ...item, body: "你有收到粉丝的消息吗？" } : item);
+                      const queue = currentQueue.filter((entry) =>
+                        !(entry.item.id.startsWith("kakao-choice-") || entry.item.id.startsWith("kakao-reply-")),
+                      );
+                      update({
+                        ...current,
+                        messages: { ...currentMessages, kakao: cleaned },
+                        ui: { ...current.ui, kakao: { ...currentUi, "romance-node": "K001", "romance-history": "[]", "romance-pending-node": "", "delivery-queue": JSON.stringify(queue) } },
+                      });
+                      return;
+                    }
+                    if (choiceId === "__resume__" && currentUi["romance-node"] === "K014" && currentUi["romance-pending-node"] === "K030") {
+                      const nextNode = getKakaoStoryNode("K030");
+                      const queued = queueLines(nextNode?.lines ?? [], "kakao-romance-K014-resume");
+                      update({
+                        ...current,
+                        ui: { ...current.ui, kakao: { ...currentUi, "romance-node": "K030", "romance-pending-node": "", "romance-pause-at": "", "delivery-queue": JSON.stringify([...currentQueue, ...queued]) } },
+                      });
+                      return;
+                    }
+                    const nodeId = String(currentUi["romance-node"] || "");
+                    const storyChoice = choiceId ? getKakaoStoryChoice(nodeId, choiceId) : undefined;
+                    if (storyChoice) {
+                      let history: string[] = [];
+                      try { history = JSON.parse(String(currentUi["romance-history"] || "[]")); } catch { history = []; }
+                      const historyKey = nodeId + ":" + choiceId;
+                      if (history.includes(historyKey)) return;
+                      const nextNode = getKakaoStoryNode(storyChoice.next);
+                      if (!nextNode) return;
+                      const outgoing = makeItem({
+                        id: "kakao-romance-player-" + nodeId + "-" + choiceId + "-" + stamp,
+                        title: character,
+                        sender: "我",
+                        body: storyChoice.text,
+                        time,
+                        outgoing: true,
+                        read: true,
+                      });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 8000), romanceNode: nodeId, romanceChoice: choiceId };
+                      const replyLines = [...nextNode.lines];
+                      if (nodeId === "K044" && choiceId === "C") replyLines.push("你刚刚说会跟着哭，我现在真的有点舍不得挂断。");
+                      const queued = queueLines(replyLines, "kakao-romance-" + nodeId + "-" + choiceId);
+                      const nextMessages = [...existing, outgoing];
+                      const result = nextNode.result || (nextNode.id.startsWith("E0") ? nextNode.id : "");
+                      let state: Record<string, number | boolean> = {};
+                      try { state = JSON.parse(String(currentUi["romance-state"] || "{}")); } catch { state = {}; }
+                      const deltas: Record<string, Record<string, number | boolean>> = {
+                        E01: { trust: 2, companyPressure: 2, denialResistance: 1 },
+                        E02: { relationship: 1, companyPressure: 1 },
+                        E03: { intimacy: -2, contactPaused: true },
+                        E04: { teamPressure: 2, responsibilityConflict: true },
+                        E05: { trust: -1, repairInProgress: true },
+                        E06: { uncertainty: true },
+                        E07: { intimacy: 2, exposureRisk: 2 },
+                        E08: { intimacy: 2, emotionalStability: 1 },
+                      };
+                      const delta = result ? deltas[result] ?? {} : {};
+                      const nextState = { ...state, ...delta };
+                      const variables = { ...current.variables };
+                      for (const [key, value] of Object.entries(delta)) {
+                        if (typeof value === "number") variables["kakao-romance-" + key] = Number(variables["kakao-romance-" + key] || 0) + value;
+                        else variables["kakao-romance-" + key] = value;
+                      }
+                      const nextUi = {
+                        ...currentUi,
+                        "romance-node": nextNode.id,
+                        "romance-history": JSON.stringify([...history, historyKey]),
+                        "romance-last-choice": historyKey,
+                        "romance-state": JSON.stringify(nextState),
+                        "romance-result": result || String(currentUi["romance-result"] || ""),
+                        "romance-pending-node": nextNode.pauseTo || "",
+                        "romance-pause-at": nextNode.pauseTo ? String(stamp + 30 * 60 * 1000) : "",
+                        "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                      };
+                      update({
+                        ...current,
+                        variables,
+                        messages: { ...currentMessages, kakao: nextMessages },
+                        ui: { ...current.ui, kakao: nextUi },
+                      });
+                      return;
+                    }
+                    const outgoing = makeItem({ id: "kakao-choice-" + character + "-" + stamp, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
                     outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 8000), ...(choiceId ? { storyCheckinChoice: choiceId } : {}) };
-                    const incomingReply = makeItem({ id: `kakao-reply-${character}-${stamp}`, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: false });
-                    const currentMessages = current.messages as Runtime["messages"];
-                    const nextMessages = [...(currentMessages.kakao ?? []), outgoing, incomingReply];
+                    const incomingReply = makeItem({ id: "kakao-reply-" + character + "-" + stamp, title: character, sender: character, avatar, body: reply, time, outgoing: false, read: false });
+                    const nextMessages = [...existing, outgoing, incomingReply];
                     let messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
-                    const currentQueue = (() => { try { return JSON.parse(String(current.ui?.kakao?.["delivery-queue"] || "[]")) as Array<{ item: Item; typingAt: number; deliverAt: number }>; } catch { return []; } })();
                     const lastDue = currentQueue.at(-1)?.deliverAt ?? stamp;
-                    const queuedFollowUp = followUpReply ? makeItem({ id: `kakao-reply-followup-${character}-${stamp}`, title: character, sender: character, avatar, body: followUpReply, time, outgoing: false, read: false }) : null;
+                    const queuedFollowUp = followUpReply ? makeItem({ id: "kakao-reply-followup-" + character + "-" + stamp, title: character, sender: character, avatar, body: followUpReply, time, outgoing: false, read: false }) : null;
                     const nextQueue = queuedFollowUp ? [...currentQueue, { item: queuedFollowUp, typingAt: Math.max(stamp, lastDue) + 1500, deliverAt: Math.max(stamp, lastDue) + 4500 }] : currentQueue;
                     if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(currentMessages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
                       const backlash = createInstagramBacklash(time);
@@ -776,7 +889,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     update({
                       ...current,
                       messages,
-                      ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(nextQueue) } },
+                      ui: { ...current.ui, kakao: { ...currentUi, "delivery-queue": JSON.stringify(nextQueue) } },
                     });
                   }}
                 />
