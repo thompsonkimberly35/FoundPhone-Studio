@@ -226,7 +226,7 @@ export function MymyKakao(p: SkinProps) {
             })()}
             {!messages.length && <Blank />}
           </div>
-          {boyfriendThread && !hasBacklashCheckin ? (
+          {boyfriendThread && !hasBacklashCheckin && !replyAlreadySent && !queuePending ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
                 onClick={() => p.onKakaoChoice?.(p.thread, playerReply, "你的身份好像已经被扒出来了")}>
@@ -235,10 +235,7 @@ export function MymyKakao(p: SkinProps) {
             </div>
           ) : boyfriendThread && !romanceNode ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
-              <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
-                onClick={() => p.onKakaoChoice?.(p.thread, playerReply, "你的身份好像已经被扒出来了")}>
-                {playerReply}
-              </button>
+              <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>等待下一段消息…</div>
             </div>
           ) : boyfriendThread && romanceNode ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
