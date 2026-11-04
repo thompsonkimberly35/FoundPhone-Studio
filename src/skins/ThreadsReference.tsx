@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Home,
   Send,
@@ -29,18 +29,38 @@ import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
 import { useSkinState } from "../skinState";
+import { formatGameDateTime, formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
 export function ThreadsReference(p: SkinProps) {
+  const relativeTime = (item: Item) => {
+    const explicit = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
+    const timestamp = item.sentAt ?? (explicit ? zonedDateTimeToTimestamp(explicit[1], explicit[2]) : p.virtualTimestamp || 0);
+    return formatRelativeGameTime(timestamp, p.virtualTimestamp ?? timestamp);
+  };
   const [tab, setTab] = useSkinState<string>(p, "threads-tab", "首页"),
     [liked, setLiked] = useSkinState<string[]>(p, "threads-liked", []),
     [saved, setSaved] = useSkinState<string[]>(p, "threads-saved", []),
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
+  const [localPostsJson, setLocalPostsJson] = useSkinState<string>(p, "threads-posts-timestamps-v1", "[]");
+  const localPostRecords = useMemo<Array<{ id: string; text: string; createdAt: number }>>(() => {
+    try {
+      const value: unknown = JSON.parse(localPostsJson);
+      return Array.isArray(value) ? value.filter((entry): entry is { id: string; text: string; createdAt: number } => !!entry && typeof entry.id === "string" && typeof entry.text === "string" && typeof entry.createdAt === "number") : [];
+    } catch { return []; }
+  }, [localPostsJson]);
   useEffect(() => {
     const cleanPosts = posts.filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body));
     if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
   }, [posts, setPosts]);
+  useEffect(() => {
+    const next = posts.map((text, index) => {
+      const current = localPostRecords[index];
+      return current?.text === text ? current : { id: "legacy-thread-" + index, text, createdAt: p.virtualTimestamp ?? 0 };
+    });
+    if (JSON.stringify(next) !== localPostsJson) setLocalPostsJson(JSON.stringify(next));
+  }, [posts, localPostRecords, localPostsJson, p.virtualTimestamp, setLocalPostsJson]);
   const replyRecords: ThreadsReplyRecord[] = (() => {
     try {
       const value: unknown = JSON.parse(replyRecordsJson);
@@ -59,17 +79,20 @@ export function ThreadsReference(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const local = posts
-    .filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body))
-    .map((body, n) =>
-      makeItem({
-        id: "local-thread-" + n,
+    .filter((body) => !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(body))
+    .map((body, n) => {
+      const record = localPostRecords[n]?.text === body ? localPostRecords[n] : undefined;
+      const createdAt = record?.createdAt ?? p.virtualTimestamp ?? 0;
+      return makeItem({
+        id: record?.id || "local-thread-" + n,
         title: "本地串文",
         body,
         sender: "allyz_1101",
-        time: p.virtualTime || "09:41",
+        time: formatGameDateTime(createdAt),
+        sentAt: createdAt,
         meta: { local: "true", handle: "allyz_1101" },
-      }),
-    );
+      });
+    });
   const feed = [
       ...local,
       ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
@@ -96,7 +119,7 @@ export function ThreadsReference(p: SkinProps) {
       <div className="tr-post-content">
         <div className="tr-byline">
           <b>@{i.meta.handle || i.sender}</b>
-          <span>{i.time.slice(-5)}</span>
+          <span>{relativeTime(i)}</span>
           <button
             aria-label="帖子选项"
             onClick={() => {
@@ -180,7 +203,7 @@ export function ThreadsReference(p: SkinProps) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (draft.trim()) {
-                  const record = createThreadsReplyRecord(selected.id, draft.trim());
+                  const record = createThreadsReplyRecord(selected.id, draft.trim(), p.virtualTimestamp ?? 0);
                   setReplyRecordsJson(JSON.stringify([...replyRecords, record]));
                   setDraft("");
                 }
@@ -311,7 +334,7 @@ export function ThreadsReference(p: SkinProps) {
                     <span>
                       <b>{i.sender}</b>
                       <small>
-                        {i.body} · {i.time.slice(-5)}
+                        {i.body} · {relativeTime(i)}
                       </small>
                     </span>
                     {i.favorite && <Pin size={16} />}
@@ -335,7 +358,7 @@ export function ThreadsReference(p: SkinProps) {
                       <Avatar name={i.sender} src={i.avatar} />
                       <div>
                         <b>{i.sender}</b>
-                        <small>{i.time.slice(-5)}</small>
+                        <small>{relativeTime(i)}</small>
                         <p>{i.body}</p>
                         <div className="tr-actions">
                           <Heart />
@@ -491,7 +514,11 @@ export function ThreadsReference(p: SkinProps) {
             <button
               disabled={!draft.trim()}
               onClick={() => {
-                setPosts([draft.trim(), ...posts]);
+                const text = draft.trim();
+                const createdAt = p.virtualTimestamp ?? 0;
+                const record = { id: "local-thread-" + createdAt + "-" + Math.random().toString(36).slice(2, 8), text, createdAt };
+                setLocalPostsJson(JSON.stringify([record, ...localPostRecords]));
+                setPosts([text, ...posts]);
                 setDraft("");
                 setCompose(false);
                 setKeyboard(false);

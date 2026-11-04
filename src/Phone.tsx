@@ -75,6 +75,7 @@ import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
+import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
   /测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(
@@ -246,8 +247,9 @@ function PhoneRuntime({
   }, [app]);
   const update = (next: Runtime) => {
     const previous = runtimeRef.current;
-    let committed = next;
-    const x002Published = hasThreadsX002(next.messages.twitter ?? []);
+    let committed = stampNewMessages(previous, next);
+    if (committed.gameClock) committed = { ...committed, gameClock: { ...committed.gameClock, lastRealTimestamp: Date.now() } };
+    const x002Published = hasThreadsX002(committed.messages.twitter ?? []);
     const x002WasPublished = hasThreadsX002(previous.messages.twitter ?? []);
     if (x002Published && !x002WasPublished) {
       committed = {
@@ -265,14 +267,14 @@ function PhoneRuntime({
       };
     }
     if (!creator) {
-      const kakaoUi = next.ui?.kakao ?? {};
+      const kakaoUi = committed.ui?.kakao ?? {};
       let seenIds: string[] = [];
       let queued: Item[] = [];
       try { seenIds = JSON.parse(String(kakaoUi["global-notification-seen-ids"] || "[]")); } catch { seenIds = []; }
       try { queued = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { queued = []; }
       const result = enqueueIncomingKakaoNotifications(
         previous.messages.kakao ?? [],
-        next.messages.kakao ?? [],
+        committed.messages.kakao ?? [],
         seenIds,
         queued,
         app === "kakao" ? activeKakaoThread.current : "",
@@ -280,9 +282,9 @@ function PhoneRuntime({
       );
       if (result.arrivals.length) {
         committed = {
-          ...next,
+          ...committed,
           ui: {
-            ...next.ui,
+            ...committed.ui,
             kakao: {
               ...kakaoUi,
               "global-notification-seen-ids": JSON.stringify(result.seenIds),
@@ -355,15 +357,15 @@ function PhoneRuntime({
       .then((saved) => {
         if (!active) return;
         if (saved && saved.state.revision === work.updatedAt)
-          setOwn(saved.state);
+          setOwn(migrateRuntimeGameClock(saved.state, work));
         else {
-          setOwn(dispatch(work, initialRuntime(work), "start"));
+          setOwn(migrateRuntimeGameClock(dispatch(work, initialRuntime(work), "start"), work));
           if (saved) setLoadError("作品已更新，已开始新的进度。");
         }
         setReady(true);
       })
       .catch(() => {
-        setOwn(dispatch(work, initialRuntime(work), "start"));
+        setOwn(migrateRuntimeGameClock(dispatch(work, initialRuntime(work), "start"), work));
         setLoadError("无法读取本地存档。本次仍可游玩。");
         setReady(true);
       });
@@ -389,7 +391,7 @@ function PhoneRuntime({
         (next.scheduled?.length ?? 0) > 0 ||
         Math.floor((next.elapsedMs ?? 0) / 5000) !==
           Math.floor((previous.elapsedMs ?? 0) / 5000);
-      if (changed) update(next);
+      if (changed || next.gameClock?.currentGameTimestamp !== previous.gameClock?.currentGameTimestamp || next.date !== previous.date) update(next);
     }, 1000);
     return () => clearInterval(interval);
   }, [creator, ready, work.id, work.updatedAt]);
@@ -533,7 +535,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   useEffect(() => {
     if (app && !work.apps.some((a) => a.id === app && a.installed)) setApp("");
   }, [app, work.apps]);
-  const displayTime = creator ? work.phone.time : s.time || work.phone.time;
+  const displayTime = creator ? work.phone.time : s.gameClock ? formatGameTime(s.gameClock.currentGameTimestamp, s.gameClock.timezone) : s.time || work.phone.time;
   const plugin = getApp(app);
   const backlashNotificationsComplete = Number(s.ui?.kakao?.["ig-backlash-notifications-finished-at"] || 0) > 0;
   const friendStoryDueAt = s.ui?.kakao?.["friend-story-trigger-at"];
@@ -1309,7 +1311,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     work.apps.find((a) => a.id === app)?.name ?? plugin.name
                   }
                   items={[
-                    ...(work.data[app] ?? []),
+                    ...normalizeStoryItems(work.data[app] ?? [], work.phone.date || "2026-10-25", s.gameClock?.timezone || "Asia/Seoul"),
                     ...(s.messages[app] ?? []),
                   ]}
                   creator={creator}
@@ -2322,6 +2324,7 @@ function AppContent({
               appId={app.id}
               owner={PLAYER_THREADS_ID}
               virtualTime={state.time}
+              virtualTimestamp={state.gameClock?.currentGameTimestamp}
               ui={state.ui?.[app.id]}
               onUi={creator ? undefined : onUi}
               name={name}

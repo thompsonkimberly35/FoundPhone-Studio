@@ -7,6 +7,7 @@ export const itemSchema = z.object({
   richText: z.string().max(400000).default(""),
   meta: z.record(z.string().max(60), z.string().max(2000)).default({}),
   time: z.string(),
+  sentAt: z.number().finite().optional(),
   sender: z.string(),
   avatar: z.string().default(""),
   kind: z
@@ -62,6 +63,13 @@ export const actionSchema = z.object({
 export type Action = z.infer<typeof actionSchema>;
 export const nodeSchema = z.object({
   delayMs: z.number().int().min(0).max(86400000).optional(),
+  timeHint: z.object({
+    period: z.enum(["morning", "noon", "afternoon", "evening", "night"]).optional(),
+    earliestTime: z.string().regex(/^\d{1,2}:\d{2}$/).optional(),
+    preferredTime: z.string().regex(/^\d{1,2}:\d{2}$/).optional(),
+    advanceToNextDay: z.boolean().optional(),
+    minimumElapsedMinutes: z.number().min(0).optional(),
+  }).optional(),
   id: z.string(),
   label: z.string(),
   type: z.enum([
@@ -131,6 +139,7 @@ export const workSchema = z.object({
 export type Work = z.infer<typeof workSchema>;
 export type UiValue = string | number | boolean | string[];
 export type Runtime = {
+  gameClock?: import("./gameClock").GameClockState;
   date?: string;
   elapsedMs?: number;
   clockRemainderMs?: number;
@@ -158,8 +167,15 @@ export type Runtime = {
   trace: string[];
 };
 export function initialRuntime(w: Work): Runtime {
+  const storyDate = w.phone.date || "2026-10-25";
+  const timeMatch = w.phone.time.match(/^(\d{1,2}):(\d{2})$/);
+  const dateMatch = storyDate.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const initialTimestamp = dateMatch && timeMatch
+    ? Date.UTC(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), Number(timeMatch[1]) - 9, Number(timeMatch[2]))
+    : Date.UTC(2026, 9, 25, 0, 0);
   return {
-    date: w.phone.date,
+    date: storyDate,
+    gameClock: { currentGameTimestamp: initialTimestamp, lastRealTimestamp: Date.now(), timeScale: 1, timezone: "Asia/Seoul", currentStoryDay: 1, migrationVersion: 0 },
     elapsedMs: 0,
     clockRemainderMs: 0,
     scheduled: [],

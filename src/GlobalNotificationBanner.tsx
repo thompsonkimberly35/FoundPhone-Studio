@@ -50,7 +50,7 @@ export function GlobalNotificationBanner({ item, onDismiss, onOpen }: Props) {
           <strong className="global-kakao-sender">{item.sender}</strong>
           <span className="global-kakao-preview">{item.body}</span>
         </span>
-        <time className="global-kakao-time">现在</time>
+        <time className="global-kakao-time">{item.time.slice(-5)}</time>
       </button>
     </div>
   );
