@@ -62,6 +62,15 @@ export function ThreadsReference(p: SkinProps) {
     try { const value: unknown = JSON.parse(fanRepliesJson); return Array.isArray(value) ? value : []; } catch { return []; }
   }, [fanRepliesJson]);
   useEffect(() => {
+    if (!fanReplies.some((reply) => /@allyz_1101\\b/i.test(reply.text))) return;
+    const repaired = fanReplies.map((reply) => {
+      if (!/@allyz_1101\\b/i.test(reply.text)) return reply;
+      const target = fanReplies.find((candidate) => candidate.id !== reply.id && candidate.handle !== reply.handle)?.handle || "moonfilm_7qx";
+      return { ...reply, text: reply.text.replace(/@allyz_1101\\b/gi, "@" + target) };
+    });
+    setFanRepliesJson(JSON.stringify(repaired));
+  }, [fanRepliesJson, setFanRepliesJson]);
+  useEffect(() => {
     const pending = fanReplies
       .filter((reply) => reply.deliveredAt === null)
       .sort((a, b) => a.scheduledAt - b.scheduledAt);
