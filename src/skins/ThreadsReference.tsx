@@ -79,6 +79,7 @@ export function ThreadsReference(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const playerItems = playerPosts.map((post) => makeItem({ id: post.id, title: "你的串文", body: post.text, sender: "allyz_1101", time: new Date(post.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), kind: "post", comments: fanReplies.filter((r) => r.postId === post.id && r.deliveredAt).map((r) => "@"+r.handle+"："+r.text), meta: { local: "true", handle: "allyz_1101", playerPostId: post.id } }));
+  useEffect(() => { if (tab === "动态") setActivityReadAt(String(Date.now())); }, [tab, setActivityReadAt]);
   const local = posts
     .filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body))
     .map((body, n) =>
@@ -92,11 +93,12 @@ export function ThreadsReference(p: SkinProps) {
       }),
     );
   const feed = [
+      ...playerItems,
       ...local,
       ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
-    activities = [ ...p.items.filter((i) => i.meta.activityType), ...fanReplies.filter((r) => !!r.deliveredAt).map((r) => makeItem({ id: "activity-"+r.id, title: "回复了你的串文", sender: r.handle, avatar: r.avatar, body: r.text, time: new Date(r.deliveredAt || r.scheduledAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), meta: { activityType: "reply", postId: r.postId, replyId: r.id, originalPreview: playerPosts.find((post) => post.id === r.postId)?.text || "" } })) ],
+    activities = [ ...p.items.filter((i) => i.meta.activityType), ...fanReplies.filter((r) => !!r.deliveredAt).map((r) => makeItem({ id: "activity-"+r.id, title: "回复了你的串文", sender: r.handle, avatar: r.avatar, body: r.text, time: new Date(r.deliveredAt || r.scheduledAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), meta: { activityType: "reply", postId: r.postId, replyId: r.id, originalPreview: playerPosts.find((post) => post.id === r.postId)?.text || "", activityCreatedAt: r.deliveredAt || 0 } })) ],
     playerReplies = p.items.filter((i) => i.folder === "threads-reply");
   const toggle = (id: string, items: string[], set: (v: string[]) => void) =>
     set(items.includes(id) ? items.filter((v) => v !== id) : [...items, id]);
@@ -353,7 +355,7 @@ export function ThreadsReference(p: SkinProps) {
                           : true,
                   )
                   .map((i) => (
-                    <button className="tr-activity" key={i.id} onClick={() => { const target = feed.find((post) => post.id === i.meta.postId); if (target) setSelected(target); }}>
+                    <button className={`tr-activity ${Number(i.meta.activityCreatedAt || 0) > Number(activityReadAt) ? "is-unread" : ""}`} key={i.id} onClick={() => { const target = feed.find((post) => post.id === i.meta.postId); if (target) setSelected(target); }}>
                       <Avatar name={i.sender} src={i.avatar} />
                       <div>
                         <b>{i.sender}</b>
