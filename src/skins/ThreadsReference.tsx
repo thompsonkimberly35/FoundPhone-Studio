@@ -54,6 +54,13 @@ export function ThreadsReference(p: SkinProps) {
     const cleanPosts = posts.filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body));
     if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
   }, [posts, setPosts]);
+  useEffect(() => {
+    const next = posts.map((text, index) => {
+      const current = localPostRecords[index];
+      return current?.text === text ? current : { id: "legacy-thread-" + index, text, createdAt: p.virtualTimestamp ?? 0 };
+    });
+    if (JSON.stringify(next) !== localPostsJson) setLocalPostsJson(JSON.stringify(next));
+  }, [posts, localPostsJson, p.virtualTimestamp, setLocalPostsJson]);
   const replyRecords: ThreadsReplyRecord[] = (() => {
     try {
       const value: unknown = JSON.parse(replyRecordsJson);
@@ -72,17 +79,20 @@ export function ThreadsReference(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const local = posts
-    .filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body))
-    .map((body, n) =>
-      makeItem({
-        id: "local-thread-" + n,
+    .filter((body) => !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(body))
+    .map((body, n) => {
+      const record = localPostRecords[n]?.text === body ? localPostRecords[n] : undefined;
+      const createdAt = record?.createdAt ?? p.virtualTimestamp ?? 0;
+      return makeItem({
+        id: record?.id || "local-thread-" + n,
         title: "本地串文",
         body,
         sender: "allyz_1101",
-        time: p.virtualTime || "09:41",
+        time: formatGameDateTime(createdAt),
+        sentAt: createdAt,
         meta: { local: "true", handle: "allyz_1101" },
-      }),
-    );
+      });
+    });
   const feed = [
       ...local,
       ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
