@@ -29,8 +29,14 @@ import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
 import { useSkinState } from "../skinState";
+import { formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
 export function ThreadsReference(p: SkinProps) {
+  const relativeTime = (item: Item) => {
+    const explicit = item.time.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{1,2}:\\d{2})/);
+    const timestamp = item.sentAt ?? (explicit ? zonedDateTimeToTimestamp(explicit[1], explicit[2]) : p.virtualTimestamp || 0);
+    return formatRelativeGameTime(timestamp, p.virtualTimestamp ?? timestamp);
+  };
   const [tab, setTab] = useSkinState<string>(p, "threads-tab", "首页"),
     [liked, setLiked] = useSkinState<string[]>(p, "threads-liked", []),
     [saved, setSaved] = useSkinState<string[]>(p, "threads-saved", []),
@@ -96,7 +102,7 @@ export function ThreadsReference(p: SkinProps) {
       <div className="tr-post-content">
         <div className="tr-byline">
           <b>@{i.meta.handle || i.sender}</b>
-          <span>{i.time.slice(-5)}</span>
+          <span>{relativeTime(i)}</span>
           <button
             aria-label="帖子选项"
             onClick={() => {
@@ -311,7 +317,7 @@ export function ThreadsReference(p: SkinProps) {
                     <span>
                       <b>{i.sender}</b>
                       <small>
-                        {i.body} · {i.time.slice(-5)}
+                        {i.body} · {relativeTime(i)}
                       </small>
                     </span>
                     {i.favorite && <Pin size={16} />}
@@ -335,7 +341,7 @@ export function ThreadsReference(p: SkinProps) {
                       <Avatar name={i.sender} src={i.avatar} />
                       <div>
                         <b>{i.sender}</b>
-                        <small>{i.time.slice(-5)}</small>
+                        <small>{relativeTime(i)}</small>
                         <p>{i.body}</p>
                         <div className="tr-actions">
                           <Heart />
