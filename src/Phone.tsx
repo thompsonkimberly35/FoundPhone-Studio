@@ -77,7 +77,7 @@ import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoic
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
-  /测试用户|测试用戶|测试帖子|测试贴文|测试内容|测试账号|测试帳號|test\s*(user|post|content|account)|demo\s*(user|post|content|account)|sample\s*(user|post|content|account)/i.test(
+  /测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(
     [item.id, item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" "),
   );
 
@@ -302,6 +302,20 @@ function PhoneRuntime({
     const seeded = ensureJapanLotteryMail(current);
     if (seeded !== current) update(seeded);
   }, [creator, ready, work.id, work.updatedAt, external]);
+  useEffect(() => {
+    if (creator || !ready) return;
+    const current = runtimeRef.current;
+    const cleanedMessages = Object.fromEntries(
+      Object.entries(current.messages).map(([appId, list]) => [
+        appId,
+        (list ?? []).filter((item) => !isTestContentItem(item)),
+      ]),
+    ) as Runtime["messages"];
+    const changed = Object.entries(current.messages).some(([appId, list]) =>
+      (list ?? []).length !== (cleanedMessages[appId as keyof Runtime["messages"]] ?? []).length,
+    );
+    if (changed) update({ ...current, messages: cleanedMessages });
+  }, [creator, ready, s.messages]);
   useEffect(() => {
     // Story notifications wait until the player unlocks the phone.
     // KakaoTalk has priority; never overlap its banner with Instagram story notices.
