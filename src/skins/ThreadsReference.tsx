@@ -350,18 +350,16 @@ export function ThreadsReference(p: SkinProps) {
                           : true,
                   )
                   .map((i) => (
-                    <div className="tr-activity" key={i.id}>
+                    <button className="tr-activity" key={i.id} onClick={() => { const target = feed.find((post) => post.id === i.meta.postId); if (target) setSelected(target); }}>
                       <Avatar name={i.sender} src={i.avatar} />
                       <div>
                         <b>{i.sender}</b>
                         <small>{i.time.slice(-5)}</small>
+                        <p className="tr-activity-original">{i.meta.originalPreview || "你关注的动态"}</p>
                         <p>{i.body}</p>
-                        <div className="tr-actions">
-                          <Heart />
-                          <Send />
-                        </div>
+                        <div className="tr-actions"><Heart /><MessageCircleIcon /><Repeat2 /><Send /></div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 {!activities.length && <p className="tr-empty">暂无动态</p>}
               </>
