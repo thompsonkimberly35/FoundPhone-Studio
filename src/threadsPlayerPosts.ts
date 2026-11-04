@@ -1,4 +1,4 @@
-export type ThreadsPlayerPost = { id: string; text: string; createdAt: number; boyfriend: string; media?: string };
+export type ThreadsPlayerPost = { id: string; text: string; createdAt: number; boyfriend: string; media?: string; contextText?: string };
 export type ThreadsFanReply = { id: string; postId: string; authorId: string; handle: string; avatar: string; text: string; category: Mood; scheduledAt: number; deliveredAt: number | null; readAt: number | null };
 type Mood = "claim" | "explain" | "attack" | "sad" | "apology" | "daily" | "support" | "mention";
 const pools: Record<Mood, string[]> = {
@@ -36,6 +36,7 @@ export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanRe
      let reply = text;
      if (category === "mention") reply = "@" + mentionHandle + " " + (offset === 0 ? "我看到你這篇了，想知道後續會怎麼發展。" : offset === 1 ? "你這段話我有看到，想補充一下我的想法。" : "來看這篇，大家可以討論但請保持尊重。");
      if (post.boyfriend) reply = reply.replace(/他/g,post.boyfriend);
+     if (post.contextText && category === "support" && offset === 0) reply = "你前面提過「" + post.contextText.slice(0,36) + "」，希望大家能把注意力放回ALD1。";
      if (category === mood && post.boyfriend && category === "claim") reply = reply.replace(/妳/g,"你");
      return { category, reply, order: categoryIndex*3+offset };
    });
