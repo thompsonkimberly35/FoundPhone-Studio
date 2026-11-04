@@ -1366,6 +1366,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       time: current.time || displayTime,
                       meta: { notificationAppId: "threads", eventId: "threads-backlash-after-first-ig-reply" },
                     });
+                    const kakaoUi = current.ui?.kakao || {};
+                    let pendingNotifications: Item[] = [];
+                    try { pendingNotifications = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { pendingNotifications = []; }
+                    if (app !== "threads" && !pendingNotifications.some((item) => item.id === notice.id)) pendingNotifications.push(notice);
                     update({
                       ...current,
                       messages: {
@@ -1375,6 +1379,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       },
                       ui: {
                         ...current.ui,
+                        kakao: app !== "threads" ? { ...kakaoUi, "global-notification-queue": JSON.stringify(pendingNotifications.slice(-40)) } : kakaoUi,
                         threads: {
                           ...threadsUi,
                           "threads-backlash-event-id": "threads-backlash-after-first-ig-reply",
@@ -1383,7 +1388,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         },
                       },
                     });
-                    if (app !== "threads") setGlobalNotificationItem(notice);
                   }}
                   onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; if (targetKakaoThread) setTargetKakaoThread(""); }}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {

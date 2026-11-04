@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { AtSign, MessageCircle } from "lucide-react";
 import type { Item } from "./schema";
 
 type Props = {
@@ -31,11 +31,11 @@ export function GlobalNotificationBanner({ item, onDismiss, onOpen }: Props) {
       <button
         type="button"
         className={`global-kakao-notification ${leaving ? "is-leaving" : ""}`}
-        aria-label={`KakaoTalk，${item.sender}：${item.body}。点击打开聊天`}
+        aria-label={`${item.sender}：${item.body}。点击打开应用`}
         onClick={() => onOpen(item)}
       >
         <span className="global-kakao-app-icon" aria-hidden="true">
-          <MessageCircle size={18} fill="currentColor" strokeWidth={1.8} />
+          {item.meta?.notificationAppId === "threads" ? <AtSign size={19} /> : <MessageCircle size={18} fill="currentColor" strokeWidth={1.8} />}
         </span>
         <span className="global-kakao-copy">
           <strong className="global-kakao-sender">{item.sender}</strong>
