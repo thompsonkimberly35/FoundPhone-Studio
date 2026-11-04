@@ -70,6 +70,7 @@ import { createInstagramBacklash } from "./instagramBacklash";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
+import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
 export function AppIcon({
   id,
   name,
@@ -740,12 +741,21 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "secret-admirer-selection-error": "排除男友与好友后没有符合成年条件的候选成员，秘密单恋剧情已安全停止。" } } });
       return;
     }
+    const teamConflict = chooseTeamConflictMember(boyfriendId, friendId, picked.id);
     const selectedAt = Date.now();
     update({
       ...current,
       ui: { ...current.ui, kakao: {
         ...currentUi,
         "secret-admirer-member-id": picked.id,
+        "team-conflict-member-id": teamConflict?.id || "",
+        "team-conflict-selection-error": teamConflict ? "" : "排除男友、好友及A后没有符合成年条件的候选成员，B剧情已安全停止。",
+        "team-conflict-trigger-at": teamConflict ? String(selectedAt + 60_000) : "",
+        "team-conflict-story-started": false,
+        "team-conflict-story-node": "",
+        "team-conflict-story-outcome": "",
+        "team-conflict-completed-nodes": "[]",
+        "team-conflict-history": "[]",
         "secret-admirer-selected-at": String(selectedAt),
         "secret-admirer-trigger-at": String(selectedAt + 60_000),
         "secret-admirer-story-started": false,
@@ -784,6 +794,22 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const node = getSecretAdmirerNode("A001");
       if (!node) return;
       const avatar = import.meta.env.BASE_URL + "kakao/" + member.avatarFile;
+      const teamConflictMemberId = String(latestUi["team-conflict-member-id"] || "");
+      const teamConflictMember = ALD1_SECRET_ADMIRER_MEMBERS.find((entry) => entry.id === teamConflictMemberId);
+      const teamConflictOpening = teamConflictMember && !messages.some((item) => item.id === "team-conflict-B001-0")
+        ? getTeamConflictNode("B001")
+        : undefined;
+      const teamConflictFirst = teamConflictMember && teamConflictOpening ? makeItem({
+        id: "team-conflict-B001-0",
+        title: teamConflictMember.name,
+        sender: teamConflictMember.name,
+        avatar: import.meta.env.BASE_URL + "kakao/" + teamConflictMember.avatarFile,
+        body: teamConflictOpening.lines[0],
+        time: latest.time || displayTime,
+        outgoing: false,
+        read: false,
+        meta: { teamConflictNode: "B001" },
+      }) : undefined;
       const first = makeItem({
         id: "secret-admirer-A001-0",
         title: member.name,
@@ -815,13 +841,23 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { existingQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { existingQueue = []; }
       update({
         ...latest,
-        messages: { ...latest.messages, kakao: [...messages, first] },
-        notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${member.name}：${first.body}`],
+        messages: { ...latest.messages, kakao: [...messages, first, ...(teamConflictFirst ? [teamConflictFirst] : [])] },
+        notifications: app === "kakao" ? latest.notifications : [
+          ...latest.notifications,
+          `KakaoTalk: ${member.name}：${first.body}`,
+          ...(teamConflictFirst ? [`KakaoTalk: ${teamConflictMember?.name}：${teamConflictFirst.body}`] : []),
+        ],
         ui: { ...latest.ui, kakao: {
           ...latestUi,
           "secret-admirer-story-started": true,
           "secret-admirer-story-node": "A001",
           "secret-admirer-completed-nodes": "[]",
+          ...(teamConflictFirst ? {
+            "team-conflict-story-started": true,
+            "team-conflict-story-node": "B001",
+            "team-conflict-completed-nodes": "[]",
+            "team-conflict-history": "[]",
+          } : {}),
           "delivery-queue": JSON.stringify([...existingQueue, ...queued]),
         } },
       });
@@ -1120,6 +1156,39 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         return { item, typingAt, deliverAt };
                       });
                     };
+                    if (choiceId?.startsWith("team-conflict:")) {
+                      const [, nodeId, choiceKey] = choiceId.split(":");
+                      const activeNodeId = String(currentUi["team-conflict-story-node"] || "");
+                      const memberId = String(currentUi["team-conflict-member-id"] || "");
+                      const member = ALD1_SECRET_ADMIRER_MEMBERS.find((entry) => entry.id === memberId);
+                      if (!member || character !== member.name || nodeId !== activeNodeId) return;
+                      const storyChoice = getTeamConflictChoice(nodeId, choiceKey);
+                      if (!storyChoice) return;
+                      let history: string[] = [];
+                      let completed: string[] = [];
+                      try { history = JSON.parse(String(currentUi["team-conflict-history"] || "[]")); } catch { history = []; }
+                      try { completed = JSON.parse(String(currentUi["team-conflict-completed-nodes"] || "[]")); } catch { completed = []; }
+                      const historyKey = nodeId + ":" + choiceKey;
+                      if (history.includes(historyKey)) return;
+                      const nextNode = getTeamConflictNode(storyChoice.next);
+                      if (!nextNode) return;
+                      const outgoing = makeItem({ id: "team-conflict-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: storyChoice.text, time, outgoing: true, read: true });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), teamConflictNode: nodeId, teamConflictChoice: choiceKey };
+                      const queued = queueLines(nextNode.lines, "team-conflict-" + nodeId + "-" + choiceKey);
+                      update({
+                        ...current,
+                        messages: { ...currentMessages, kakao: [...existing, outgoing] },
+                        ui: { ...current.ui, kakao: {
+                          ...currentUi,
+                          "team-conflict-story-node": nextNode.id,
+                          "team-conflict-history": JSON.stringify([...history, historyKey]),
+                          "team-conflict-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
+                          "team-conflict-story-outcome": nextNode.result || String(currentUi["team-conflict-story-outcome"] || ""),
+                          "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                        } },
+                      });
+                      return;
+                    }
                     if (choiceId === "admirer:reconnect") {
                       const boundary = String(currentUi["secret-admirer-boundary"] || "");
                       const reconnectAt = Number(currentUi["secret-admirer-boundary-until-at"] || 0);
