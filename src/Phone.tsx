@@ -939,6 +939,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const usedKey = "friend-link-used-" + nodeId + "-" + linkType;
                       if (currentUi[usedKey] === true) return;
                       const responses: Record<string, Record<string, string[]>> = {
+                        handoff: {
+                          A: ["好，我们谈谈。", "我不想再让你从别人那里拼凑真相。"],
+                          B: ["我会亲口告诉你。", "这次我不会再把你排除在外。"],
+                          C: ["谢谢你愿意给我时间。", "我会整理好，再认真跟你说。"],
+                        },
                         warning: {
                           A: ["……你已经知道了。", "是，几个星期前公司就提醒过我。", "我当时以为只要更小心，就不会影响到你。"],
                           B: ["我不是故意要瞒你。", "还有一些会议内容我没有整理好，但我会把和你有关的部分说清楚。"],
