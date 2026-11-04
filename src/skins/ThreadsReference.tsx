@@ -23,7 +23,7 @@ import type { SkinProps } from "../AppSkins";
 import { Avatar } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
-import { createThreadsAvatar, createThreadsCommentIdentity, generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
+import { createThreadsAvatar, createThreadsCommentIdentity, generateThreadsFanReplies, reconcileThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
 import { useSkinState } from "../skinState";
 import { formatGameDateTime, formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
@@ -61,6 +61,12 @@ export function ThreadsReference(p: SkinProps) {
   const fanReplies: ThreadsFanReply[] = useMemo(() => {
     try { const value: unknown = JSON.parse(fanRepliesJson); return Array.isArray(value) ? value : []; } catch { return []; }
   }, [fanRepliesJson]);
+  useEffect(() => {
+    // Restore the original scheduled fan replies if a saved post survived an update
+    // but its separately persisted reply list was incomplete.
+    const repaired = reconcileThreadsFanReplies(playerPosts, fanReplies);
+    if (repaired !== fanReplies) setFanRepliesJson(JSON.stringify(repaired));
+  }, [playerPosts, fanReplies, setFanRepliesJson]);
   useEffect(() => {
     if (!fanReplies.some((reply) => /@allyz_1101\\b/i.test(reply.text))) return;
     const repaired = fanReplies.map((reply) => {
