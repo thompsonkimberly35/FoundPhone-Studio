@@ -403,8 +403,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             notifications: [...current.notifications, ...notices],
           });
           setBanner(notices[0] || "");
-          window.setTimeout(() => setBanner(notices[1] || ""), 2000);
-          window.setTimeout(() => setBanner(""), 4000);
+          window.setTimeout(() => setBanner(notices[1] || ""), 1000);
+          window.setTimeout(() => setBanner(""), 2000);
         } else if (xPostsChanged) {
           update({ ...current, messages: { ...current.messages, twitter: nextXPosts } });
         }
@@ -598,7 +598,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const count = s.notifications.length;
     if (!locked && work.phone.notifications && count > noticesSeen.current) {
       setBanner(s.notifications.at(-1) || "");
-      const timer = setTimeout(() => setBanner(""), 2000);
+      const timer = setTimeout(() => setBanner(""), 1000);
       noticesSeen.current = count;
       return () => clearTimeout(timer);
     }
