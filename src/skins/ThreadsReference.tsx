@@ -29,10 +29,16 @@ import type { SkinProps } from "../AppSkins";
 import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
-import { generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
+import { createThreadsAvatar, generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
 import { useSkinState } from "../skinState";
 import { formatGameDateTime, formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
+
+function getPostImages(media?: string): string[] {
+  if (!media) return [];
+  try { const parsed: unknown = JSON.parse(media); if (Array.isArray(parsed)) return parsed.filter((value): value is string => typeof value === "string" && /^(data:image\/|https?:\/\/|\/)/.test(value)); } catch { /* legacy single-image URL */ }
+  return /^(data:image\/|https?:\/\/|\/)/.test(media) ? [media] : [];
+}
 export function ThreadsReference(p: SkinProps) {
   const relativeTime = (item: Item) => {
     const explicit = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
@@ -95,7 +101,8 @@ export function ThreadsReference(p: SkinProps) {
     [options, setOptions] = useState(false),
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
-  const [draftMedia, setDraftMedia] = useState("");
+  const [draftMedia, setDraftMedia] = useState<string[]>([]);
+  const [lightboxImage, setLightboxImage] = useState("");
   const [replyTarget, setReplyTarget] = useState("");
   const [highlightedReplyId, setHighlightedReplyId] = useState("");
   const local = posts
@@ -185,7 +192,7 @@ export function ThreadsReference(p: SkinProps) {
         </div>
         <button className="tr-body" onClick={() => open(i)}>
           {i.body}
-          {i.media && <Media item={i} />}
+          {getPostImages(i.media).length > 0 && <div className="tr-post-media" onClick={(event) => event.stopPropagation()}>{getPostImages(i.media).map((src, index) => <button type="button" className="tr-post-media-item" key={src + index} aria-label="放大图片" onClick={() => setLightboxImage(src)}><img src={src} alt={"贴文图片 " + (index + 1)} loading="lazy" /></button>)}</div>}
         </button>
         <div className="tr-actions">
           <button
@@ -247,13 +254,13 @@ export function ThreadsReference(p: SkinProps) {
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
                 
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
-              ].map((c, n) => (
-                <p key={n}>{c}</p>
-              ))}
+              ].map((c, n) => {
+                const handle = "threadfan_" + (n + 1).toString(36) + "x";
+                return <div className="tr-comment-row" key={selected.id + "-legacy-comment-" + n}><Avatar name={handle} src={createThreadsAvatar(selected.id + ":" + n + ":" + c)} /><div className="tr-comment-main"><div className="tr-comment-byline"><b>@{handle}</b><small>{relativeTime(selected)}</small></div><p>{c}</p><div className="tr-comment-actions"><button type="button" aria-label="点赞评论"><Heart size={15} /></button><button type="button" aria-label="回复评论" onClick={() => setReplyTarget(selected.id)}><MessageCircleIcon /></button></div></div></div>;
+              })}
               {fanReplies.filter((reply) => reply.postId === selected.id && reply.deliveredAt !== null).map((reply) => (
                 <div className={"tr-fan-reply" + (highlightedReplyId === reply.id ? " is-targeted" : "")} key={reply.id}>
-                  <p><b>@{reply.handle}</b>：{reply.text}</p>
-                  <button type="button" onClick={() => setReplyTarget(reply.id)}>回覆</button>
+                  <div className="tr-comment-row"><Avatar name={reply.handle} src={reply.avatar || createThreadsAvatar(reply.handle)} /><div className="tr-comment-main"><div className="tr-comment-byline"><b>@{reply.handle}</b><small>{formatRelativeGameTime(reply.deliveredAt || reply.scheduledAt, p.virtualTimestamp ?? reply.scheduledAt)}</small></div><p>{reply.text}</p><div className="tr-comment-actions"><button type="button" aria-label="点赞评论"><Heart size={15} /></button><button type="button" onClick={() => setReplyTarget(reply.id)} aria-label="回复评论"><MessageCircleIcon /></button><button type="button" onClick={() => setReplyTarget(reply.id)}>回复</button></div></div></div>
                   {replyRecords.filter((child) => child.parentReplyId === reply.id).map((child) => (
                     <p className="tr-nested-reply" key={child.id}>{child.authorHandle}：{child.text}</p>
                   ))}
@@ -574,7 +581,7 @@ export function ThreadsReference(p: SkinProps) {
                 maxLength={2000}
               />
               <p className="tr-muted">添加到串文</p>
-              {draftMedia && <div className="tr-compose-photo"><img src={draftMedia} alt="待發布圖片" /><button type="button" onClick={() => setDraftMedia("")}>移除圖片</button></div>}
+              {draftMedia.length > 0 && <div className="tr-compose-photo-list">{draftMedia.map((src, index) => <div className="tr-compose-photo" key={src + index}><img src={src} alt={"待发布图片 " + (index + 1)} /><button type="button" onClick={() => setDraftMedia((current) => current.filter((_, itemIndex) => itemIndex !== index))}>移除</button></div>)}</div>}
             </div>
           </div>
           <div className="tr-compose-actions">
@@ -582,13 +589,11 @@ export function ThreadsReference(p: SkinProps) {
               <ImageIcon size={21} />
               照片
             </button>
-            <input id="threads-player-photo" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) return;
-              if (file.size > 5 * 1024 * 1024) { window.alert("圖片請小於 5 MB"); event.target.value = ""; return; }
-              const reader = new FileReader();
-              reader.onload = () => { if (typeof reader.result === "string") setDraftMedia(reader.result); };
-              reader.readAsDataURL(file);
+            <input id="threads-player-photo" type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden onChange={(event) => {
+              const files = Array.from(event.target.files || []);
+              if (files.some((file) => file.size > 5 * 1024 * 1024)) { window.alert("每张图片请小于 5 MB"); event.target.value = ""; return; }
+              Promise.all(files.map((file) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("图片读取失败")); reader.onerror = () => reject(new Error("图片读取失败")); reader.readAsDataURL(file); }))).then((images) => setDraftMedia((current) => [...current, ...images].slice(0, 4))).catch(() => window.alert("图片读取失败，请重试"));
+              event.target.value = "";
             }} />
             <button onClick={() => setOptions(!options)}>
               <SlidersHorizontal size={21} />
@@ -600,14 +605,14 @@ export function ThreadsReference(p: SkinProps) {
                 const createdAt = p.virtualTimestamp ?? 0;
                 const post: ThreadsPlayerPost = {
                   id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8),
-                  text: draft, createdAt, boyfriend: p.selectedBoyfriend || "", media: draftMedia || undefined,
+                  text: draft, createdAt, boyfriend: p.selectedBoyfriend || "", media: draftMedia.length ? JSON.stringify(draftMedia) : undefined,
                   contextText: [p.storyContext || "", ...p.items.filter(item => item.kind === "post").slice(-2).map(item => item.body)].filter(Boolean).join(" ").slice(0, 1200),
                 };
                 setPlayerPostsJson(JSON.stringify([post, ...playerPosts]));
                 setFanRepliesJson(JSON.stringify([...fanReplies, ...generateThreadsFanReplies(post)]));
                 // Player posts are stored separately from legacy local posts to avoid duplicate feed cards.
                 setDraft("");
-                setDraftMedia("");
+                setDraftMedia([]);
                 setCompose(false);
                 setKeyboard(false);
                 setTab("首页");
@@ -694,6 +699,7 @@ export function ThreadsReference(p: SkinProps) {
           )}
         </section>
       )}
+      {lightboxImage && <div className="tr-image-lightbox" role="dialog" aria-modal="true" aria-label="图片预览" onClick={() => setLightboxImage("")}><button type="button" aria-label="关闭图片预览" onClick={() => setLightboxImage("")}>×</button><img src={lightboxImage} alt="放大图片" /></div>}
       {options && (
         <div className="tr-options">
           <b>帖子选项</b>
