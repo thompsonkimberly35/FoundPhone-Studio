@@ -490,11 +490,24 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       }
       const existing = current.messages.kakao ?? [];
       if (!existing.some((item) => item.id === head.item.id)) {
+        const delivered = { ...head.item, read: false };
+        const startsBacklash = delivered.title === selectedBoyfriend
+          && delivered.body === "你的身份好像已经被扒出来了"
+          && !(current.messages.instagram ?? []).some((item) => item.id === "ig-backlash-1");
         update({
           ...current,
-          messages: { ...current.messages, kakao: [...existing, { ...head.item, read: false }] },
+          messages: { ...current.messages, kakao: [...existing, delivered] },
           ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(currentQueue.slice(1)), "typing-state": "" } },
         });
+        if (startsBacklash) {
+          const backlash = createInstagramBacklash(current.time || displayTime);
+          const latest = runtimeRef.current;
+          update({
+            ...latest,
+            messages: { ...latest.messages, instagram: [...(latest.messages.instagram ?? []), ...backlash] },
+          });
+          setIgQueue(backlash);
+        }
       } else {
         update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(currentQueue.slice(1)), "typing-state": "" } } });
       }
@@ -890,11 +903,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const queueAfterReply = [...currentQueue, ...queuedReply];
                     const queuedFollowUp = followUpReply ? queueLines([followUpReply], "kakao-reply-followup-" + character + "-" + stamp, queueAfterReply) : [];
                     const nextQueue = [...queueAfterReply, ...queuedFollowUp];
-                    if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(currentMessages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
-                      const backlash = createInstagramBacklash(time);
-                      messages = { ...messages, instagram: [...(currentMessages.instagram ?? []), ...backlash] };
-                      setIgQueue(backlash);
-                    }
                     update({
                       ...current,
                       messages,
