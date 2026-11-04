@@ -9,11 +9,11 @@ export type SecretAdmirerMember = {
 // Stable IDs are deliberately independent of display names and asset filenames.
 export const ALD1_SECRET_ADMIRER_MEMBERS: readonly SecretAdmirerMember[] = [
   { id: "ald1-zhou-anxin", name: "周安信", avatarFile: "周安信-kakao.png", adult: true, style: "sensitive" },
-  { id: "ald1-zhang-jiahao", name: "張家豪", avatarFile: "張家豪-kakao.png", adult: true, style: "playful" },
+  { id: "ald1-zhang-jiahao", name: "张家豪", avatarFile: "張家豪-kakao.png", adult: true, style: "playful" },
   { id: "ald1-li-liwu", name: "李理悟", avatarFile: "李理悟-kakao-v2.jpg", adult: true, style: "reserved" },
   { id: "ald1-li-xiangyuan", name: "李相沅", avatarFile: "李相沅-kakao.png", adult: true, style: "mature" },
-  { id: "ald1-he-xinlong", name: "賀鑫隆", avatarFile: "賀鑫隆-kakao.png", adult: true, style: "direct" },
-  { id: "ald1-zheng-xiangxuan", name: "鄭相炫", avatarFile: "鄭相炫-kakao.png", adult: true, style: "sensitive" },
+  { id: "ald1-he-xinlong", name: "贺鑫隆", avatarFile: "賀鑫隆-kakao.png", adult: true, style: "direct" },
+  { id: "ald1-zheng-xiangxuan", name: "郑相炫", avatarFile: "鄭相炫-kakao.png", adult: true, style: "sensitive" },
   { id: "ald1-jin-junshu", name: "金俊抒", avatarFile: "金俊抒-kakao.png", adult: true, style: "playful" },
   { id: "ald1-jin-qianyou", name: "金虔佑", avatarFile: "金虔佑-kakao.png", adult: true, style: "reserved" },
 ] as const;
