@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeThreadsBacklash, hasThreadsX002, type InstagramReplyEvidence } from "./threadsBacklash";
+import { makeThreadsBacklash, hasThreadsX002, createThreadsReplyRecord, type InstagramReplyEvidence } from "./threadsBacklash";
 
 const evidence: InstagramReplyEvidence = {
   conversationId: "ig-backlash-1",
@@ -42,7 +42,6 @@ describe("Threads backlash event", () => {
   });
 });
 
-import { createThreadsReplyRecord } from "./threadsBacklash";
 
 describe("Threads player replies", () => {
   it("creates uniquely identified replies with persistent author and timestamp fields", () => {
