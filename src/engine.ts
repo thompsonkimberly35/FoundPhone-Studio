@@ -216,26 +216,21 @@ export function advance(
     s.elapsedMs = next;
     if (s.clockRemainderMs >= 60000) {
       s.clockRemainderMs -= 60000;
-      const match = s.time.match(/^(\d{1,2}):(\d{2})$/);
-      if (match) {
-        const value = (Number(match[1]) * 60 + Number(match[2]) + 1) % 1440;
-        s.time =
-          String(Math.floor(value / 60)).padStart(2, "0") +
-          ":" +
-          String(value % 60).padStart(2, "0");
-        if (w.mode !== "explore")
-          runQueue(
-            w,
-            s,
-            "time",
-            s.time,
-            w.nodes
-              .filter(
-                (n) => n.event === "time" && (!n.target || n.target === s.time),
-              )
-              .map((n) => n.id),
-          );
-      }
+      const previousDate = formatGameDate(s.gameClock!.currentGameTimestamp, s.gameClock!.timezone);
+      s.gameClock = { ...s.gameClock!, currentGameTimestamp: s.gameClock!.currentGameTimestamp + 60_000 };
+      s.time = formatGameTime(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
+      s.date = formatGameDate(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
+      if (s.date !== previousDate) s.gameClock.currentStoryDay += 1;
+      if (w.mode !== "explore")
+        runQueue(
+          w,
+          s,
+          "time",
+          s.time,
+          w.nodes
+            .filter((n) => n.event === "time" && (!n.target || n.target === s.time))
+            .map((n) => n.id),
+        );
     }
     if (due && due.due <= s.elapsedMs) {
       s.scheduled.splice(s.scheduled.indexOf(due), 1);
