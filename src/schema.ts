@@ -65,8 +65,8 @@ export const nodeSchema = z.object({
   delayMs: z.number().int().min(0).max(86400000).optional(),
   timeHint: z.object({
     period: z.enum(["morning", "noon", "afternoon", "evening", "night"]).optional(),
-    earliestTime: z.string().regex(/^\\d{1,2}:\\d{2}$/).optional(),
-    preferredTime: z.string().regex(/^\\d{1,2}:\\d{2}$/).optional(),
+    earliestTime: z.string().regex(/^\d{1,2}:\d{2}$/).optional(),
+    preferredTime: z.string().regex(/^\d{1,2}:\d{2}$/).optional(),
     advanceToNextDay: z.boolean().optional(),
     minimumElapsedMinutes: z.number().min(0).optional(),
   }).optional(),
