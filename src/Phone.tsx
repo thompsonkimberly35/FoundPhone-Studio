@@ -1142,8 +1142,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   creator={creator}
                   state={s}
                   onRead={(id) => {
-                    event("read", id);
                     const current = runtimeRef.current;
+                    if (!(current.messages.mail ?? []).some((item) => item.id === id))
+                      event("read", id);
                     if ((current.messages.instagram ?? []).some((item) => item.id === id)) {
                       update({ ...current, messages: { ...current.messages, instagram: (current.messages.instagram ?? []).map((item) => item.id === id ? { ...item, read: true } : item) } });
                     } else if ((current.messages.kakao ?? []).some((item) => item.id === id)) {
