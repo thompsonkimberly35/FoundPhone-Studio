@@ -228,7 +228,7 @@ export function MymyKakao(p: SkinProps) {
           </div>
           {boyfriendThread && !hasBacklashCheckin && !replyAlreadySent && !queuePending ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
-              <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
+              <button type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, width: "100%", borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fff8ed 100%)", color: "#655344", boxShadow: "0 2px 7px rgba(115, 87, 58, 0.07)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word" }}
                 onClick={() => p.onKakaoChoice?.(p.thread, playerReply, "你的身份好像已经被扒出来了")}>
                 {playerReply}
               </button>
@@ -246,10 +246,11 @@ export function MymyKakao(p: SkinProps) {
                   先结束聊天，稍后重新打开继续
                 </button>
               ) : romanceNode.choices.length ? (
-                <div style={{ display: "grid", gap: 8, width: "100%" }}>
-                  {romanceNode.choices.map((choice) => (
-                    <button key={choice.key} type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal", textAlign: "left" }}
+                <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
+                  {romanceNode.choices.map((choice, index) => (
+                    <button key={choice.key} type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, maxWidth: "100%", width: "100%", minHeight: 42, borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", boxShadow: "0 2px 5px rgba(115, 87, 58, 0.06)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, letterSpacing: "0.1px", textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word", overflow: "visible" }}
                       onClick={() => p.onKakaoChoice?.(p.thread, choice.text, "", "", choice.key)}>
+                      <span style={{ display: "inline-block", marginRight: 7, color: "#c2a17c", fontSize: 11, fontWeight: 600 }}>{String(index + 1).padStart(2, "0")}</span>
                       {choice.text}
                     </button>
                   ))}
@@ -261,7 +262,7 @@ export function MymyKakao(p: SkinProps) {
           ) : friendThread && !replyAlreadySent ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               {showChoices ? (
-                <button type="button" className="go" style={{ borderRadius: 18, padding: "10px 16px", width: "100%", whiteSpace: "normal" }}
+                <button type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, width: "100%", borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fff8ed 100%)", color: "#655344", boxShadow: "0 2px 7px rgba(115, 87, 58, 0.07)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word" }}
                   onClick={() => { p.onKakaoChoice?.(p.thread, playerReply, "你先别紧张，他已经在和公司开会了"); setShowChoices(false); }}>
                   {playerReply}
                 </button>
