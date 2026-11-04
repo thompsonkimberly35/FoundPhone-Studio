@@ -7,7 +7,7 @@ const pools: Record<Mood, string[]> = {
   explain: ["不是，谈恋爱而已，你们到底在崩溃什么？","她讲话是有点呛，但你们私讯骂人也很离谱吧。","我不支持这段恋情，但也不赞成网暴。","拜托，他是人，不是粉丝的私有财产。","她只是发个文也要被骂？有完没完？","不是吧，她只是说自己很累而已。"],
   attack: ["她真的完全不在乎 ALLYZ 的感受欸。","我本来还想替妳说话，现在不了。","救命，这发言我真的看傻。","现在知道委屈了？粉丝的委屈谁管？","妳是不是嫌事情闹得还不够大？","我真的替其他成员感到不值。"],
   sad: ["妳知道多少粉丝因为这件事哭了吗？","我们在演唱会只能远远看着他，妳倒是很幸福。","我今天真的要脱粉了。","ALLYZ 今天又要吵到天亮。","这留言区比恋爱新闻还精彩。","我真的不懂为什么有人觉得粉丝没有资格难过。"],
-  apology: ["臥槽，正主真的出来回应了。","我现在只想知道 Wake One 要怎么处理。","她现在说什么都会被骂吧。","我不支持这段恋情，但也不赞成网暴。","她只是发个文也要被骂？有完没完？"],
+  apology: ["卧槽，正主真的出来回应了。","我现在只想知道 Wake One 要怎么处理。","她现在说什么都会被骂吧。","我不支持这段恋情，但也不赞成网暴。","她只是发个文也要被骂？有完没完？"],
   daily: ["留友看傻逼。","不是姐，妳认真的？","我今天真的要脱粉了。","这留言区比恋爱新闻还精彩。","ALLYZ 今天又要吵到天亮。","不是吧，她只是说自己很累而已。"],
   support: ["她只是发个文也要被骂？有完没完？","拜托，他是人，不是粉丝的私有财产。","我不支持这段恋情，但也不赞成网暴。","有些粉丝真的管太宽了吧。","我只希望 ALD1 能好好活动。","她讲话是有点呛，但你们私讯骂人也很离谱吧。"],
   mention: ["@cloudy_7r 快来看这篇，真的离谱。","@orbitgirl_7p 快来吃瓜。","@starry_8m 妳快看，我真的不知道说什么。","我去，你看这件事又有新进展了。","有人整理时间线吗？","快来看，留言区真的太精彩了。"]
@@ -65,6 +65,8 @@ export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanRe
   return selected.slice(0, 24).map(({ text: sourceText, category }, index) => {
     let text = sourceText.replace(/\{\{BOYFRIEND_NAME\}\}/g, post.boyfriend || "他");
     if (text.includes("{{MENTION_HANDLE}}")) text = text.replace(/\{\{MENTION_HANDLE\}\}/g, mentionHandle);
+    if (category === "mention" && !/@[\w.]+/.test(text)) text = "@" + mentionHandle + " " + text;
+    if (category === "support" && post.contextText && index === 0) text = "你前面提过「" + post.contextText.slice(0, 36) + "」，" + text;
     if (category === "claim" && post.boyfriend) text = text.replace(/正主真的出来回应了/g, post.boyfriend + " 的女友真的出来回应了");
     const handle = handles[index];
     return {
