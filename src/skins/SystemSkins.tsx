@@ -28,6 +28,7 @@ import {
 import { useEffect, useState } from "react";
 import { download } from "../io";
 import { safeMedia, type Item } from "../schema";
+import { getBoyfriendPhotos } from "../boyfriendPhotoManifest";
 import {
   Add,
   Avatar,
@@ -185,22 +186,29 @@ export function ContactsSkin(p: Props) {
 export function PhotosSkin(p: Props) {
   const { tab, setTab, q, setQ } = useContent(p, "图库");
   const [album, setAlbum] = useState("");
-  // Photos are explicitly assigned to one boyfriend. Never fall back to another
-  // character's photos when the selected boyfriend has no matching media.
-  const boyfriend = p.selectedBoyfriend?.trim() || "";
-  const items = boyfriend
-    ? p.items.filter((item) => {
-        const owner = String(
-          item.meta?.boyfriend ?? item.meta?.character ?? item.folder ?? "",
-        ).trim();
-        return (
-          owner === boyfriend &&
-          item.kind !== "video" &&
-          item.kind !== "audio" &&
-          Boolean(safeMedia(item.media))
-        );
-      })
-    : [];
+  // Only load the explicit manifest for the currently selected character.
+  const { name: boyfriend, photos } = getBoyfriendPhotos(p.selectedBoyfriend);
+  const items: Item[] = photos.map((src, index) => ({
+    id: `boyfriend-photo-${encodeURIComponent(boyfriend)}-${index + 1}`,
+    title: `${boyfriend} · ${String(index + 1).padStart(2, "0")}`,
+    body: "",
+    richText: "",
+    meta: { boyfriend },
+    time: p.virtualTime ?? "2026-09-01 12:00",
+    sender: boyfriend,
+    avatar: "",
+    kind: "image",
+    media: src,
+    hidden: false,
+    unlock: "",
+    password: "",
+    folder: boyfriend,
+    favorite: false,
+    outgoing: false,
+    read: true,
+    likes: 0,
+    comments: [],
+  }));
   const searched = items.filter((item) =>
     (item.title + item.body + item.sender).toLowerCase().includes(q.toLowerCase()),
   );
@@ -213,8 +221,10 @@ export function PhotosSkin(p: Props) {
       <Header p={p} />
       <div className="catalog-scroll">
         <h1>{album || (boyfriend ? tab : "尚未选择男友")}</h1>
-        {!boyfriend ? (
+        {!p.selectedBoyfriend?.trim() ? (
           <div className="catalog-empty">选择男友后，这里会显示他的专属照片</div>
+        ) : !photos.length ? (
+          <div className="catalog-empty">暂时找不到{p.selectedBoyfriend}的照片</div>
         ) : tab === "相簿" && !album ? (
           <div className="album-grid">
             <button onClick={() => setAlbum(albumName)}>
@@ -245,9 +255,6 @@ export function PhotosSkin(p: Props) {
             </div>
             <p className="media-count">{list.length} 张照片</p>
           </>
-        )}
-        {boyfriend && !items.length && (
-          <p className="catalog-empty">还没有上传{boyfriend}的照片</p>
         )}
       </div>
       <Tabs
