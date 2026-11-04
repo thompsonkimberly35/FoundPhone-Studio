@@ -81,7 +81,7 @@ export function ThreadsReference(p: SkinProps) {
       </button>
       <div className="tr-post-content">
         <div className="tr-byline">
-          <b>{i.sender}</b>
+          <b>@{i.meta.handle || i.sender}</b>
           <span>{i.time.slice(-5)}</span>
           <button
             aria-label="帖子选项"
