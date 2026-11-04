@@ -26,7 +26,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import type { SkinProps } from "../AppSkins";
-import { Avatar, Media } from "./shared";
+import { Avatar } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
 import { createThreadsAvatar, createThreadsCommentIdentity, generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
