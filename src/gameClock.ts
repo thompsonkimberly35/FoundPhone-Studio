@@ -92,7 +92,10 @@ function inferLegacyTime(item: Item, date: string, timezone: string, cursor: num
   let minute = clock ? Number(clock[2]) : 0;
   const body = item.body;
   if (/晚安|睡吧|早点休息|准备睡|睡觉/.test(body)) hour = Math.max(hour, 22);
-  if (/早安|早上好|起床了吗/.test(body)) hour = Math.min(hour, 9);
+  if (/早安|早上好|起床了吗/.test(body)) {
+    hour = Math.min(hour, 8);
+    if (hour === 8 && minute === 0) minute = 30;
+  }
   if (/午安|午餐|午饭|中午/.test(body)) hour = 12;
   if (/下班|练习结束|晚上|晚餐|夜宵/.test(body)) hour = Math.max(hour, 19);
   let candidate = zonedDateTimeToTimestamp(date, `${pad(hour)}:${pad(minute)}`, timezone);
