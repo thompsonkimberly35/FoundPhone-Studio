@@ -57,10 +57,11 @@ export function ThreadsReference(p: SkinProps) {
   );
   const feed = [
       ...local,
-      ...p.items.filter((i) => i.folder !== "私信" && !i.meta.activityType),
+      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && !i.hidden),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
-    activities = p.items.filter((i) => i.meta.activityType);
+    activities = p.items.filter((i) => i.meta.activityType),
+    playerReplies = p.items.filter((i) => i.folder === "threads-reply");
   const toggle = (id: string, items: string[], set: (v: string[]) => void) =>
     set(items.includes(id) ? items.filter((v) => v !== id) : [...items, id]);
   const open = (i: Item) => {
@@ -109,7 +110,7 @@ export function ThreadsReference(p: SkinProps) {
           </button>
           <button aria-label={"回复" + i.title} onClick={() => open(i)}>
             <MessageCircleIcon />
-            {i.comments.length || ""}
+            {i.comments.length + playerReplies.filter((r) => r.meta.postId === i.meta.postId).length || ""}
           </button>
           <button
             aria-label={"转发" + i.title}
@@ -146,12 +147,14 @@ export function ThreadsReference(p: SkinProps) {
               <MoreHorizontal />
             </header>
             {card(selected)}
+            {(selected.meta.evidenceId === "ig-first-reply-evidence") && <div className="tr-ig-evidence"><div className="tr-ig-evidence-head">Instagram · 私信对话截图</div><div className="tr-ig-evidence-user">@{selected.meta.evidenceAttackerHandle}</div><div className="tr-ig-evidence-bubble">{selected.meta.evidenceAttackerText}</div><div className="tr-ig-evidence-player">{selected.meta.evidencePlayerReplyText}</div><small>游戏内对话引用 · 非真实账号资料</small></div>}
             <div className="tr-comments">
               {[
                 ...selected.comments,
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => v.split("\t").slice(1).join("\t")),
+                ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
               ))}

@@ -44,7 +44,7 @@ const seeds: PostSeed[] = [
 {id:"T035",handle:"unheardcheer_9n",body:"我有时会想，{{BOYFRIEND_NAME}}会知道吗？\n知道有人因为他开始努力学韩文。\n知道有人因为想看他的舞台，第一次自己搭飞机出国。\n知道有人在最难过的时候，靠着他的歌撑过去。\n我不是要他回报什么。\n只是希望他知道，那些喜欢过他的心情，都不是假的。",comments:[["@blueletter_4x","我就是因为他第一次出国。"],["@starlight_7v","他应该知道粉丝的支持有多重要。"],["@gentleallyz_2q","希望粉丝也能相信，他以前的感谢是真的。"]]},
 {id:"T036",handle:"tomorrowallyz_6w",body:"今天的Threads全都是难过的人。\n有人脱粉，有人生气，有人还在努力替他说话。\n我也不知道自己现在算哪一种。\n但刚刚洗澡的时候，我还是不自觉哼了ALD1的歌。\n原来喜欢一个人的习惯，不会因为一夜之间发生的事就全部消失。\n也许明天，我还是会按下播放键。",comments:[["@orbitmorning_8k","我也是。"],["@cloudallyz_3r","不用急着替自己的心情分类。"],["@starroad_5n","希望大家明天都能好一点。"]]}
 ];
-const makeThreadsBacklash = (boyfriendName:string, evidence:InstagramReplyEvidence, time:string, x002Published:boolean):Item[] => seeds.map((seed,index)=>{
+export const makeThreadsBacklash = (boyfriendName:string, evidence:InstagramReplyEvidence, time:string, x002Published:boolean):Item[] => seeds.map((seed,index)=>{
  const handle=seed.id==="T029"?evidence.attackerHandle:seed.handle;
  const body=seed.body.replace(/\{\{BOYFRIEND_NAME\}\}/g,boyfriendName);
  const comments=seed.comments.map(([author,text])=>author+"："+text);

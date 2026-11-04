@@ -766,6 +766,7 @@ export function MymyInstagram(p: SkinProps) {
                   ...sentMessages,
                   [selected.id]: [...(sentMessages[selected.id] || []), message],
                 }));
+                if (isBacklash(selected)) p.onInstagramReply?.(selected, message);
                 // A reply accepts the request and moves the conversation to General.
                 if (isBacklash(selected)) setDmTab("一般");
                 setDraft("");
