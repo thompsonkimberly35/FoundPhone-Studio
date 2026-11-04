@@ -23,6 +23,7 @@ import {
   ArrowUp,
   CornerDownLeft,
   Pin,
+  Image as ImageIcon,
 } from "lucide-react";
 import type { SkinProps } from "../AppSkins";
 import { Avatar, Media } from "./shared";
@@ -94,6 +95,8 @@ export function ThreadsReference(p: SkinProps) {
     [options, setOptions] = useState(false),
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
+  const [draftMedia, setDraftMedia] = useState("");
+  const [replyTarget, setReplyTarget] = useState("");
   const local = posts
     .filter((body) => !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(body))
     .map((body, n) => {
@@ -112,6 +115,7 @@ export function ThreadsReference(p: SkinProps) {
   const playerItems = playerPosts.map((post) => makeItem({
     id: post.id, title: "你的串文", body: post.text, sender: "allyz_1101",
     time: formatGameDateTime(post.createdAt), kind: "post",
+    media: post.media || "",
     comments: fanReplies.filter((reply) => reply.postId === post.id && reply.deliveredAt !== null).map((reply) => "@" + reply.handle + "：" + reply.text),
     meta: { local: "true", handle: "allyz_1101", playerPostId: post.id },
   }));
@@ -227,8 +231,7 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
-                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),
-                ...fanReplies.filter((r) => r.postId === selected.id && r.deliveredAt !== null).map((r) => "@" + r.handle + "：" + r.text),
+                ...replyRecords.filter((r) => r.postId === selected.id && !r.parentReplyId).map((r) => r.authorHandle + "：" + r.text),
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
@@ -239,15 +242,16 @@ export function ThreadsReference(p: SkinProps) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (draft.trim()) {
-                  const record = createThreadsReplyRecord(selected.id, draft.trim(), p.virtualTimestamp ?? 0);
+                  const record = createThreadsReplyRecord(selected.id, draft.trim(), p.virtualTimestamp ?? 0, replyTarget || undefined);
                   setReplyRecordsJson(JSON.stringify([...replyRecords, record]));
                   setDraft("");
+                  setReplyTarget("");
                 }
               }}
             >
               <input
                 aria-label="Threads回复"
-                placeholder="回复串文"
+                placeholder={replyTarget ? "回覆這則留言" : "回复串文"}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
               />
@@ -538,9 +542,22 @@ export function ThreadsReference(p: SkinProps) {
                 maxLength={2000}
               />
               <p className="tr-muted">添加到串文</p>
+              {draftMedia && <div className="tr-compose-photo"><img src={draftMedia} alt="待發布圖片" /><button type="button" onClick={() => setDraftMedia("")}>移除圖片</button></div>}
             </div>
           </div>
           <div className="tr-compose-actions">
+            <button type="button" onClick={() => document.getElementById("threads-player-photo")?.click()}>
+              <ImageIcon size={21} />
+              照片
+            </button>
+            <input id="threads-player-photo" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              if (file.size > 5 * 1024 * 1024) { window.alert("圖片請小於 5 MB"); event.target.value = ""; return; }
+              const reader = new FileReader();
+              reader.onload = () => { if (typeof reader.result === "string") setDraftMedia(reader.result); };
+              reader.readAsDataURL(file);
+            }} />
             <button onClick={() => setOptions(!options)}>
               <SlidersHorizontal size={21} />
               帖子选项
@@ -551,12 +568,13 @@ export function ThreadsReference(p: SkinProps) {
                 const createdAt = p.virtualTimestamp ?? 0;
                 const post: ThreadsPlayerPost = {
                   id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8),
-                  text: draft, createdAt, boyfriend: p.selectedBoyfriend || "",
+                  text: draft, createdAt, boyfriend: p.selectedBoyfriend || "", media: draftMedia || undefined,
                 };
                 setPlayerPostsJson(JSON.stringify([post, ...playerPosts]));
                 setFanRepliesJson(JSON.stringify([...fanReplies, ...generateThreadsFanReplies(post)]));
                 // Player posts are stored separately from legacy local posts to avoid duplicate feed cards.
                 setDraft("");
+                setDraftMedia("");
                 setCompose(false);
                 setKeyboard(false);
                 setTab("首页");
