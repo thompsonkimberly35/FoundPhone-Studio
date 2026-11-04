@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Home,
   Send,
@@ -37,6 +37,10 @@ export function ThreadsReference(p: SkinProps) {
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
+  useEffect(() => {
+    const cleanPosts = posts.filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body));
+    if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
+  }, [posts, setPosts]);
   const replyRecords: ThreadsReplyRecord[] = (() => {
     try {
       const value: unknown = JSON.parse(replyRecordsJson);
@@ -54,19 +58,21 @@ export function ThreadsReference(p: SkinProps) {
     [options, setOptions] = useState(false),
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
-  const local = posts.map((body, n) =>
-    makeItem({
-      id: "local-thread-" + n,
-      title: "本地串文",
-      body,
-      sender: p.owner || "机主",
-      time: p.virtualTime || "09:41",
-      meta: { local: "true" },
-    }),
-  );
+  const local = posts
+    .filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body))
+    .map((body, n) =>
+      makeItem({
+        id: "local-thread-" + n,
+        title: "本地串文",
+        body,
+        sender: "allyz_1101",
+        time: p.virtualTime || "09:41",
+        meta: { local: "true", handle: "allyz_1101" },
+      }),
+    );
   const feed = [
       ...local,
-      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && !i.hidden),
+      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
     activities = p.items.filter((i) => i.meta.activityType),
@@ -234,7 +240,7 @@ export function ThreadsReference(p: SkinProps) {
                       : tab === "动态"
                         ? "动态"
                         : tab === "个人主页"
-                          ? p.owner || "机主"
+                          ? "allyz_1101"
                           : tab}
                   </h1>
                   {(tab === "消息" || tab === "动态") && <BellOff />}
@@ -344,12 +350,12 @@ export function ThreadsReference(p: SkinProps) {
             {tab === "个人主页" && (
               <>
                 <div className="tr-profile">
-                  <Avatar name={p.owner || "机主"} />
-                  <p>{p.owner}</p>
+                  <Avatar name={"allyz_1101"} />
+                  <p>allyz_1101</p>
                 </div>
                 {feed
                   .filter(
-                    (i) => i.sender === p.owner || i.meta.local === "true",
+                    (i) => i.sender === "allyz_1101" || i.meta.local === "true",
                   )
                   .map(card)}
               </>
@@ -461,9 +467,9 @@ export function ThreadsReference(p: SkinProps) {
             </button>
           </header>
           <div className="tr-compose-content">
-            <Avatar name={p.owner || "机主"} />
+            <Avatar name={"allyz_1101"} />
             <div>
-              <b>{p.owner}</b>
+              <b>{"allyz_1101"}</b>
               <span className="tr-muted"> › 社群或话题</span>
               <textarea
                 aria-label="串文内容"
