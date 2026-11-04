@@ -68,6 +68,7 @@ import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
+import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 export function AppIcon({
   id,
   name,
@@ -420,7 +421,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [app, work.apps]);
   const displayTime = creator ? work.phone.time : s.time || work.phone.time;
   const plugin = getApp(app);
-  const backlashNotificationsComplete = (s.messages.instagram ?? []).some((item) => item.id === "ig-backlash-50");
+  const backlashNotificationsComplete = (s.messages.instagram ?? []).some((item) => item.id === "ig-backlash-60");
+  const friendStoryDueAt = s.ui?.kakao?.["friend-story-trigger-at"];
+  const friendStoryTriggered = s.ui?.kakao?.["friend-story-triggered"] === true;
   const checkinDueAt = s.ui?.kakao?.["ig-backlash-checkin-due-at"];
   const checkinSent = s.ui?.kakao?.["ig-backlash-checkin-sent"] === true;
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
@@ -594,6 +597,53 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }, remaining);
     return () => window.clearTimeout(timer);
   }, [backlashNotificationsComplete, igQueue.length, igBanner, selectedBoyfriend, checkinSent, checkinDueAt]);
+  useEffect(() => {
+    if (!ready || !backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedFriend || friendStoryTriggered) return;
+    if (!friendStoryDueAt) {
+      const current = runtimeRef.current;
+      const existingDue = Number(current.ui?.kakao?.["ig-backlash-checkin-due-at"] || 0);
+      const dueAt = Number.isFinite(existingDue) && existingDue > 0 ? existingDue : Date.now() + 60_000;
+      update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "friend-story-trigger-at": String(dueAt) } } });
+      return;
+    }
+    const dueAt = Number(friendStoryDueAt);
+    if (!Number.isFinite(dueAt)) return;
+    const timer = window.setTimeout(() => {
+      const current = runtimeRef.current;
+      if (current.ui?.kakao?.["friend-story-triggered"] === true) return;
+      const existing = current.messages.kakao ?? [];
+      if (existing.some((item) => item.id === "friend-story-F001-0")) {
+        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "friend-story-triggered": true, "friend-story-started": true, "friend-story-node": "F001" } } });
+        return;
+      }
+      const files: Record<string, string> = {
+        "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+        "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+        "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+        "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+      };
+      const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
+      const first = makeItem({ id: "friend-story-F001-0", title: selectedFriend, sender: selectedFriend, avatar, body: "你现在方便回讯息吗？", time: current.time || displayTime, outgoing: false, read: false, meta: { friendStoryNode: "F001" } });
+      const pending = ["我知道你今天应该收到很多不太好听的话。", "我本来不想在这个时候打扰你。", "可是有件事，我觉得你应该知道。"];
+      const start = Date.now();
+      const queue = pending.map((body, index) => {
+        const item = makeItem({ id: "friend-story-F001-" + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: current.time || displayTime, outgoing: false, read: false, meta: { friendStoryNode: "F001" } });
+        const typingAt = start + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      });
+      let existingQueue: Array<{item: Item; typingAt: number; deliverAt: number}> = [];
+      try { existingQueue = JSON.parse(String(current.ui?.kakao?.["delivery-queue"] || "[]")); } catch { existingQueue = []; }
+      update({
+        ...current,
+        messages: { ...current.messages, kakao: [...existing, first] },
+        notifications: [...current.notifications, `KakaoTalk: ${selectedFriend}：${first.body}`],
+        ui: { ...current.ui, kakao: { ...current.ui?.kakao, "friend-story-triggered": true, "friend-story-started": true, "friend-story-node": "F001", "friend-story-completed-nodes": "[]", "friend-story-history": "[]", "delivery-queue": JSON.stringify([...existingQueue, ...queue]) } },
+      });
+      setBanner(`KakaoTalk: ${selectedFriend}：${first.body}`);
+    }, Math.max(0, dueAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
+
   useEffect(() => {
     const count = s.notifications.length;
     if (!locked && work.phone.notifications && count > noticesSeen.current) {
@@ -836,6 +886,49 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         return { item, typingAt, deliverAt };
                       });
                     };
+                    if (choiceId?.startsWith("friend:")) {
+                      const [, friendNodeId, friendChoiceKey] = choiceId.split(":");
+                      const activeNodeId = String(currentUi["friend-story-node"] || "");
+                      if (friendNodeId !== activeNodeId) return;
+                      const friendChoice = getFriendStoryChoice(friendNodeId, friendChoiceKey);
+                      if (!friendChoice) return;
+                      let history: string[] = [];
+                      let completed: string[] = [];
+                      try { history = JSON.parse(String(currentUi["friend-story-history"] || "[]")); } catch { history = []; }
+                      try { completed = JSON.parse(String(currentUi["friend-story-completed-nodes"] || "[]")); } catch { completed = []; }
+                      const historyKey = friendNodeId + ":" + friendChoiceKey;
+                      if (history.includes(historyKey)) return;
+                      const nextNode = getFriendStoryNode(friendChoice.next);
+                      if (!nextNode) return;
+                      const outgoing = makeItem({ id: "kakao-friend-player-" + friendNodeId + "-" + friendChoiceKey + "-" + stamp, title: character, sender: "我", body: friendChoice.text, time, outgoing: true, read: true });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendStoryNode: friendNodeId, friendStoryChoice: friendChoiceKey };
+                      const queued = queueLines(nextNode.lines, "kakao-friend-" + friendNodeId + "-" + friendChoiceKey);
+                      const outcome = nextNode.result || String(currentUi["friend-story-outcome"] || "");
+                      const friendState = {
+                        trust: Number(currentUi["friend-story-trust"] || 0) + (["F036","F046","F051","H01"].includes(nextNode.id) ? 1 : 0),
+                        conflict: nextNode.id === "H04" || nextNode.id === "H10" || nextNode.id === "H06" ? true : currentUi["friend-story-conflict"] === true,
+                        teamConcern: ["F006","F014","F019","F020","F037","F040","F042","H02","H05"].includes(nextNode.id) || currentUi["friend-story-team-concern"] === true,
+                        secretLevel: ["F009","F026","F027","F028","F031","F056","F057","F058","F060","F069"].includes(nextNode.id) ? Math.max(1, Number(currentUi["friend-story-secret-level"] || 0)) : Number(currentUi["friend-story-secret-level"] || 0),
+                      };
+                      const nextUi = {
+                        ...currentUi,
+                        "friend-story-node": nextNode.id,
+                        "friend-story-history": JSON.stringify([...history, historyKey]),
+                        "friend-story-completed-nodes": JSON.stringify([...new Set([...completed, friendNodeId])]),
+                        "friend-story-last-choice": historyKey,
+                        "friend-story-outcome": outcome,
+                        "friend-story-trust": friendState.trust,
+                        "friend-story-conflict": friendState.conflict,
+                        "friend-story-team-concern": friendState.teamConcern,
+                        "friend-story-secret-level": friendState.secretLevel,
+                        "friend-story-promised-secrecy": nextNode.id === "H10" ? true : currentUi["friend-story-promised-secrecy"] === true,
+                        "friend-story-knows-player-intent": ["H07","H08","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-knows-player-intent"] || ""),
+                        "friend-story-handoff": ["H07","H09","H11","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-handoff"] || ""),
+                        "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                      };
+                      update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
+                      return;
+                    }
                     if (choiceId === "__migrate__") {
                       const checkinIndex = existing.findIndex((item) => item.id === "boyfriend-backlash-checkin");
                       const cleaned = existing.filter((item, index) =>
