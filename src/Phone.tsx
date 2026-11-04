@@ -1283,7 +1283,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (!nextNode) return;
                       const outgoing = makeItem({ id: "boyfriend-stage2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), boyfriendStage2Node: nodeId, boyfriendStage2Choice: choiceKey };
-                      const queued = queueLines(nextNode.lines, "boyfriend-stage2-" + nodeId + "-" + choiceKey);
+                      const queued = queueLines(nextNode.lines, "boyfriend-stage2-" + nodeId + "-" + choiceKey).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, boyfriendStage2Node: nextNode.id } } }));
                       const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
                       update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
                       return;
