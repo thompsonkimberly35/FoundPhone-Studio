@@ -245,23 +245,40 @@ export function ThreadsReference(p: SkinProps) {
                 
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => {
-                const identity = createThreadsCommentIdentity(c);
+                const identity = /(?:^|[\\s@])allyz_1101\\b/i.test(c)
+                  ? { handle: "allyz_1101", avatar: createThreadsAvatar("allyz_1101") }
+                  : createThreadsCommentIdentity(c);
                 return <div className="tr-comment-row" key={selected.id + "-legacy-comment-" + n}><Avatar name={identity.handle} src={identity.avatar} /><div className="tr-comment-main"><div className="tr-comment-byline"><b>@{identity.handle}</b><small>{relativeTime(selected)}</small></div><p>{c}</p><div className="tr-comment-actions"><button type="button" aria-label="点赞评论"><Heart size={15} /></button><button type="button" aria-label="回复评论" onClick={() => setReplyTarget(selected.id)}><MessageCircleIcon /></button></div></div></div>;
               })}
               {fanReplies.filter((reply) => reply.postId === selected.id && reply.deliveredAt !== null).map((reply) => (
                 <div className={"tr-fan-reply" + (highlightedReplyId === reply.id ? " is-targeted" : "")} key={reply.id}>
                   <div className="tr-comment-row"><Avatar name={reply.handle} src={createThreadsAvatar(reply.handle)} /><div className="tr-comment-main"><div className="tr-comment-byline"><b>@{reply.handle}</b><small>{formatRelativeGameTime(reply.deliveredAt || reply.scheduledAt, p.virtualTimestamp ?? reply.scheduledAt)}</small></div><p>{reply.text}</p><div className="tr-comment-actions"><button type="button" aria-label="点赞评论"><Heart size={15} /></button><button type="button" onClick={() => setReplyTarget(reply.id)} aria-label="回复评论"><MessageCircleIcon /></button><button type="button" onClick={() => setReplyTarget(reply.id)}>回复</button></div></div></div>
                   {replyRecords.filter((child) => child.parentReplyId === reply.id).map((child) => (
-                    <p className="tr-nested-reply" key={child.id}>{child.authorHandle}：{child.text}</p>
+                    <div className="tr-comment-row tr-player-nested-reply" key={child.id}>
+                      <Avatar name="allyz_1101" src={createThreadsAvatar("allyz_1101")} />
+                      <div className="tr-comment-main"><div className="tr-comment-byline"><b>@allyz_1101</b><small>{formatGameDateTime(child.createdAt)}</small></div><p>{child.text}</p></div>
+                    </div>
                   ))}
                 </div>
               ))}
               {replyRecords.filter((record) => record.postId === selected.id && !record.parentReplyId).map((record) => (
                 <div className="tr-fan-reply" key={record.id}>
-                  <p>{record.authorHandle}：{record.text}</p>
-                  <button type="button" onClick={() => setReplyTarget(record.id)}>回覆</button>
+                  <div className="tr-comment-row">
+                    <Avatar name="allyz_1101" src={createThreadsAvatar("allyz_1101")} />
+                    <div className="tr-comment-main">
+                      <div className="tr-comment-byline"><b>@allyz_1101</b><small>{formatGameDateTime(record.createdAt)}</small></div>
+                      <p>{record.text}</p>
+                      <div className="tr-comment-actions"><button type="button" onClick={() => setReplyTarget(record.id)}>回复</button></div>
+                    </div>
+                  </div>
                   {replyRecords.filter((child) => child.parentReplyId === record.id).map((child) => (
-                    <p className="tr-nested-reply" key={child.id}>{child.authorHandle}：{child.text}</p>
+                    <div className="tr-comment-row tr-player-nested-reply" key={child.id}>
+                      <Avatar name="allyz_1101" src={createThreadsAvatar("allyz_1101")} />
+                      <div className="tr-comment-main">
+                        <div className="tr-comment-byline"><b>@allyz_1101</b><small>{formatGameDateTime(child.createdAt)}</small></div>
+                        <p>{child.text}</p>
+                      </div>
+                    </div>
                   ))}
                 </div>
               ))}
