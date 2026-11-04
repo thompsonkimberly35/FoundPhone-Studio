@@ -77,7 +77,7 @@ import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoic
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
-  /测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(
+  /测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(
     [item.id, item.title, item.sender, item.body, item.folder, ...Object.values(item.meta ?? {})].join(" "),
   );
 
