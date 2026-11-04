@@ -35,7 +35,7 @@ export function ThreadsReference(p: SkinProps) {
     [liked, setLiked] = useSkinState<string[]>(p, "threads-liked", []),
     [saved, setSaved] = useSkinState<string[]>(p, "threads-saved", []),
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
-    [replies, setReplies] = useSkinState<string[]>(p, "threads-replies", []);
+    [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
   const replyRecords: ThreadsReplyRecord[] = (() => {
     try {
