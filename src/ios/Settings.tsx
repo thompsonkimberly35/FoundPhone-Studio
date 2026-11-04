@@ -75,7 +75,8 @@ export function NativeSettings({
     [savedAtText, setSavedAtText] = useState(savedAt || ""),
     [saving, setSaving] = useState(false),
     [showRestartPrompt, setShowRestartPrompt] = useState(false),
-    [restarting, setRestarting] = useState(false);
+    [restarting, setRestarting] = useState(false),
+    [saveError, setSaveError] = useState("");
   useEffect(() => setSavedAtText(savedAt || ""), [savedAt]);
   const formattedSavedAt = savedAtText
     ? new Date(savedAtText).toLocaleString("zh-TW", {
@@ -109,8 +110,12 @@ export function NativeSettings({
                   if (!onSaveProgress) return;
                   setSaving(true);
                   try {
+                    setSaveError("");
                     const timestamp = await onSaveProgress();
-                    if (timestamp) setSavedAtText(timestamp);
+                    if (!timestamp) throw new Error("未收到保存确认，请重试。");
+                    setSavedAtText(timestamp);
+                  } catch (error) {
+                    setSaveError(error instanceof Error ? error.message : "保存失败，请检查浏览器存储空间后重试。");
                   } finally {
                     setSaving(false);
                   }
@@ -124,6 +129,7 @@ export function NativeSettings({
               >
                 {saving ? "正在儲存…" : "儲存當前進度"}
               </button>
+              {saveError && <p role="alert" style={{ color: "#c62828", fontSize: 12, margin: "10px 2px 0", lineHeight: 1.5 }}>{saveError}</p>}
               <button
                 type="button"
                 disabled={restarting || !onRestartGame}
