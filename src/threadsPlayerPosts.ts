@@ -62,12 +62,13 @@ export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanRe
   }
   const filler = ["我先收藏，等后续更新。","每个人都可以表达看法，但请不要人身攻击。","这件事还是等当事人和公司说明吧。","希望讨论可以回到事情本身。","看完之后心情有点复杂。","这条动态很快就会被转发出去吧。","先不急着下结论，再看看后续。","今天的时间线又变长了。"];
   for (const text of filler) { if (selected.length >= 24) break; if (!used.has(text)) { used.add(text); selected.push({ text, category: "mention" }); } }
-  const mention = post.text.match(/@([\w.]+)/);
-  const mentionHandle = mention?.[1] || "allyz_1101";
   return selected.slice(0, 24).map(({ text: sourceText, category }, index) => {
+    const mentionTarget = handles[(index + 1) % handles.length];
     let text = sourceText.replace(/\{\{BOYFRIEND_NAME\}\}/g, post.boyfriend || "他");
-    if (text.includes("{{MENTION_HANDLE}}")) text = text.replace(/\{\{MENTION_HANDLE\}\}/g, mentionHandle);
-    if (category === "mention" && !text.startsWith("@" + mentionHandle)) text = "@" + mentionHandle + " " + text;
+    // Fan accounts should discuss or tag other fan IDs, never tag the player by default.
+    text = text.replace(/@allyz_1101\b/gi, "@" + mentionTarget);
+    if (text.includes("{{MENTION_HANDLE}}")) text = text.replace(/\{\{MENTION_HANDLE\}\}/g, mentionTarget);
+    if (category === "mention" && !/@[\w.]+/.test(text)) text = text + " @" + mentionTarget;
     if (category === "support" && post.contextText && index === 0) text = "你前面提过「" + post.contextText.slice(0, 36) + "」，" + text;
     if (category === "claim" && post.boyfriend) text = text.replace(/正主真的出来回应了/g, post.boyfriend + " 的女友真的出来回应了");
     const handle = handles[index];
