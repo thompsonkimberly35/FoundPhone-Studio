@@ -12,9 +12,9 @@ export const ALD1_SECRET_ADMIRER_MEMBERS: readonly SecretAdmirerMember[] = [
   { id: "ald1-li-liwu", name: "李理悟", avatarFile: "李理悟-kakao-v2.jpg", adult: true },
   { id: "ald1-li-xiangyuan", name: "李相沅", avatarFile: "李相沅-kakao.png", adult: true },
   { id: "ald1-he-xinlong", name: "贺鑫隆", avatarFile: "賀鑫隆-kakao.png", adult: true },
-  { id: "ald1-zheng-xiangxuan", name: "郑相炫", avatarFile: "鄭相炫-kakao.png", adult: true, style: "sensitive" },
-  { id: "ald1-jin-junshu", name: "金俊抒", avatarFile: "金俊抒-kakao.png", adult: true, style: "playful" },
-  { id: "ald1-jin-qianyou", name: "金虔佑", avatarFile: "金虔佑-kakao.png", adult: true, style: "reserved" },
+  { id: "ald1-zheng-xiangxuan", name: "郑相炫", avatarFile: "鄭相炫-kakao.png", adult: true },
+  { id: "ald1-jin-junshu", name: "金俊抒", avatarFile: "金俊抒-kakao.png", adult: true },
+  { id: "ald1-jin-qianyou", name: "金虔佑", avatarFile: "金虔佑-kakao.png", adult: true },
 ] as const;
 
 export function memberIdForName(name: string): string | undefined {
