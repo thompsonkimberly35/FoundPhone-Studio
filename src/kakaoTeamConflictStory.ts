@@ -18,13 +18,12 @@ const fallbackChoices: [string, string, string] = [
 ];
 const node = (id: string, line: string, targets: string[], result = ""): TeamConflictNode => {
   const choices = choiceSets.find((set) => set.test.test(line))?.texts || fallbackChoices;
-  const topic = line.split(/[，。！？]/)[0].slice(0, 14);
   return {
     id,
     lines: [line],
     choices: targets.map((next, index) => ({
       key: ["A", "B", "C"][index],
-      text: `关于“${topic}”，${choices[index]}`,
+      text: choices[index],
       next,
     })),
     ...(result ? { result } : {}),
