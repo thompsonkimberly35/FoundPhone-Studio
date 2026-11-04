@@ -20,7 +20,7 @@ function classify(text: string): Mood {
  if (/(真心相愛|理解|解釋|沒有想過傷害|希望大家)/i.test(text)) return "explain";
  if (/(我的|男朋友|男友|喜歡我|陪在我身邊)/i.test(text)) return "claim";
  if (/(今天|蛋糕|吃了|天氣|睡覺|晚安|早安)/i.test(text)) return "daily";
- return "neutral";
+ return "mention";
 }
 export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanReply[] {
  const mood = classify(post.text);
