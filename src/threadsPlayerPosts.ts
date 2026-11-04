@@ -1,5 +1,5 @@
 export type ThreadsPlayerPost = { id: string; text: string; createdAt: number; boyfriend: string; media?: string; contextText?: string };
-export type ThreadsFanReply = { id: string; postId: string; authorId: string; handle: string; avatar: string; text: string; category: Mood; personality: string; scheduledAt: number; deliveredAt: number | null; readAt: number | null };
+export type ThreadsFanReply = { id: string; postId: string; authorId: string; handle: string; displayName: string; avatar: string; text: string; category: Mood; personality: string; scheduledAt: number; deliveredAt: number | null; readAt: number | null };
 type Mood = "claim" | "explain" | "attack" | "sad" | "apology" | "daily" | "support" | "mention";
 const pools: Record<Mood, string[]> = {
  claim: ["妳颯什麼？？？","臥槽，正主真的出來宣示主權了。","姐妳是嫌現在事情還不夠大嗎？","這句是故意發給粉絲看的吧。","我真的看傻了。","我們連他的手都碰不到，妳直接說他是妳的？","我本來還想替她說話，現在不了。","談戀愛可以，但有必要這樣講嗎？","她說的是事實吧，為什麼不能講？","這語氣真的很像在炫耀。","我只想知道他本人知不知道她發這個。","這留言區比新聞還精彩。"],
@@ -11,6 +11,7 @@ const pools: Record<Mood, string[]> = {
  support: ["妳真的有想過其他成員嗎？","她說支持團體，結果團體現在被影響。","我覺得她至少沒有否定其他成員。","不要把所有責任都推到她身上。","希望公司能讓團體繼續正常活動。","她現在說什麼都會被罵吧。","希望大家把注意力放回舞台。"],
  mention: ["@orbitgirl_7p 快來看這篇。","我先留個言等等看後續。","這件事到底還要吵多久。","每個人都先冷靜一下吧。","有人整理時間線嗎？","我只想知道事情的完整經過。","截圖又要開始滿天飛了。"]
 };
+const displayNames = ["月光收件人","藍色應援","花瓣星球","相框收藏家","夜航日記","安靜觀察者","星塵來信","雲端相簿","月頁收藏","花藍日常","破碎星光","軌道眼淚","銀色晴天","暮色信箋","微光底片","星河散步","藍花日記","午後微光","柔軟軌道","丁香月色","底片檔案","安靜應援","日出之後","失落安可"];
 const personalities = ["理性分析派","情緒共鳴派","團體支持派","溫和安慰派","直率質疑派","旁觀整理派"];
 const handles = ["moonfilm_7qx","allyzblue_4n","petalorbit_8v","framearchive_2k","nightletter_6r","hushorbit_7q","starfall_3vx","cloudfilm_9m","moonpage_4rk","petalblue_8n","brokenstar_2w","orbittear_5x","silverday_9t","duskletter_7m","tinyfilm_4q","starlane_8v","bluepetal_2k","afterlight_6r","orbitsoft_9p","lilacmoon_5t","filmarchive_3n","quietallyz_8x","sunrise_4m","lostencore_7v","silverorbit_2q","moonfilm_6k","allyzheart_9w","peachorbit_8q","cloudyday_7r","orbitnote_5p"];
 function classify(text: string): Mood {
@@ -48,7 +49,7 @@ export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanRe
    if (unique.has(text)) text += "（我也有同樣的感受）";
    unique.add(text);
    const handle=handles[index];
-   return {id:post.id+"-reply-"+index,postId:post.id,authorId:handle,handle,
+   return {id:post.id+"-reply-"+index,postId:post.id,authorId:handle,handle,displayName:displayNames[index],
      avatar:"https://api.dicebear.com/9.x/notionists/svg?seed="+encodeURIComponent(handle),
      text,category:categories[Math.floor(index/3)],personality:personalities[index % personalities.length],scheduledAt:post.createdAt+(index<4?3000+index*1200:index<11?10000+(index-4)*2100:index<19?30000+(index-11)*3500:60000+(index-19)*6500),
      deliveredAt:null,readAt:null};
