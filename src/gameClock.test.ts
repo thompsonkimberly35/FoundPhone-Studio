@@ -102,4 +102,40 @@ describe("global story clock", () => {
     expect(formatGameDate(timestamp, "Asia/Seoul")).toBe("2026-10-25");
     expect(formatGameTime(timestamp, "Asia/Seoul")).toBe("23:17");
   });
+  it("applies explicit story node time hints and advances to the next morning", () => {
+    const work = createWork();
+    work.mode = "story";
+    work.nodes = [{
+      ...work.nodes[0],
+      id: "next-morning",
+      type: "action",
+      event: "story-morning",
+      target: "",
+      next: [],
+      actions: [],
+      timeHint: { period: "morning", advanceToNextDay: true },
+    }];
+    const state = initialRuntime(work);
+    state.date = "2026-10-25";
+    state.time = "23:00";
+    state.gameClock = { ...state.gameClock!, currentGameTimestamp: zonedDateTimeToTimestamp("2026-10-25", "23:00") };
+
+    const next = dispatch(work, state, "story-morning");
+
+    expect(next.date).toBe("2026-10-26");
+    expect(next.time).toBe("08:30");
+    expect(next.gameClock!.currentStoryDay).toBe(2);
+  });
+
+  it("normalizes static legacy 09:00 story fixtures without mutating source items", () => {
+    const source = [
+      makeItem({ id: "static-day", time: "09:00", body: "早安，起床了吗？" }),
+      makeItem({ id: "static-night", time: "09:00", body: "晚安，早点休息。" }),
+    ];
+    const normalized = normalizeStoryItems(source, "2026-10-25");
+
+    expect(normalized[0].time).toContain("08:30");
+    expect(normalized[1].time).toContain("23:00");
+    expect(source.every((item) => item.time === "09:00")).toBe(true);
+  });
 });
