@@ -67,6 +67,7 @@ import { makeItem } from "./schema";
 import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
+import { makeThreadsBacklash, type InstagramReplyEvidence, hasThreadsX002 } from "./threadsBacklash";
 import { enqueueIncomingKakaoNotifications } from "./kakaoNotifications";
 import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
@@ -240,6 +241,19 @@ function PhoneRuntime({
   const update = (next: Runtime) => {
     const previous = runtimeRef.current;
     let committed = next;
+    const x002Published = hasThreadsX002(next.messages.twitter ?? []);
+    const x002WasPublished = hasThreadsX002(previous.messages.twitter ?? []);
+    if (x002Published && !x002WasPublished) {
+      committed = {
+        ...committed,
+        messages: {
+          ...committed.messages,
+          threads: (committed.messages.threads ?? []).map((post) =>
+            post.meta?.postId === "T025" ? { ...post, hidden: false } : post,
+          ),
+        },
+      };
+    }
     if (!creator) {
       const kakaoUi = next.ui?.kakao ?? {};
       let seenIds: string[] = [];
@@ -1226,6 +1240,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
             onDismiss={() => setGlobalNotificationItem(null)}
             onOpen={(item) => {
               setGlobalNotificationItem(null);
+              if (item.meta?.notificationAppId === "threads") { open("threads"); return; }
               if (item.meta?.notificationAppId === "twitter") {
                 setTargetXPostId(String(item.meta.notificationPostId || item.id));
                 open("twitter");
@@ -1317,6 +1332,63 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   initialKakaoThread={targetKakaoThread}
                   targetXPostId={targetXPostId}
                   onTargetXPostHandled={() => setTargetXPostId("")}
+                  onInstagramReply={(conversation, replyText) => {
+                    const current = runtimeRef.current;
+                    const threadsUi = current.ui?.threads || {};
+                    if (threadsUi["threads-backlash-event-id"] === "threads-backlash-after-first-ig-reply") return;
+                    const replyMessage = makeItem({
+                      id: "ig-player-reply-" + Date.now(),
+                      title: conversation.title,
+                      sender: "allyz_1101",
+                      body: replyText,
+                      time: current.time || displayTime,
+                      outgoing: true,
+                      read: true,
+                      meta: { conversationId: conversation.id, platform: "instagram" },
+                    });
+                    const evidence: InstagramReplyEvidence = {
+                      conversationId: conversation.id,
+                      attackerUserId: conversation.meta?.userId || conversation.id,
+                      attackerHandle: conversation.sender,
+                      attackerMessageId: conversation.id,
+                      playerReplyMessageId: replyMessage.id,
+                      attackerText: conversation.body,
+                      playerReplyText: replyText,
+                      capturedAt: Date.now(),
+                    };
+                    const x002 = hasThreadsX002(current.messages.twitter || []);
+                    const posts = makeThreadsBacklash(selectedBoyfriend || "ALPHA DRIVE ONE", evidence, current.time || displayTime, x002);
+                    const notice = makeItem({
+                      id: "threads-backlash-notification",
+                      title: "Threads",
+                      sender: "Threads",
+                      body: "Threads上出现了大量关于" + (selectedBoyfriend || "ALPHA DRIVE ONE") + "恋情的讨论。",
+                      time: current.time || displayTime,
+                      meta: { notificationAppId: "threads", eventId: "threads-backlash-after-first-ig-reply" },
+                    });
+                    const kakaoUi = current.ui?.kakao || {};
+                    let pendingNotifications: Item[] = [];
+                    try { pendingNotifications = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { pendingNotifications = []; }
+                    if (app !== "threads" && !pendingNotifications.some((item) => item.id === notice.id)) pendingNotifications.push(notice);
+                    update({
+                      ...current,
+                      messages: {
+                        ...current.messages,
+                        instagram: [...(current.messages.instagram || []), replyMessage],
+                        threads: [...(current.messages.threads || []), ...posts],
+                      },
+                      ui: {
+                        ...current.ui,
+                        kakao: app !== "threads" ? { ...kakaoUi, "global-notification-queue": JSON.stringify(pendingNotifications.slice(-40)) } : kakaoUi,
+                        threads: {
+                          ...threadsUi,
+                          "threads-backlash-event-id": "threads-backlash-after-first-ig-reply",
+                          "threads-backlash-evidence": JSON.stringify(evidence),
+                          "threads-backlash-initialized-at": String(evidence.capturedAt),
+                        },
+                      },
+                    });
+                  }}
                   onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; if (targetKakaoThread) setTargetKakaoThread(""); }}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
@@ -2071,6 +2143,7 @@ function AppContent({
   initialKakaoThread,
   onKakaoThreadChange,
   onKakaoChoice,
+  onInstagramReply,
   targetXPostId,
   onTargetXPostHandled,
 }: {
@@ -2094,6 +2167,7 @@ function AppContent({
   initialKakaoThread?: string;
   onKakaoThreadChange?: (thread: string) => void;
   onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
+  onInstagramReply?: (conversation: Item, replyText: string) => void;
   targetXPostId?: string;
   onTargetXPostHandled?: () => void;
 }) {
@@ -2242,6 +2316,7 @@ function AppContent({
               selectedBoyfriend={selectedBoyfriend}
               selectedFriend={selectedFriend}
               onKakaoChoice={onKakaoChoice}
+              onInstagramReply={onInstagramReply}
             />
           </Suspense>
         </div>

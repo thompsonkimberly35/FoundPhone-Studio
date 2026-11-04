@@ -44,7 +44,8 @@ export function ThreadsReference(p: SkinProps) {
     [shift, setShift] = useState(false),
     [numbers, setNumbers] = useState(false),
     [options, setOptions] = useState(false),
-    [selected, setSelected] = useState<Item | null>(null);
+    [selected, setSelected] = useState<Item | null>(null),
+    [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const local = posts.map((body, n) =>
     makeItem({
       id: "local-thread-" + n,
@@ -57,10 +58,11 @@ export function ThreadsReference(p: SkinProps) {
   );
   const feed = [
       ...local,
-      ...p.items.filter((i) => i.folder !== "私信" && !i.meta.activityType),
+      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && !i.hidden),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
-    activities = p.items.filter((i) => i.meta.activityType);
+    activities = p.items.filter((i) => i.meta.activityType),
+    playerReplies = p.items.filter((i) => i.folder === "threads-reply");
   const toggle = (id: string, items: string[], set: (v: string[]) => void) =>
     set(items.includes(id) ? items.filter((v) => v !== id) : [...items, id]);
   const open = (i: Item) => {
@@ -79,7 +81,7 @@ export function ThreadsReference(p: SkinProps) {
       </button>
       <div className="tr-post-content">
         <div className="tr-byline">
-          <b>{i.sender}</b>
+          <b>@{i.meta.handle || i.sender}</b>
           <span>{i.time.slice(-5)}</span>
           <button
             aria-label="帖子选项"
@@ -109,7 +111,7 @@ export function ThreadsReference(p: SkinProps) {
           </button>
           <button aria-label={"回复" + i.title} onClick={() => open(i)}>
             <MessageCircleIcon />
-            {i.comments.length || ""}
+            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length || ""}
           </button>
           <button
             aria-label={"转发" + i.title}
@@ -146,12 +148,14 @@ export function ThreadsReference(p: SkinProps) {
               <MoreHorizontal />
             </header>
             {card(selected)}
+            {(selected.meta.evidenceId === "ig-first-reply-evidence") && <button type="button" aria-label="放大或收起Instagram对话截图" className={`tr-ig-evidence ${evidenceExpanded ? "is-expanded" : ""}`} onClick={() => setEvidenceExpanded(!evidenceExpanded)}><div className="tr-ig-evidence-head">Instagram · 私信对话截图 · {evidenceExpanded ? "点击收起" : "点击放大"}</div><div className="tr-ig-evidence-user">@{selected.meta.evidenceAttackerHandle}</div><div className="tr-ig-evidence-bubble">{selected.meta.evidenceAttackerText}</div><div className="tr-ig-evidence-player">{selected.meta.evidencePlayerReplyText}</div><small>游戏内对话引用 · 非真实账号资料</small></button>}
             <div className="tr-comments">
               {[
                 ...selected.comments,
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
-                  .map((v) => v.split("\t").slice(1).join("\t")),
+                  .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
+                ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
               ))}
