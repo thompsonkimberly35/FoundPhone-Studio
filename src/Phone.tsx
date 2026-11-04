@@ -886,6 +886,33 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         return { item, typingAt, deliverAt };
                       });
                     };
+                    if (choiceId?.startsWith("friend-link:")) {
+                      const [, linkType, linkKey] = choiceId.split(":");
+                      const nodeId = String(currentUi["romance-node"] || "");
+                      const usedKey = "friend-link-used-" + nodeId + "-" + linkType;
+                      if (currentUi[usedKey] === true) return;
+                      const responses: Record<string, Record<string, string[]>> = {
+                        warning: {
+                          A: ["……你已经知道了。", "是，几个星期前公司就提醒过我。", "我当时以为只要更小心，就不会影响到你。"],
+                          B: ["我不是故意要瞒你。", "还有一些会议内容我没有整理好，但我会把和你有关的部分说清楚。"],
+                          C: ["好。", "我不想再用沉默让你猜。", "等我把事情理清楚，我们好好谈。"],
+                        },
+                        sacrifice: {
+                          A: ["你怎么会知道这件事？", "我确实问过经纪人，但那只是我在压力下提出的问题，还没有做决定。"],
+                          B: ["我知道。", "我不想放弃舞台，也不想让你觉得自己成了我的负担。", "我们应该一起找办法。"],
+                          C: ["你说得对。", "这件事会影响大家，我应该先听听团员怎么想。"],
+                        },
+                      };
+                      const answer = responses[linkType]?.[linkKey];
+                      if (!answer) return;
+                      const outgoing = makeItem({ id: "kakao-friend-link-player-" + nodeId + "-" + linkType + "-" + linkKey + "-" + stamp, title: character, sender: "我", body: playerText, time, outgoing: true, read: true });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendStoryLink: linkType };
+                      const queued = queueLines(answer, "kakao-friend-link-reply-" + nodeId + "-" + linkType + "-" + linkKey);
+                      let linkHistory: string[] = [];
+                      try { linkHistory = JSON.parse(String(currentUi["friend-story-link-history"] || "[]")); } catch { linkHistory = []; }
+                      update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: { ...currentUi, [usedKey]: true, "friend-story-link-history": JSON.stringify([...linkHistory, nodeId + ":" + linkType + ":" + linkKey]), "delivery-queue": JSON.stringify([...currentQueue, ...queued]) } } });
+                      return;
+                    }
                     if (choiceId?.startsWith("friend:")) {
                       const [, friendNodeId, friendChoiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["friend-story-node"] || "");
@@ -921,6 +948,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-conflict": friendState.conflict,
                         "friend-story-team-concern": friendState.teamConcern,
                         "friend-story-secret-level": friendState.secretLevel,
+                        "friend-story-knows-warning": ["F009","F026","F027","F031"].includes(nextNode.id) || currentUi["friend-story-knows-warning"] === true,
+                        "friend-story-knows-sacrifice": ["F028","F060","H11"].includes(nextNode.id) || currentUi["friend-story-knows-sacrifice"] === true,
                         "friend-story-promised-secrecy": nextNode.id === "H10" ? true : currentUi["friend-story-promised-secrecy"] === true,
                         "friend-story-knows-player-intent": ["H07","H08","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-knows-player-intent"] || ""),
                         "friend-story-handoff": ["H07","H09","H11","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-handoff"] || ""),
