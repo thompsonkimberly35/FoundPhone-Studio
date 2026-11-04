@@ -41,7 +41,7 @@ describe("KakaoTalk team-conflict story", () => {
       expect(choices).toHaveLength(3);
       expect(new Set(choices.map(choice => choice.text)).size).toBe(3);
     }
-    expect(new Set(Object.values(TEAM_CONFLICT_STORY).filter(n => n.id.startsWith("B")).flatMap(n => n.choices.map(c => c.text))).size).toBeGreaterThan(12);
+    expect(new Set(Object.values(TEAM_CONFLICT_STORY).filter(n => n.id.startsWith("B")).flatMap(n => n.choices.map(c => c.text))).size).toBeGreaterThan(250);
     for(let i=1;i<=12;i++){const id="S"+String(i).padStart(2,"0");expect(getTeamConflictNode(id)?.result).toBe(id);expect(getTeamConflictNode(id)?.choices).toHaveLength(0);}
   });
 });
