@@ -601,6 +601,7 @@ export function ThreadsReference(p: SkinProps) {
                 const post: ThreadsPlayerPost = {
                   id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8),
                   text: draft, createdAt, boyfriend: p.selectedBoyfriend || "", media: draftMedia || undefined,
+                  contextText: [p.storyContext || "", ...p.items.filter(item => item.kind === "post").slice(-2).map(item => item.body)].filter(Boolean).join(" ").slice(0, 1200),
                 };
                 setPlayerPostsJson(JSON.stringify([post, ...playerPosts]));
                 setFanRepliesJson(JSON.stringify([...fanReplies, ...generateThreadsFanReplies(post)]));
