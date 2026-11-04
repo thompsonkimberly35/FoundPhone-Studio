@@ -116,12 +116,14 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
   let cursor = Math.min(baseline, ...explicitTimes) - 1;
   const messages: Runtime["messages"] = {};
   for (const [appId, items] of Object.entries(runtime.messages || {})) {
+    const fixedNine = (items || []).length > 1 && (items || []).every((item) => /(?:^|\s)09:00$/.test(item.time));
     messages[appId] = (items || []).map((item) => {
       if (Number.isFinite(item.sentAt)) {
         cursor = Math.max(cursor, Number(item.sentAt));
         return item;
       }
-      const sentAt = inferLegacyTime(item, runtime.date || work.phone.date || formatGameDate(cursor, timezone), timezone, cursor - 1);
+      const source = fixedNine ? { ...item, time: "09:00" } : item;
+      const sentAt = inferLegacyTime(source, runtime.date || work.phone.date || formatGameDate(cursor, timezone), timezone, cursor - 1);
       cursor = Math.max(cursor, sentAt);
       return { ...item, sentAt, time: formatGameDateTime(sentAt, timezone) };
     });
@@ -161,6 +163,28 @@ function applyTextTimeHint(item: Item, timestamp: number, timezone: string): num
   if (/午安|午餐|午饭|中午/.test(body) && hour < 12) return choose(date, "12:00");
   if (/晚上好|晚餐|下班了|练习结束|夜宵/.test(body) && hour < 19) return choose(date, "19:00");
   return timestamp;
+}
+
+/** Normalize static story fixtures for display without mutating the authored Work data. */
+export function normalizeStoryItems(items: Item[], date: string, timezone = DEFAULT_TIMEZONE): Item[] {
+  if (!items.length) return items;
+  const fixedNine = items.length > 1 && items.every((item) => /(?:^|\s)09:00$/.test(item.time)) && items.every((item) => !Number.isFinite(item.sentAt));
+  const baseline = zonedDateTimeToTimestamp(date, "00:00", timezone);
+  const explicitTimes = items.map((item) => {
+    const match = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
+    return match ? zonedDateTimeToTimestamp(match[1], match[2], timezone) : Number.POSITIVE_INFINITY;
+  });
+  let cursor = Math.min(baseline, ...explicitTimes) - 1;
+  return items.map((item) => {
+    if (Number.isFinite(item.sentAt)) {
+      cursor = Math.max(cursor, Number(item.sentAt));
+      return item;
+    }
+    const source = fixedNine ? { ...item, time: "09:00" } : item;
+    const sentAt = inferLegacyTime(source, date, timezone, cursor - 1);
+    cursor = Math.max(cursor, sentAt);
+    return { ...item, sentAt, time: formatGameDateTime(sentAt, timezone) };
+  });
 }
 
 /** Stamp only newly appended messages, once, in deterministic cross-App order. */
