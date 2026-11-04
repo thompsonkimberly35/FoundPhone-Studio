@@ -308,6 +308,9 @@ function PhoneRuntime({
         app === "kakao" ? activeKakaoThread.current : "",
         work.phone.notifications,
       );
+      const notificationQueue = app === "kakao"
+        ? result.queue.filter(item => String(item.meta?.notificationAppId || "kakao") !== "kakao")
+        : result.queue;
       if (result.arrivals.length) {
         committed = {
           ...committed,
@@ -316,7 +319,7 @@ function PhoneRuntime({
             kakao: {
               ...kakaoUi,
               "global-notification-seen-ids": JSON.stringify(result.seenIds),
-              "global-notification-queue": JSON.stringify(result.queue),
+              "global-notification-queue": JSON.stringify(notificationQueue),
             },
           },
         };
