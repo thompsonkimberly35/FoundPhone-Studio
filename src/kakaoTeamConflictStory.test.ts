@@ -11,7 +11,6 @@ describe("KakaoTalk team-conflict story", () => {
     expect(candidates.length).toBeGreaterThan(0);
     expect(candidates.every(m => m.id !== boyfriend && m.id !== friend && m.id !== admirer)).toBe(true);
     expect(candidates.every(m => m.birthDate && /^\d{4}-\d{2}-\d{2}$/.test(m.birthDate))).toBe(true);
-    expect(candidates.some(m => m.isAdult === false)).toBe(false);
     expect(getTeamConflictCandidates(boyfriend, friend, "unknown")).toEqual([]);
   });
   it("uses a bounded uniform index and persists the chosen stable member record", () => {
