@@ -248,6 +248,7 @@ function PhoneRuntime({
   const update = (next: Runtime) => {
     const previous = runtimeRef.current;
     let committed = stampNewMessages(previous, next);
+    if (committed.gameClock) committed = { ...committed, gameClock: { ...committed.gameClock, lastRealTimestamp: Date.now() } };
     const x002Published = hasThreadsX002(committed.messages.twitter ?? []);
     const x002WasPublished = hasThreadsX002(previous.messages.twitter ?? []);
     if (x002Published && !x002WasPublished) {
