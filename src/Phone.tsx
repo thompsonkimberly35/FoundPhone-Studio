@@ -427,7 +427,7 @@ function PhoneRuntime({
       try { scheduledFanReplies = JSON.parse(String(threadsUi["threads-fan-replies-v1"] || "[]")); } catch { scheduledFanReplies = []; }
       // Fan comments are real-time phone events and must continue while Threads is not open.
       const realNow = Date.now();
-      const dueFanReplies = scheduledFanReplies.some(reply => !reply.deliveredAt && reply.scheduledAt <= realNow);
+      const dueFanReplies = scheduledFanReplies.some(reply => reply.deliveredAt == null && reply.scheduledAt <= realNow);
       if (dueFanReplies) {
         next = { ...next, ui: { ...next.ui, threads: { ...threadsUi, "threads-fan-replies-v1": JSON.stringify(scheduledFanReplies.map(reply => !reply.deliveredAt && reply.scheduledAt <= realNow ? { ...reply, deliveredAt: realNow } : reply)) } } };
       }
@@ -438,7 +438,7 @@ function PhoneRuntime({
         (next.scheduled?.length ?? 0) > 0 ||
         Math.floor((next.elapsedMs ?? 0) / 5000) !==
           Math.floor((previous.elapsedMs ?? 0) / 5000);
-      if (changed || next.gameClock?.currentGameTimestamp !== previous.gameClock?.currentGameTimestamp || next.date !== previous.date) update(next);
+      if (dueFanReplies || changed || next.gameClock?.currentGameTimestamp !== previous.gameClock?.currentGameTimestamp || next.date !== previous.date) update(next);
     }, 1000);
     return () => clearInterval(interval);
   }, [creator, ready, work.id, work.updatedAt]);
