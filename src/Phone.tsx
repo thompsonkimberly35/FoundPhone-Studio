@@ -2323,6 +2323,7 @@ function AppContent({
               appId={app.id}
               owner={PLAYER_THREADS_ID}
               virtualTime={state.time}
+              virtualTimestamp={state.gameClock?.currentGameTimestamp}
               ui={state.ui?.[app.id]}
               onUi={creator ? undefined : onUi}
               name={name}
