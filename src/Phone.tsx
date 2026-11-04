@@ -425,10 +425,11 @@ function PhoneRuntime({
       const threadsUi = next.ui?.threads ?? {};
       let scheduledFanReplies: Array<{id:string;scheduledAt:number;deliveredAt:number|null}> = [];
       try { scheduledFanReplies = JSON.parse(String(threadsUi["threads-fan-replies-v1"] || "[]")); } catch { scheduledFanReplies = []; }
-      const gameNow = next.gameClock?.currentGameTimestamp ?? 0;
-      const dueFanReplies = scheduledFanReplies.some(reply => !reply.deliveredAt && reply.scheduledAt <= gameNow);
+      // Fan comments are real-time phone events and must continue while Threads is not open.
+      const realNow = Date.now();
+      const dueFanReplies = scheduledFanReplies.some(reply => !reply.deliveredAt && reply.scheduledAt <= realNow);
       if (dueFanReplies) {
-        next = { ...next, ui: { ...next.ui, threads: { ...threadsUi, "threads-fan-replies-v1": JSON.stringify(scheduledFanReplies.map(reply => !reply.deliveredAt && reply.scheduledAt <= gameNow ? { ...reply, deliveredAt: gameNow } : reply)) } } };
+        next = { ...next, ui: { ...next.ui, threads: { ...threadsUi, "threads-fan-replies-v1": JSON.stringify(scheduledFanReplies.map(reply => !reply.deliveredAt && reply.scheduledAt <= realNow ? { ...reply, deliveredAt: realNow } : reply)) } } };
       }
       const changed =
         next.time !== previous.time ||
