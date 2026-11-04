@@ -1,0 +1,34 @@
+import { describe, expect, it } from "vitest";
+import { generateThreadsFanReplies } from "./threadsPlayerPosts";
+
+describe("player-authored Threads posts", () => {
+  it("generates 24 distinct replies across all eight reaction categories", () => {
+    const post = {
+      id: "player-post-test-1",
+      text: "今天終於鼓起勇氣說出我的感受，也希望大家能理解並繼續支持 ALD1。@friend",
+      createdAt: 100_000,
+      boyfriend: "李理悟",
+    };
+    const replies = generateThreadsFanReplies(post);
+    expect(replies).toHaveLength(24);
+    expect(new Set(replies.map((reply) => reply.id)).size).toBe(24);
+    expect(new Set(replies.map((reply) => reply.handle)).size).toBe(24);
+    expect(new Set(replies.map((reply) => reply.text)).size).toBe(24);
+    expect(new Set(replies.map((reply) => reply.category))).toEqual(new Set([
+      "claim", "explain", "attack", "sad", "apology", "daily", "support", "mention",
+    ]));
+    expect(replies.filter((reply) => reply.category === "mention").every((reply) => reply.text.includes("@friend"))).toBe(true);
+    expect(replies.every((reply) => reply.deliveredAt === null && reply.readAt === null)).toBe(true);
+  });
+
+  it("schedules replies in staggered batches and uses stable account identities", () => {
+    const post = { id: "player-post-test-2", text: "今天吃了蛋糕。", createdAt: 200_000, boyfriend: "" };
+    const first = generateThreadsFanReplies(post);
+    const second = generateThreadsFanReplies(post);
+    expect(first.map((reply) => reply.handle)).toEqual(second.map((reply) => reply.handle));
+    expect(first.map((reply) => reply.text)).toEqual(second.map((reply) => reply.text));
+    expect(first[0].scheduledAt - post.createdAt).toBe(3_000);
+    expect(first.at(-1)!.scheduledAt - post.createdAt).toBeGreaterThanOrEqual(60_000);
+    expect(first.every((reply) => reply.scheduledAt >= post.createdAt)).toBe(true);
+  });
+});
