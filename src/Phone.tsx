@@ -75,7 +75,7 @@ import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
-import { formatGameTime, migrateRuntimeGameClock, stampNewMessages } from "./gameClock";
+import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
   /测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(
@@ -1310,7 +1310,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     work.apps.find((a) => a.id === app)?.name ?? plugin.name
                   }
                   items={[
-                    ...(work.data[app] ?? []),
+                    ...normalizeStoryItems(work.data[app] ?? [], s.date || work.phone.date || "2026-10-25", s.gameClock?.timezone || "Asia/Seoul"),
                     ...(s.messages[app] ?? []),
                   ]}
                   creator={creator}
