@@ -6,10 +6,9 @@ import { useDeviceLayout } from "./launcher/layout";
 import "./launcher/launcher.css";
 import { NativeDetail, nativeDetailApps } from "./ios/Details";
 import "./ios/details.css";
-import {
-  SystemNotifications,
-  notificationContent,
-} from "./SystemNotifications";
+import { SystemNotifications } from "./SystemNotifications";
+import { GlobalNotificationBanner } from "./GlobalNotificationBanner";
+import "./global-notifications.css";
 import {
   readLauncherOrigin,
   AppWindow,
@@ -157,10 +156,9 @@ function PhoneRuntime({
   const [keyboard, setKeyboard] = useState(false);
   const [recent, setRecent] = useState<string[]>([]);
   const appSnapshots = useRef(new Map<string, HTMLElement>());
-  const [banner, setBanner] = useState("");
+  const [globalNotificationItem, setGlobalNotificationItem] = useState<Item | null>(null);
   const [igQueue, setIgQueue] = useState<Item[]>([]);
   const [igBanner, setIgBanner] = useState<Item | null>(null);
-  const noticesSeen = useRef(0);
   const [contextApp, setContextApp] = useState("");
   const [deviceScale, setDeviceScale] = useState(0.84);
   const shell = useRef<HTMLDivElement>(null);
@@ -210,10 +208,54 @@ function PhoneRuntime({
   const s = external ?? own;
   const runtimeRef = useRef(s);
   runtimeRef.current = s;
+  const activeKakaoThread = useRef("");
+  const previousApp = useRef(app);
+  const [targetKakaoThread, setTargetKakaoThread] = useState("");
+  useEffect(() => {
+    if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
+    previousApp.current = app;
+  }, [app]);
   const update = (next: Runtime) => {
-    runtimeRef.current = next;
-    setOwn(next);
-    onRuntime?.(next);
+    const previous = runtimeRef.current;
+    const previousIds = new Set((previous.messages.kakao ?? []).map((item) => item.id));
+    const arrivals = (next.messages.kakao ?? []).filter((item) => !item.outgoing && !previousIds.has(item.id));
+    let committed = next;
+    if (arrivals.length && !creator) {
+      const kakaoUi = next.ui?.kakao ?? {};
+      let seenIds: string[] = [];
+      let queued: Item[] = [];
+      try { seenIds = JSON.parse(String(kakaoUi["global-notification-seen-ids"] || "[]")); } catch { seenIds = []; }
+      try { queued = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { queued = []; }
+      const seen = new Set(seenIds);
+      const fresh = arrivals.filter((item) => !seen.has(item.id));
+      fresh.forEach((item) => seen.add(item.id));
+      if (fresh.length) {
+        if (work.phone.notifications) {
+          for (const item of fresh) {
+            const isBeingViewed = app === "kakao" && activeKakaoThread.current === item.title;
+            if (isBeingViewed) continue;
+            const sameSender = queued.findIndex((entry) => entry.title === item.title);
+            if (sameSender >= 0) queued[sameSender] = item;
+            else queued.push(item);
+          }
+        }
+        queued = queued.slice(-40);
+        committed = {
+          ...next,
+          ui: {
+            ...next.ui,
+            kakao: {
+              ...kakaoUi,
+              "global-notification-seen-ids": JSON.stringify([...seen].slice(-500)),
+              "global-notification-queue": JSON.stringify(queued),
+            },
+          },
+        };
+      }
+    }
+    runtimeRef.current = committed;
+    setOwn(committed);
+    onRuntime?.(committed);
   };
   useEffect(() => {
     // Story notifications wait until the player unlocks the phone.
@@ -280,7 +322,6 @@ function PhoneRuntime({
     const interval = setInterval(() => {
       const previous = runtimeRef.current;
       const next = advance(work, previous, 1000);
-      runtimeRef.current = next;
       const changed =
         next.time !== previous.time ||
         next.trace.join() !== previous.trace.join() ||
@@ -414,15 +455,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         if (changed) {
           const notices = corrected.map((item) => `KakaoTalk: ${item.title}：${item.body}`);
           const merged = [...existing.filter((item) => !corrected.some((next) => next.id === item.id)), ...corrected];
-          noticesSeen.current = current.notifications.length + notices.length;
           update({
             ...current,
             messages: { ...current.messages, kakao: merged, twitter: nextXPosts },
             notifications: [...current.notifications, ...notices],
           });
-          setBanner(notices[0] || "");
-          window.setTimeout(() => setBanner(notices[1] || ""), 1000);
-          window.setTimeout(() => setBanner(""), 2000);
         } else if (xPostsChanged) {
           update({ ...current, messages: { ...current.messages, twitter: nextXPosts } });
         }
@@ -444,6 +481,32 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   const checkinDueAt = s.ui?.kakao?.["ig-backlash-checkin-due-at"];
   const checkinSent = s.ui?.kakao?.["ig-backlash-checkin-sent"] === true;
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
+  const globalNotificationQueue = String(s.ui?.kakao?.["global-notification-queue"] || "[]");
+  useEffect(() => {
+    if (locked || creator || !work.phone.notifications || globalNotificationItem) return;
+    let queued: Item[] = [];
+    try { queued = JSON.parse(globalNotificationQueue); } catch { queued = []; }
+    if (!queued.length) return;
+    const timer = window.setTimeout(() => {
+      const current = runtimeRef.current;
+      let latest: Item[] = [];
+      try { latest = JSON.parse(String(current.ui?.kakao?.["global-notification-queue"] || "[]")); } catch { latest = []; }
+      if (!latest.length) return;
+      const [next, ...remaining] = latest;
+      update({
+        ...current,
+        ui: {
+          ...current.ui,
+          kakao: {
+            ...current.ui?.kakao,
+            "global-notification-queue": JSON.stringify(remaining),
+          },
+        },
+      });
+      setGlobalNotificationItem(next);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [globalNotificationQueue, globalNotificationItem, locked, creator, work.phone.notifications]);
   useEffect(() => {
     if (!ready || igQueue.length > 0 || igBanner) return;
     const currentUi = s.ui?.kakao || {};
@@ -672,7 +735,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           kakao: { ...current.ui?.kakao, "ig-backlash-checkin-sent": true, "romance-node": "K001" },
         },
       });
-      setBanner(`KakaoTalk: ${selectedBoyfriend}：${body}`);
     }, remaining);
     return () => window.clearTimeout(timer);
   }, [backlashNotificationsComplete, igQueue.length, igBanner, selectedBoyfriend, checkinSent, checkinDueAt]);
@@ -718,7 +780,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         notifications: [...current.notifications, `KakaoTalk: ${selectedFriend}：${first.body}`],
         ui: { ...current.ui, kakao: { ...current.ui?.kakao, "friend-story-triggered": true, "friend-story-started": true, "friend-story-node": "F001", "friend-story-completed-nodes": "[]", "friend-story-history": "[]", "delivery-queue": JSON.stringify([...existingQueue, ...queue]) } },
       });
-      setBanner(`KakaoTalk: ${selectedFriend}：${first.body}`);
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
@@ -861,7 +922,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "delivery-queue": JSON.stringify([...existingQueue, ...queued]),
         } },
       });
-      if (app !== "kakao") setBanner(`KakaoTalk: ${member.name}：${first.body}`);
     }, remaining);
     return () => window.clearTimeout(timer);
   }, [ready, creator, app, s.ui?.kakao?.["secret-admirer-member-id"], s.ui?.kakao?.["secret-admirer-trigger-at"], s.ui?.kakao?.["secret-admirer-story-started"]]);
@@ -908,21 +968,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         notifications: [...current.notifications, `KakaoTalk: ${selectedFriend}：${first.body}`],
         ui: { ...current.ui, kakao: { ...currentUi, [sentKey]: true, "friend-story-node": care ? "F070" : "F071", "delivery-queue": JSON.stringify([...currentQueue, ...queue]) } },
       });
-      setBanner(`KakaoTalk: ${selectedFriend}：${first.body}`);
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [ready, friendStoryTriggered, selectedFriend, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-care-due-at"], s.ui?.kakao?.["friend-story-reconnect-due-at"], s.ui?.kakao?.["friend-story-care-sent"], s.ui?.kakao?.["friend-story-reconnect-sent"]]);
-
-  useEffect(() => {
-    const count = s.notifications.length;
-    if (!locked && work.phone.notifications && count > noticesSeen.current) {
-      setBanner(s.notifications.at(-1) || "");
-      const timer = setTimeout(() => setBanner(""), 1000);
-      noticesSeen.current = count;
-      return () => clearTimeout(timer);
-    }
-    noticesSeen.current = count;
-  }, [s.notifications.length, locked, work.phone.notifications]);
   const dismissNotice = (index: number) =>
     update({
       ...runtimeRef.current,
@@ -1042,6 +1090,16 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
               </span>
             </button>
           </div>
+          <GlobalNotificationBanner
+            item={globalNotificationItem}
+            onDismiss={() => setGlobalNotificationItem(null)}
+            onOpen={(item) => {
+              setGlobalNotificationItem(null);
+              activeKakaoThread.current = item.title;
+              setTargetKakaoThread(item.title);
+              open("kakao");
+            }}
+          />
           <AnimatePresence mode="wait">
             {locked && !(quickCamera && app === "camera") ? (
               <DeviceLock
@@ -1117,6 +1175,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                   work={work}
                   selectedBoyfriend={selectedBoyfriend}
                   selectedFriend={selectedFriend}
+                  initialKakaoThread={targetKakaoThread}
+                  onKakaoThreadChange={(thread) => { activeKakaoThread.current = thread; }}
                   onKakaoChoice={(character, playerText, reply, followUpReply, choiceId) => {
                     const current = runtimeRef.current;
                     const currentMessages = current.messages as Runtime["messages"];
@@ -1672,22 +1732,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
               <time>现在</time>
             </button>
           )}
-          {banner && !locked && (
-            <button
-              className="device-banner kakao-unlock-banner"
-              style={{ position: "absolute", zIndex: 9999, top: 58, left: 8, right: 8, display: "flex", visibility: "visible", opacity: 1 }}
-              onClick={() => {
-                setBanner("");
-                open("kakao");
-              }}
-            >
-              <AppIcon id="kakao" small />
-              <span>
-                <strong>KakaoTalk · {notificationContent(banner, work.apps).title}</strong>
-                <span>{notificationContent(banner, work.apps).body}</span>
-              </span>
-            </button>
-          )}
           {panel === "switcher" && (
             <div className="device-switcher">
               <div className="switcher-cards">
@@ -1864,6 +1908,8 @@ function AppContent({
   work,
   selectedBoyfriend,
   selectedFriend,
+  initialKakaoThread,
+  onKakaoThreadChange,
   onKakaoChoice,
 }: {
   app: AppPlugin;
@@ -1883,10 +1929,18 @@ function AppContent({
   work: Work;
   selectedBoyfriend?: string;
   selectedFriend?: string;
+  initialKakaoThread?: string;
+  onKakaoThreadChange?: (thread: string) => void;
   onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
-  const [thread, setThread] = useState("");
+  const [thread, setThread] = useState(initialKakaoThread || "");
+  useEffect(() => {
+    if (app.id === "kakao" && initialKakaoThread) {
+      setThread(initialKakaoThread);
+      onKakaoThreadChange?.(initialKakaoThread);
+    }
+  }, [app.id, initialKakaoThread, onKakaoThreadChange]);
   const [tab, setTab] = useState(app.tabs[0]);
   const [q, setQ] = useState("");
   const [pw, setPw] = useState("");
@@ -2009,7 +2063,10 @@ function AppContent({
               onAdd={onAdd}
               onBack={onBack}
               thread={thread}
-              onThread={setThread}
+              onThread={(value) => {
+                setThread(value);
+                onKakaoThreadChange?.(app.id === "kakao" ? value : "");
+              }}
               selectedBoyfriend={selectedBoyfriend}
               selectedFriend={selectedFriend}
               onKakaoChoice={onKakaoChoice}
