@@ -98,7 +98,7 @@ export function ThreadsReference(p: SkinProps) {
       ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
-    activities = [ ...p.items.filter((i) => i.meta.activityType), ...fanReplies.filter((r) => !!r.deliveredAt).map((r) => makeItem({ id: "activity-"+r.id, title: "回复了你的串文", sender: r.handle, avatar: r.avatar, body: r.text, time: new Date(r.deliveredAt || r.scheduledAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), meta: { activityType: "reply", postId: r.postId, replyId: r.id, originalPreview: playerPosts.find((post) => post.id === r.postId)?.text || "", activityCreatedAt: r.deliveredAt || 0 } })) ],
+    activities = [ ...p.items.filter((i) => i.meta.activityType), ...fanReplies.filter((r) => !!r.deliveredAt).map((r) => makeItem({ id: "activity-"+r.id, title: "回复了你的串文", sender: r.handle, avatar: r.avatar, body: r.text, time: new Date(r.deliveredAt || r.scheduledAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }), meta: { activityType: "reply", postId: r.postId, replyId: r.id, originalPreview: playerPosts.find((post) => post.id === r.postId)?.text || "", activityCreatedAt: String(r.deliveredAt || 0) } })) ],
     playerReplies = p.items.filter((i) => i.folder === "threads-reply");
   const toggle = (id: string, items: string[], set: (v: string[]) => void) =>
     set(items.includes(id) ? items.filter((v) => v !== id) : [...items, id]);
