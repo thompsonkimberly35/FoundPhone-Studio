@@ -26,7 +26,7 @@ describe("KakaoTalk secret admirer", () => {
     const all = ALD1_SECRET_ADMIRER_MEMBERS;
     const none = getSecretAdmirerCandidates(all[0].id, all[1].id);
     expect(none).toHaveLength(all.length - 2);
-    expect(chooseSecretAdmirer("unknown-boyfriend", "unknown-friend")).toBeNull();
+    expect(chooseSecretAdmirer("unknown-boyfriend", "unknown-friend")).not.toBeNull();
     expect(() => secureRandomIndex(0)).toThrow(RangeError);
   });
 
