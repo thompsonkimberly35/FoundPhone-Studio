@@ -32,7 +32,7 @@ import "./ios/reference.css";
 import "./ios/status-bar.css";
 import { WeChatSkin, WhatsAppSkin } from "./AppSkins";
 import { RichText } from "./RichText";
-import { getBoyfriendStage2Node, getBoyfriendStage2Choice } from "./kakaoBoyfriendStage2";
+import { getBoyfriendStage2Node, getBoyfriendStage2Choice, STAGE2_X003 } from "./kakaoBoyfriendStage2";
 import {
   useEffect,
   useState,
@@ -844,6 +844,33 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       } },
     });
   }, [ready, creator, selectedBoyfriend, selectedFriend, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["secret-admirer-selected-at"], s.ui?.kakao?.["secret-admirer-selection-error"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["typing-state"]]);
+
+  useEffect(() => {
+    if (!ready || creator) return;
+    const hasDeliveredK117 = (s.messages.kakao || []).some(item => item.meta?.boyfriendStage2Node === "K117");
+    if (!hasDeliveredK117 || s.ui?.kakao?.["x-event-X003-created"] === true) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    const event = STAGE2_X003;
+    const post = makeItem({
+      id: event.postId, title: event.title, sender: event.account, body: event.body,
+      richText: event.body, time: current.time || displayTime, kind: "post",
+      likes: event.likes, comments: event.comments,
+      meta: { handle: event.handle, verified: "true", reposts: String(event.reposts), views: "248万", translation: event.translation, storyEventId: event.eventId }
+    });
+    const posts = current.messages.twitter || [];
+    let queue: Item[] = [];
+    try { queue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { queue = []; }
+    queue.push({ ...post, meta: { ...post.meta, notificationAppId: "twitter", notificationPostId: post.id } });
+    let events: unknown[] = [];
+    try { events = JSON.parse(String(ui["story-x-events"] || "[]")); } catch { events = []; }
+    if (posts.some(item => item.id === post.id)) return;
+    update({
+      ...current,
+      messages: { ...current.messages, twitter: [...posts, post] },
+      ui: { ...current.ui, kakao: { ...ui, "x-event-X003-created": true, "story-x-events": JSON.stringify([...events, { eventId: "X003", triggeredByNode: "K117", postId: post.id, deliveredAt: Date.now(), notificationDelivered: false }]), "global-notification-queue": JSON.stringify(queue) } }
+    });
+  }, [ready, creator, s.messages.kakao, s.ui?.kakao?.["x-event-X003-created"]]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend) return;
