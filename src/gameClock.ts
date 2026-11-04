@@ -202,7 +202,7 @@ export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
     const oldIds = new Set((previous.messages?.[appId] || []).map((item) => item.id));
     messages[appId] = (items || []).map((item) => {
       if (oldIds.has(item.id) || Number.isFinite(item.sentAt)) return item;
-      const explicit = item.time.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{1,2}:\\d{2})(?::\\d{2})?$/);
+      const explicit = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})(?::\d{2})?$/);
       const hinted = explicit
         ? zonedDateTimeToTimestamp(explicit[1], explicit[2], clock.timezone)
         : applyTextTimeHint(item, cursor, clock.timezone);
