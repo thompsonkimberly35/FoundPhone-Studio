@@ -497,70 +497,99 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     return () => window.clearTimeout(timer);
   }, [s.messages.kakao]);
   useEffect(() => {
-    let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    type QueuedKakaoMessage = { item: Item; typingAt: number; deliverAt: number };
+    let queue: QueuedKakaoMessage[] = [];
     try { queue = JSON.parse(String(kakaoDeliveryQueue)); } catch { queue = []; }
-    if (!queue.length) {
-      if (s.ui?.kakao?.["typing-state"]) {
-        const current = runtimeRef.current;
-        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": "" } } });
-      }
-      return;
-    }
-    const next = queue[0];
     const now = Date.now();
-    const typingRaw = s.ui?.kakao?.["typing-state"] || "";
-    const typingActive = now >= next.typingAt;
-    if (typingActive && !typingRaw) {
-      const current = runtimeRef.current;
-      const clearedKakao = (current.messages.kakao ?? []).map((item) =>
-        item.outgoing && item.title === next.item.title && item.meta.unread === "1"
-          ? { ...item, meta: { ...item.meta, unread: "", readAt: String(now) } }
-          : item
-      );
+    const current = runtimeRef.current;
+    const currentUi = current.ui?.kakao || {};
+    const active = queue.filter((entry) => entry.typingAt <= now && entry.deliverAt > now);
+    const nextTypingState = Object.fromEntries(active.map((entry) => [entry.item.title, entry.deliverAt]));
+    const due = queue.filter((entry) => entry.deliverAt <= now);
+    const remaining = queue.filter((entry) => entry.deliverAt > now);
+    const existing = current.messages.kakao ?? [];
+    const delivered = due
+      .filter((entry) => !existing.some((item) => item.id === entry.item.id))
+      .map((entry) => ({ ...entry.item, read: false }));
+    const startsBacklash = delivered.some((item) =>
+      item.body === "你的身份好像已经被扒出来了"
+      && !(current.messages.instagram ?? []).some((entry) => entry.id === "ig-backlash-1")
+    );
+    const oldTyping = String(currentUi["typing-state"] || "");
+    const nextTyping = JSON.stringify(nextTypingState);
+    if (due.length || oldTyping !== nextTyping) {
       update({
         ...current,
-        messages: { ...current.messages, kakao: clearedKakao },
-        ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": JSON.stringify({ title: next.item.title, until: next.deliverAt }) } },
+        messages: delivered.length
+          ? { ...current.messages, kakao: [...existing, ...delivered] }
+          : current.messages,
+        ui: {
+          ...current.ui,
+          kakao: {
+            ...currentUi,
+            "delivery-queue": JSON.stringify(remaining),
+            "typing-state": nextTyping,
+          },
+        },
       });
-    }
-    const due = typingActive ? next.deliverAt : next.typingAt;
-    const timer = window.setTimeout(() => {
-      const current = runtimeRef.current;
-      let currentQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
-      try { currentQueue = JSON.parse(String(current.ui?.kakao?.["delivery-queue"] || "[]")); } catch { currentQueue = []; }
-      const head = currentQueue[0];
-      if (!head) return;
-      if (Date.now() < head.deliverAt) {
-        if (Date.now() >= head.typingAt && !current.ui?.kakao?.["typing-state"]) {
-          update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "typing-state": JSON.stringify({ title: head.item.title, until: head.deliverAt }) } } });
-        }
-        return;
-      }
-      const existing = current.messages.kakao ?? [];
-      if (!existing.some((item) => item.id === head.item.id)) {
-        const delivered = { ...head.item, read: false };
-        // This exact queued boyfriend reply is the sole trigger; fire only after it is added to chat.
-        const startsBacklash = delivered.body === "你的身份好像已经被扒出来了"
-          && !(current.messages.instagram ?? []).some((item) => item.id === "ig-backlash-1");
+      if (startsBacklash) {
+        const backlash = createInstagramBacklash(current.time || displayTime);
+        const latest = runtimeRef.current;
         update({
-          ...current,
-          messages: { ...current.messages, kakao: [...existing, delivered] },
-          ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(currentQueue.slice(1)), "typing-state": "" } },
+          ...latest,
+          messages: { ...latest.messages, instagram: [...(latest.messages.instagram ?? []), ...backlash] },
+          ui: { ...latest.ui, kakao: { ...latest.ui?.kakao, "ig-backlash-notifications-started": true, "ig-backlash-notification-index": 0, "ig-backlash-notifications-finished-at": "" } },
         });
-        if (startsBacklash) {
-          const backlash = createInstagramBacklash(current.time || displayTime);
-          const latest = runtimeRef.current;
-          update({
-            ...latest,
-            messages: { ...latest.messages, instagram: [...(latest.messages.instagram ?? []), ...backlash] },
-            ui: { ...latest.ui, kakao: { ...latest.ui?.kakao, "ig-backlash-notifications-started": true, "ig-backlash-notification-index": 0, "ig-backlash-notifications-finished-at": "" } },
-          });
-          setIgQueue(backlash);
-        }
-      } else {
-        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "delivery-queue": JSON.stringify(currentQueue.slice(1)), "typing-state": "" } } });
+        setIgQueue(backlash);
       }
-    }, Math.max(0, due - now));
+    }
+    const nextEventAt = remaining
+      .flatMap((entry) => [entry.typingAt, entry.deliverAt])
+      .filter((time) => time > now)
+      .sort((a, b) => a - b)[0];
+    if (!nextEventAt) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      let latestQueue: QueuedKakaoMessage[] = [];
+      try { latestQueue = JSON.parse(String(latest.ui?.kakao?.["delivery-queue"] || "[]")); } catch { latestQueue = []; }
+      const tick = Date.now();
+      const activeNow = latestQueue.filter((entry) => entry.typingAt <= tick && entry.deliverAt > tick);
+      const dueNow = latestQueue.filter((entry) => entry.deliverAt <= tick);
+      const remainingNow = latestQueue.filter((entry) => entry.deliverAt > tick);
+      const latestExisting = latest.messages.kakao ?? [];
+      const newMessages = dueNow
+        .filter((entry) => !latestExisting.some((item) => item.id === entry.item.id))
+        .map((entry) => ({ ...entry.item, read: false }));
+      const latestTyping = JSON.stringify(Object.fromEntries(activeNow.map((entry) => [entry.item.title, entry.deliverAt])));
+      const backlashStarts = newMessages.some((item) =>
+        item.body === "你的身份好像已经被扒出来了"
+        && !(latest.messages.instagram ?? []).some((entry) => entry.id === "ig-backlash-1")
+      );
+      update({
+        ...latest,
+        messages: newMessages.length
+          ? { ...latest.messages, kakao: [...latestExisting, ...newMessages] }
+          : latest.messages,
+        ui: {
+          ...latest.ui,
+          kakao: {
+            ...latest.ui?.kakao,
+            "delivery-queue": JSON.stringify(remainingNow),
+            "typing-state": latestTyping,
+          },
+        },
+      });
+      if (backlashStarts) {
+        const backlash = createInstagramBacklash(latest.time || displayTime);
+        const afterDelivery = runtimeRef.current;
+        update({
+          ...afterDelivery,
+          messages: { ...afterDelivery.messages, instagram: [...(afterDelivery.messages.instagram ?? []), ...backlash] },
+          ui: { ...afterDelivery.ui, kakao: { ...afterDelivery.ui?.kakao, "ig-backlash-notifications-started": true, "ig-backlash-notification-index": 0, "ig-backlash-notifications-finished-at": "" } },
+        });
+        setIgQueue(backlash);
+      }
+    }, Math.max(0, nextEventAt - now));
     return () => window.clearTimeout(timer);
   }, [kakaoDeliveryQueue, s.ui?.kakao?.["typing-state"]]);
   useEffect(() => {
@@ -699,9 +728,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const currentUi = current.ui?.kakao || {};
     const boyfriendDone = /^E0[1-8]$/.test(String(currentUi["romance-result"] || ""));
     const friendDone = /^H(0[1-9]|1[0-2])$/.test(String(currentUi["friend-story-outcome"] || ""));
-    let pendingMessages: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
-    try { pendingMessages = JSON.parse(String(currentUi["delivery-queue"] || "[]")); } catch { pendingMessages = []; }
-    if (!boyfriendDone || !friendDone || pendingMessages.length > 0 || currentUi["typing-state"] || currentUi["secret-admirer-selected-at"] || currentUi["secret-admirer-selection-error"]) return;
+    if (!boyfriendDone || !friendDone || currentUi["secret-admirer-selected-at"] || currentUi["secret-admirer-selection-error"]) return;
     const boyfriendId = memberIdForName(selectedBoyfriend);
     const friendId = memberIdForName(selectedFriend);
     if (!boyfriendId || !friendId || boyfriendId === friendId) {
@@ -786,11 +813,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
       let existingQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
       try { existingQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { existingQueue = []; }
-      if (existingQueue.length) {
-        const nextDue = Math.max(Date.now() + 1_000, Number(existingQueue.at(-1)?.deliverAt || 0));
-        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "secret-admirer-trigger-at": String(nextDue) } } });
-        return;
-      }
       update({
         ...latest,
         messages: { ...latest.messages, kakao: [...messages, first] },
@@ -1079,7 +1101,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     };
                     const currentQueue = readQueue();
                     const queueLines = (bodies: string[], prefix: string, afterQueue = currentQueue) => {
-                      let cursor = Math.max(stamp, afterQueue.at(-1)?.deliverAt ?? stamp);
+                      const sameThreadQueue = afterQueue.filter((entry) => entry.item.title === character);
+                      let cursor = Math.max(stamp, ...sameThreadQueue.map((entry) => entry.deliverAt));
                       return bodies.map((body, index) => {
                         const item = makeItem({
                           id: prefix + "-" + index,
