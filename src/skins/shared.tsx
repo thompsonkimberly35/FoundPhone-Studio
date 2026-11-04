@@ -95,9 +95,9 @@ export function Avatar({
 }) {
   return (
     <span className={`catalog-avatar kzka ${round ? "round" : ""}`}>
-      {safeMedia(src)?.startsWith("data:image/") || src.startsWith("/") || /^https:\/\/api\.dicebear\.com\//.test(src) ? (
+      {src.startsWith("data:image/svg+xml,") || safeMedia(src)?.startsWith("data:image/") || src.startsWith("/") || /^https:\/\/api\.dicebear\.com\//.test(src) ? (
         <img
-          src={safeMedia(src) || src}
+          src={src.startsWith("data:image/svg+xml,") ? src : safeMedia(src) || src}
           alt=""
           style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: "inherit" }}
         />
