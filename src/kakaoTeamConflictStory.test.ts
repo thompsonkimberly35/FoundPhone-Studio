@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { ALD1_SECRET_ADMIRER_MEMBERS } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictCandidates, getTeamConflictChoice, getTeamConflictNode, getTeamConflictNodeCount, TEAM_CONFLICT_STORY } from "./kakaoTeamConflictStory";
 
 describe("KakaoTalk team-conflict story", () => {
