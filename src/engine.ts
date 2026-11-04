@@ -1,5 +1,6 @@
 import type { Action, Condition, Runtime, StoryNode, Work } from "./schema";
 import { makeItem } from "./schema";
+import { ensureGameClock, formatGameDate, formatGameTime, setGameClockTime } from "./gameClock";
 export function testCondition(c: Condition, s: Runtime): boolean {
   const [scope, ...rest] = c.key.split(":");
   const key = rest.join(":");
@@ -58,7 +59,9 @@ function apply(a: Action, s: Runtime, w: Work) {
       if (!s.clues.includes(a.key)) s.clues.push(a.key);
       break;
     case "time":
-      s.time = String(a.value);
+      s.gameClock = setGameClockTime(s.gameClock || ensureGameClock(s, w), String(a.value));
+      s.date = formatGameDate(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
+      s.time = formatGameTime(s.gameClock.currentGameTimestamp, s.gameClock.timezone);
       s.clockRemainderMs = 0;
       break;
     case "ending":
@@ -76,6 +79,8 @@ function apply(a: Action, s: Runtime, w: Work) {
           title: "新消息",
           sender: w.phone.owner,
           body: String(a.value),
+          time: s.time,
+          sentAt: s.gameClock?.currentGameTimestamp,
         }),
       ];
       break;
@@ -187,6 +192,7 @@ export function advance(
   milliseconds: number,
 ): Runtime {
   const s = structuredClone(previous);
+  s.gameClock = ensureGameClock(s, w);
   const delta = Number.isFinite(milliseconds)
     ? Math.max(0, Math.min(milliseconds, 86400000))
     : 0;
@@ -199,13 +205,14 @@ export function advance(
     s.scheduled.sort((a, b) => a.due - b.due);
     const due =
       w.mode !== "explore" && resumes < 200 ? s.scheduled[0] : undefined;
-    const clockAt = s.elapsedMs + 60000 - s.clockRemainderMs;
+    const scale = Math.max(0, s.gameClock?.timeScale ?? 1);
+    const clockAt = scale > 0 ? s.elapsedMs + (60000 - s.clockRemainderMs) / scale : Infinity;
     const next = Math.min(
       end,
       clockAt,
       due ? Math.max(s.elapsedMs, due.due) : Infinity,
     );
-    s.clockRemainderMs += next - s.elapsedMs;
+    s.clockRemainderMs += (next - s.elapsedMs) * scale;
     s.elapsedMs = next;
     if (s.clockRemainderMs >= 60000) {
       s.clockRemainderMs -= 60000;
@@ -238,6 +245,7 @@ export function advance(
     }
     if (s.elapsedMs >= end) break;
   }
+  if (s.gameClock) s.gameClock = { ...s.gameClock, lastRealTimestamp: Date.now() };
   return s;
 }
 export function choose(w: Work, s: Runtime, id: string) {
