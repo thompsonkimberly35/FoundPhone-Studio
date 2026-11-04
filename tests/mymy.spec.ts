@@ -13,7 +13,7 @@ async function start(page: Page) {
     r.fulfill({ json: compileStory(fixture).work }),
   );
   await page.goto("/");
-  await page.getByRole("button", { name: "轻触解锁" }).click();
+  await page.locator("button.unlock-btn").click();
 }
 async function open(page: Page, name: string) {
   await page.getByRole("button", { name: "打开App Store", exact: true }).click();
@@ -98,7 +98,7 @@ test("Mymy Instagram comments, likes, profile, stories and X interaction persist
   );
   await home(page);
   await page.reload();
-  await page.getByRole("button", { name: "轻触解锁" }).click();
+  await page.locator("button.unlock-btn").click();
   await open(page, "Instagram");
   await page.getByRole("button", { name: "主页", exact: true }).click();
   await expect(
