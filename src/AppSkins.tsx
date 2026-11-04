@@ -53,6 +53,7 @@ export type SkinProps = {
   onKakaoChoice?: (character: string, playerText: string, reply: string, followUpReply?: string, choiceId?: string) => void;
   onInstagramReply?: (conversation: Item, replyText: string) => void;
   targetPostId?: string;
+  targetReplyId?: string;
   onTargetPostHandled?: () => void;
 };
 function Avatar({
