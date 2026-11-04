@@ -147,7 +147,24 @@ export function validateLayout(raw: unknown, input: Work) {
       mail.folder = "";
     }
     if (!layout.order.includes("mail")) layout.order.push("mail");
-    layout.positions.mail ??= { page: 1, x: 2, y: 1 };
+    if (!layout.positions.mail) {
+      const pagesWithoutMail = packHome(
+        homeEntries(layout).filter((entry) => entry.key !== "mail"),
+        layout.positions,
+      );
+      let target: DeviceLayout["positions"][string] | undefined;
+      for (let page = 1; page < 20 && !target; page++) {
+        const occupied = new Set<string>();
+        for (const cell of pagesWithoutMail[page] ?? [])
+          for (let y = cell.y; y < cell.y + cell.h; y++)
+            for (let x = cell.x; x < cell.x + cell.w; x++)
+              occupied.add(x + "," + y);
+        for (let y = 0; y < 6 && !target; y++)
+          for (let x = 0; x < 4 && !target; x++)
+            if (!occupied.has(x + "," + y)) target = { page, x, y };
+      }
+      layout.positions.mail = target ?? { page: 19, x: 0, y: 0 };
+    }
     layout.previewLayoutRevision = 5;
   }
   if (w.id === "ui-test-phone-v2" && layout.previewLayoutRevision < 1) {
