@@ -27,6 +27,7 @@ import {
 import type { SkinProps } from "../AppSkins";
 import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
+import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
 import { useSkinState } from "../skinState";
 import "./threads-reference.css";
 export function ThreadsReference(p: SkinProps) {
@@ -34,7 +35,14 @@ export function ThreadsReference(p: SkinProps) {
     [liked, setLiked] = useSkinState<string[]>(p, "threads-liked", []),
     [saved, setSaved] = useSkinState<string[]>(p, "threads-saved", []),
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
-    [replies, setReplies] = useSkinState<string[]>(p, "threads-replies", []);
+    [replies] = useSkinState<string[]>(p, "threads-replies", []);
+  const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
+  const replyRecords: ThreadsReplyRecord[] = (() => {
+    try {
+      const value: unknown = JSON.parse(replyRecordsJson);
+      return Array.isArray(value) ? value.filter((entry): entry is ThreadsReplyRecord => !!entry && typeof entry.id === "string" && typeof entry.postId === "string" && typeof entry.text === "string" && typeof entry.createdAt === "number" && entry.isPlayerReply === true) : [];
+    } catch { return []; }
+  })();
   const [draft, setDraft] = useState(""),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState("全部"),
@@ -111,7 +119,7 @@ export function ThreadsReference(p: SkinProps) {
           </button>
           <button aria-label={"回复" + i.title} onClick={() => open(i)}>
             <MessageCircleIcon />
-            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length || ""}
+            {i.comments.length + replies.filter((v) => v.startsWith(i.id + "\t")).length + replyRecords.filter((r) => r.postId === i.id).length || ""}
           </button>
           <button
             aria-label={"转发" + i.title}
@@ -155,6 +163,7 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
+                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
@@ -165,7 +174,8 @@ export function ThreadsReference(p: SkinProps) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (draft.trim()) {
-                  setReplies([...replies, selected.id + "\t" + draft.trim()]);
+                  const record = createThreadsReplyRecord(selected.id, draft.trim());
+                  setReplyRecordsJson(JSON.stringify([...replyRecords, record]));
                   setDraft("");
                 }
               }}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeThreadsBacklash, hasThreadsX002, type InstagramReplyEvidence } from "./threadsBacklash";
+import { makeThreadsBacklash, hasThreadsX002, createThreadsReplyRecord, type InstagramReplyEvidence } from "./threadsBacklash";
 
 const evidence: InstagramReplyEvidence = {
   conversationId: "ig-backlash-1",
@@ -39,5 +39,22 @@ describe("Threads backlash event", () => {
     expect(before.find((post) => post.meta.postId === "T025")?.hidden).toBe(true);
     expect(after.find((post) => post.meta.postId === "T025")?.hidden).toBe(false);
     expect(hasThreadsX002([{ ...after[24], id: "x-story-X002", meta: { eventId: "X002" } }])).toBe(true);
+  });
+});
+
+
+describe("Threads player replies", () => {
+  it("creates uniquely identified replies with persistent author and timestamp fields", () => {
+    const first = createThreadsReplyRecord("threads-backlash-t001", "玩家自定义回复", 1234);
+    const second = createThreadsReplyRecord("threads-backlash-t001", "第二条回复", 1235);
+    expect(first.id).not.toBe(second.id);
+    expect(first).toMatchObject({
+      postId: "threads-backlash-t001",
+      authorId: "player-allyz_1101",
+      authorHandle: "@allyz_1101",
+      text: "玩家自定义回复",
+      createdAt: 1234,
+      isPlayerReply: true,
+    });
   });
 });
