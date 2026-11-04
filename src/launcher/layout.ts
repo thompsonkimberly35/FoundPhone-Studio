@@ -54,7 +54,7 @@ export function ensureAppStore(work: Work): Work {
 }
 const homeScreenApps = new Set([
   "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
-  "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
+  "notes", "photos", "clock", "weather", "douyin", "calendar", "settings", "mail",
 ]);
 const dockApps = new Set(["phone", "messages", "camera", "safari"]);
 const allowedHomeApps = new Set([...homeScreenApps, ...dockApps]);
@@ -72,6 +72,7 @@ const homePositions: DeviceLayout["positions"] = {
   douyin: { page: 1, x: 3, y: 0 },
   calendar: { page: 1, x: 0, y: 1 },
   settings: { page: 1, x: 1, y: 1 },
+  mail: { page: 1, x: 2, y: 1 },
 };
 function applyCuratedApps(apps: AppConfig[]) {
   return apps.map((app) => {
@@ -93,12 +94,12 @@ export function defaultLayout(input: Work): DeviceLayout {
   return {
     version: 1,
     workId: w.id,
-    previewLayoutRevision: 4,
+    previewLayoutRevision: 5,
     apps: applyCuratedApps(structuredClone(w.apps)),
     widgets: [],
     order: [
       "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
-      "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
+      "notes", "photos", "clock", "weather", "douyin", "calendar", "settings", "mail",
     ],
     cleared: [],
     positions: structuredClone(homePositions),
@@ -136,6 +137,35 @@ export function validateLayout(raw: unknown, input: Work) {
     ];
     layout.positions = structuredClone(homePositions);
     layout.previewLayoutRevision = 4;
+  }
+  if (layout.previewLayoutRevision < 5) {
+    const mail = layout.apps.find((app) => app.id === "mail");
+    if (mail) {
+      mail.installed = true;
+      mail.visible = true;
+      mail.dock = false;
+      mail.folder = "";
+    }
+    if (!layout.order.includes("mail")) layout.order.push("mail");
+    if (!layout.positions.mail) {
+      const pagesWithoutMail = packHome(
+        homeEntries(layout).filter((entry) => entry.key !== "mail"),
+        layout.positions,
+      );
+      let target: DeviceLayout["positions"][string] | undefined;
+      for (let page = 1; page < 20 && !target; page++) {
+        const occupied = new Set<string>();
+        for (const cell of pagesWithoutMail[page] ?? [])
+          for (let y = cell.y; y < cell.y + cell.h; y++)
+            for (let x = cell.x; x < cell.x + cell.w; x++)
+              occupied.add(x + "," + y);
+        for (let y = 0; y < 6 && !target; y++)
+          for (let x = 0; x < 4 && !target; x++)
+            if (!occupied.has(x + "," + y)) target = { page, x, y };
+      }
+      layout.positions.mail = target ?? { page: 19, x: 0, y: 0 };
+    }
+    layout.previewLayoutRevision = 5;
   }
   if (w.id === "ui-test-phone-v2" && layout.previewLayoutRevision < 1) {
     const visibleApps = ["wechat", "douyin"];

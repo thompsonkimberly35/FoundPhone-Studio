@@ -11,10 +11,14 @@ import {
 } from "./layout";
 const work = () => compileStory(blank).work;
 describe("device layout", () => {
-  it("keeps all 47 apps and only defaults installed", () => {
+  it("keeps the restored Mail app on the home screen with the curated apps", () => {
     const l = defaultLayout(work());
     expect(l.apps).toHaveLength(49);
-    expect(l.apps.filter((a) => a.installed)).toHaveLength(18);
+    expect(l.apps.filter((a) => a.installed)).toHaveLength(19);
+    expect(l.apps.find((a) => a.id === "mail")).toMatchObject({
+      installed: true, visible: true, dock: false,
+    });
+    expect(l.positions.mail).toEqual({ page: 1, x: 2, y: 1 });
   });
   it("packs different widget sizes and pages without overlap", () => {
     const l = defaultLayout(work());
@@ -116,4 +120,25 @@ it("migrates preview folders once to the curated layout while preserving widgets
   expect(
     validateLayout(migrated, w).apps.find((a) => a.id === "wechat")!.folder,
   ).toBe("作者新建文件夹");
+});
+
+it("restores Mail in existing saved layouts without moving other apps", () => {
+  const w = work();
+  const old = defaultLayout(w);
+  old.previewLayoutRevision = 4;
+  old.apps.find((app) => app.id === "mail")!.visible = false;
+  old.apps.find((app) => app.id === "mail")!.installed = false;
+  delete old.positions.mail;
+  old.order = old.order.filter((id) => id !== "mail");
+  const beforePositions = structuredClone(old.positions);
+  const migrated = validateLayout(old, w);
+  expect(migrated.apps.find((app) => app.id === "mail")).toMatchObject({
+    installed: true, visible: true, dock: false, folder: "",
+  });
+  expect(migrated.positions).toEqual({
+    ...beforePositions,
+    mail: { page: 1, x: 2, y: 1 },
+  });
+  for (const [id, position] of Object.entries(beforePositions))
+    expect(migrated.positions[id]).toEqual(position);
 });
