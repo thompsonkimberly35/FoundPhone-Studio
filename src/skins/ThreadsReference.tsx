@@ -189,7 +189,7 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
-                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),\n                ...fanReplies.filter((r) => r.postId === selected.id && r.deliveredAt).map((r) => "@"+r.handle+"："+r.text),\n                ...fanReplies.filter((r) => r.postId === selected.id && r.deliveredAt).map((r) => "@"+r.handle+"："+r.text),
+                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),\n                ...fanReplies.filter((r) => r.postId === selected.id && r.deliveredAt).map((r) => "@"+r.handle+"："+r.text),
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
@@ -509,7 +509,11 @@ export function ThreadsReference(p: SkinProps) {
             <button
               disabled={!draft.trim()}
               onClick={() => {
-                const createdAt = Date.now();\n                const post: ThreadsPlayerPost = { id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8), text: draft, createdAt, boyfriend: p.selectedBoyfriend || "" };\n                setPlayerPostsJson(JSON.stringify([post, ...playerPosts]));\n                setFanRepliesJson(JSON.stringify([...fanReplies, ...generateThreadsFanReplies(post)]));\n                setPosts([draft.trim(), ...posts]);
+                const createdAt = Date.now();
+                const post: ThreadsPlayerPost = { id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8), text: draft, createdAt, boyfriend: p.selectedBoyfriend || "" };
+                setPlayerPostsJson(JSON.stringify([post, ...playerPosts]));
+                setFanRepliesJson(JSON.stringify([...fanReplies, ...generateThreadsFanReplies(post)]));
+                setPosts([draft.trim(), ...posts]);
                 setDraft("");
                 setCompose(false);
                 setKeyboard(false);
