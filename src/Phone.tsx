@@ -870,7 +870,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       .filter(Boolean));
     const current = runtimeRef.current;
     const ui = current.ui?.kakao || {};
-    let posts = [...(current.messages.twitter || [])];
+    const posts = [...(current.messages.twitter || [])];
     let queue: Item[] = [];
     let events: Array<{eventId:string;triggeredByNode:string;postId:string;deliveredAt:number;notificationDelivered:boolean}> = [];
     try { queue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { queue = []; }
