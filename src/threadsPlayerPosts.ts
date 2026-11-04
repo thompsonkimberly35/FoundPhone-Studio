@@ -24,19 +24,31 @@ function classify(text: string): Mood {
 }
 export function generateThreadsFanReplies(post: ThreadsPlayerPost): ThreadsFanReply[] {
  const mood = classify(post.text);
- const pool = [...pools[mood], ...pools.neutral, ...pools[mood]];
- let seed = [...post.id].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7);
+ const categories: Mood[] = ["claim","explain","attack","sad","apology","daily","support","neutral"];
+ let seed = [...post.id + post.text].reduce((n,c)=>(n*31+c.charCodeAt(0))>>>0,7);
  const random = () => { seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
- const shuffled = [...pool].sort(() => random()-0.5);
- return Array.from({length:24},(_,index)=>{
-  const handle=handles[index];
-  let text=shuffled[index%shuffled.length];
-  const mention=post.text.match(/@([\w.]+)/);
-  if(mention && index%6===0) text="@"+mention[1]+" "+text;
-  if(post.boyfriend && mood==="claim" && index%5===0) text=text.replace(/他/g,post.boyfriend);
-  return {id:post.id+"-reply-"+index,postId:post.id,authorId:handle,handle,
-   avatar:"https://api.dicebear.com/9.x/notionists/svg?seed="+encodeURIComponent(handle),
-   text,scheduledAt:post.createdAt+(index<4?3000+index*1200:index<11?10000+(index-4)*2100:index<19?30000+(index-11)*3500:60000+(index-19)*6500),
-   deliveredAt:null,readAt:null};
+ const mention = post.text.match(/@([\\w.]+)/);
+ const mentionHandle = mention?.[1] || "allyz_1101";
+ const generated = categories.flatMap((category, categoryIndex) => {
+   const pool = [...pools[category]];
+   for (let i=pool.length-1;i>0;i--) { const j=Math.floor(random()*(i+1)); [pool[i],pool[j]]=[pool[j],pool[i]]; }
+   return pool.slice(0,3).map((text,offset) => {
+     let reply = text;
+     if (category === "neutral" && offset === 0) reply = "@" + mentionHandle + " 我看到你這篇了，想知道後續會怎麼發展。";
+     if (post.boyfriend) reply = reply.replace(/他/g,post.boyfriend);
+     if (category === mood && post.boyfriend && category === "claim") reply = reply.replace(/妳/g,"你");
+     return { category, reply, order: categoryIndex*3+offset };
+   });
+ });
+ const unique = new Set<string>();
+ return generated.map(({reply},index) => {
+   let text = reply;
+   if (unique.has(text)) text += "（我也有同樣的感受）";
+   unique.add(text);
+   const handle=handles[index];
+   return {id:post.id+"-reply-"+index,postId:post.id,authorId:handle,handle,
+     avatar:"https://api.dicebear.com/9.x/notionists/svg?seed="+encodeURIComponent(handle),
+     text,scheduledAt:post.createdAt+(index<4?3000+index*1200:index<11?10000+(index-4)*2100:index<19?30000+(index-11)*3500:60000+(index-19)*6500),
+     deliveredAt:null,readAt:null};
  });
 }
