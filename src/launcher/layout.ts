@@ -99,7 +99,7 @@ export function defaultLayout(input: Work): DeviceLayout {
     widgets: [],
     order: [
       "twitter", "threads", "youtube", "kakao", "spotify", "instagram",
-      "notes", "photos", "clock", "weather", "douyin", "calendar", "settings",
+      "notes", "photos", "clock", "weather", "douyin", "calendar", "settings", "mail",
     ],
     cleared: [],
     positions: structuredClone(homePositions),
