@@ -110,7 +110,7 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
   const timezone = clock.timezone;
   const baseline = zonedDateTimeToTimestamp(runtime.date || work.phone.date || "2026-10-25", "00:00", timezone);
   const explicitTimes = Object.values(runtime.messages || {}).flat().map((item) => {
-    const match = item.time.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{1,2}:\\d{2})/);
+    const match = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
     return match ? zonedDateTimeToTimestamp(match[1], match[2], timezone) : Number.POSITIVE_INFINITY;
   });
   let cursor = Math.min(baseline, ...explicitTimes) - 1;
