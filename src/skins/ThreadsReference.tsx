@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Home,
   Send,
@@ -37,6 +37,10 @@ export function ThreadsReference(p: SkinProps) {
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
+  useEffect(() => {
+    const cleanPosts = posts.filter((body) => !/测试用户|测试用戶|测试帖子|测试贴文|测试内容|测试账号|测试帳號|test\s*(user|post|content|account)|demo\s*(user|post|content|account)|sample\s*(user|post|content|account)/i.test(body));
+    if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
+  }, [posts, setPosts]);
   const replyRecords: ThreadsReplyRecord[] = (() => {
     try {
       const value: unknown = JSON.parse(replyRecordsJson);
@@ -55,7 +59,7 @@ export function ThreadsReference(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const local = posts
-    .filter((body) => !/测试用户|测试用戶|测试帖子|测试贴文|测试内容|测试账号|测试帳號|test\\s*(user|post|content|account)|demo\\s*(user|post|content|account)|sample\\s*(user|post|content|account)/i.test(body))
+    .filter((body) => !/测试用户|测试用戶|测试帖子|测试贴文|测试内容|测试账号|测试帳號|test\s*(user|post|content|account)|demo\s*(user|post|content|account)|sample\s*(user|post|content|account)/i.test(body))
     .map((body, n) =>
       makeItem({
         id: "local-thread-" + n,
@@ -68,7 +72,7 @@ export function ThreadsReference(p: SkinProps) {
     );
   const feed = [
       ...local,
-      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试用户|测试用戶|测试帖子|测试贴文|测试内容|测试账号|测试帳號|test\\s*(user|post|content|account)|demo\\s*(user|post|content|account)|sample\\s*(user|post|content|account)/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
+      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试用户|测试用戶|测试帖子|测试贴文|测试内容|测试账号|测试帳號|test\s*(user|post|content|account)|demo\s*(user|post|content|account)|sample\s*(user|post|content|account)/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
     activities = p.items.filter((i) => i.meta.activityType),
@@ -346,12 +350,12 @@ export function ThreadsReference(p: SkinProps) {
             {tab === "个人主页" && (
               <>
                 <div className="tr-profile">
-                  <Avatar name={p.owner || "机主"} />
+                  <Avatar name={"allyz_1101" || "机主"} />
                   <p>allyz_1101</p>
                 </div>
                 {feed
                   .filter(
-                    (i) => i.sender === p.owner || i.meta.local === "true",
+                    (i) => i.sender === "allyz_1101" || i.meta.local === "true",
                   )
                   .map(card)}
               </>
@@ -463,9 +467,9 @@ export function ThreadsReference(p: SkinProps) {
             </button>
           </header>
           <div className="tr-compose-content">
-            <Avatar name={p.owner || "机主"} />
+            <Avatar name={"allyz_1101" || "机主"} />
             <div>
-              <b>{p.owner}</b>
+              <b>{"allyz_1101"}</b>
               <span className="tr-muted"> › 社群或话题</span>
               <textarea
                 aria-label="串文内容"
