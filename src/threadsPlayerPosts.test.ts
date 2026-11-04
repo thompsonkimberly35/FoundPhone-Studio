@@ -17,7 +17,9 @@ describe("player-authored Threads posts", () => {
     expect(new Set(replies.map((reply) => reply.category))).toEqual(new Set([
       "claim", "explain", "attack", "sad", "apology", "daily", "support", "mention",
     ]));
-    expect(replies.filter((reply) => reply.category === "mention").every((reply) => reply.text.includes("@friend"))).toBe(true);
+    expect(replies.every((reply) => !/@allyz_1101\\b/i.test(reply.text))).toBe(true);
+    expect(replies.filter((reply) => reply.category === "mention").every((reply) => /@[\\w.]+/.test(reply.text))).toBe(true);
+    expect(replies.filter((reply) => reply.category === "mention").every((reply) => !reply.text.includes("@" + reply.handle))).toBe(true);
     expect(replies.every((reply) => reply.deliveredAt === null && reply.readAt === null)).toBe(true);
   });
 
