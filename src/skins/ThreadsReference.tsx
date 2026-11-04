@@ -548,7 +548,6 @@ export function ThreadsReference(p: SkinProps) {
             <button
               disabled={!draft.trim()}
               onClick={() => {
-                const text = draft.trim();
                 const createdAt = p.virtualTimestamp ?? 0;
                 const post: ThreadsPlayerPost = {
                   id: "player-threads-" + createdAt + "-" + Math.random().toString(36).slice(2, 8),
@@ -556,9 +555,7 @@ export function ThreadsReference(p: SkinProps) {
                 };
                 setPlayerPostsJson(JSON.stringify([post, ...playerPosts]));
                 setFanRepliesJson(JSON.stringify([...fanReplies, ...generateThreadsFanReplies(post)]));
-                const record = { id: post.id, text, createdAt };
-                setLocalPostsJson(JSON.stringify([record, ...localPostRecords]));
-                setPosts([text, ...posts]);
+                // Player posts are stored separately from legacy local posts to avoid duplicate feed cards.
                 setDraft("");
                 setCompose(false);
                 setKeyboard(false);
