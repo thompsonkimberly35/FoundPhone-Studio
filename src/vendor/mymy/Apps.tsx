@@ -123,6 +123,23 @@ export function MymyKakao(p: SkinProps) {
   }, [p.thread, messages.length, hasBacklashCheckin]);
   const boyfriendThread = Boolean(p.selectedBoyfriend && p.thread === p.selectedBoyfriend);
   const friendThread = Boolean(p.selectedFriend && p.thread === p.selectedFriend);
+  const boyfriendContext = romanceNode?.lines.join("") || "";
+  const friendLinkOptions = boyfriendThread && romanceNode
+    ? p.ui?.["friend-story-knows-sacrifice"] === true && /公司|经纪人|活动/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-sacrifice"]
+      ? [
+          { key: "friend-link:sacrifice:A", text: "你是不是想用暂停活动换公司不要追究我？" },
+          { key: "friend-link:sacrifice:B", text: "我不希望你放弃自己的梦想。" },
+          { key: "friend-link:sacrifice:C", text: "你应该先跟团员商量。" },
+        ]
+      : p.ui?.["friend-story-knows-warning"] === true && /公司|经纪人/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-warning"]
+        ? [
+            { key: "friend-link:warning:A", text: "你是不是几个星期前就被公司警告了？" },
+            { key: "friend-link:warning:B", text: "你还有什么事情没有告诉我？" },
+            { key: "friend-link:warning:C", text: "如果你现在不想说，我可以等。" },
+          ]
+        : []
+    : [];
+  const displayedRomanceChoices = [...(romanceNode?.choices || []), ...friendLinkOptions];
   const playerReply = boyfriendThread ? "看到了，怎么办？" : "不好，我好害怕";
   const previousThread = useRef(p.thread);
   useEffect(() => {
@@ -248,9 +265,9 @@ export function MymyKakao(p: SkinProps) {
                 <button type="button" className="go" style={{ borderRadius: 18, padding: "11px 14px", width: "100%", whiteSpace: "normal" }} onClick={() => p.onThread("")}>
                   先结束聊天，稍后重新打开继续
                 </button>
-              ) : romanceNode.choices.length ? (
+              ) : displayedRomanceChoices.length ? (
                 <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
-                  {romanceNode.choices.map((choice, index) => (
+                  {displayedRomanceChoices.map((choice, index) => (
                     <button key={choice.key} type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, maxWidth: "100%", width: "100%", minHeight: 42, borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", boxShadow: "0 2px 5px rgba(115, 87, 58, 0.06)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, letterSpacing: "0.1px", textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word", overflow: "visible" }}
                       onClick={() => p.onKakaoChoice?.(p.thread, choice.text, "", "", choice.key)}>
                       <span style={{ display: "inline-block", marginRight: 7, color: "#c2a17c", fontSize: 11, fontWeight: 600 }}>{String(index + 1).padStart(2, "0")}</span>
