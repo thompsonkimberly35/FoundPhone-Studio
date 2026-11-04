@@ -50,7 +50,7 @@ export const STAGE2_X003={
  eventId:"X003",postId:"x-story-X003",triggeredByNode:"K117",
  account:"NOVA LIVE",handle:"@novalive_kr",time:"10:00",
  title:"[행사 일정 안내]",
- body:"안녕하세요. NOVA LIVE입니다.\n\n예정되어 있던 ALPHA DRIVE ONE 관련 공개 프로모션 일정은 운영 및 현장 안전 관리에 관한 추가 협의가 필요하여 세부 일정 안내가 잠정 연기되었습니다.\n\n현재 행사 자체의 취소가 확정된 것은 아니며, 변경 사항은 추후 공식 채널을 통해 안내드릴 예정입니다.\n\n기다려 주신 여러분께 양해 부탁드립니다.",
+ body:"[행사 일정 안내]\n\n안녕하세요. NOVA LIVE입니다.\n\n예정되어 있던 ALPHA DRIVE ONE 관련 공개 프로모션 일정은 운영 및 현장 안전 관리에 관한 추가 협의가 필요하여 세부 일정 안내가 잠정 연기되었습니다.\n\n현재 행사 자체의 취소가 확정된 것은 아니며, 변경 사항은 추후 공식 채널을 통해 안내드릴 예정입니다.\n\n기다려 주신 여러분께 양해 부탁드립니다.",
  translation:"活动日程通知。原定的 ALPHA DRIVE ONE 公开宣传活动因运营及现场安全管理仍需进一步协商，详细日程暂缓公布。目前并未确定取消活动，后续变更将通过官方渠道通知。感谢大家的理解。",
  likes:186300,reposts:42100,
  comments:[
