@@ -97,6 +97,7 @@ export function ThreadsReference(p: SkinProps) {
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const [draftMedia, setDraftMedia] = useState("");
   const [replyTarget, setReplyTarget] = useState("");
+  const [highlightedReplyId, setHighlightedReplyId] = useState("");
   const local = posts
     .filter((body) => !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(body))
     .map((body, n) => {
@@ -131,7 +132,7 @@ export function ThreadsReference(p: SkinProps) {
   useEffect(() => {
     if (!p.targetPostId) return;
     const target = feed.find((item) => item.id === p.targetPostId);
-    if (target) setSelected(target);
+    if (target) { setSelected(target); setHighlightedReplyId(p.targetReplyId || ""); }
     p.onTargetPostHandled?.();
   }, [p.targetPostId, feed.map((item) => item.id).join("|")]);
     activities = [
