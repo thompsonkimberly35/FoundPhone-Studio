@@ -919,7 +919,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     if (!ready || creator || !selectedBoyfriend) return;
     const current = runtimeRef.current;
     const ui = current.ui?.kakao || {};
-    if (!/^E0[1-8]$/.test(String(ui["romance-result"] || "")) || ui["boyfriend-stage2-started"] === true) return;
+    if (!/^E0[1-8]$/.test(String(ui["romance-result"] || "")) || !/_END$/.test(String(ui["romance-node"] || "")) || ui["boyfriend-stage2-started"] === true) return;
     let pending: Array<{item?: Item; deliverAt?: number}> = [];
     try { pending = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { pending = []; }
     if (pending.some(entry => entry.item?.title === selectedBoyfriend)) return;
@@ -936,9 +936,19 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (existing.some(item => item.id === "boyfriend-stage2-K046-0")) return;
       const node = getBoyfriendStage2Node("K046");
       if (!node) return;
-      const first = makeItem({ id: "boyfriend-stage2-K046-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: node.lines[0], time: latest.time || displayTime, outgoing: false, read: false });
+      const result = String(latestUi["romance-result"] || "");
+      const openings: Record<string, string[]> = {
+        E03: ["我知道我们前几天说好先给彼此一点空间。","这几天我没有想用沉默逼你做决定。","今天有新的消息，我想先问你愿不愿意听我说。","如果你现在还不想谈，我也会尊重。"],
+        E04: ["我和团员谈过了。","有些问题还没有答案，但至少大家开始把担心说出来。","我想把今天的进展告诉你。","你现在方便听我说吗？"],
+        E05: ["我知道之前的隐瞒还没有过去。","我不会假装只要事情有新进展，你就应该立刻相信我。","但今天发生了一些变化，我想如实告诉你。","你可以按自己的节奏回应。"],
+        E06: ["我记得我们说过要重新想一想未来。","我没有把这段时间当成你必须等我的理由。","只是有新的事情需要让你知道。","如果你还没有准备好，我们也可以慢慢来。"],
+        E07: ["那天的见面最后还是改了安排。","我有点遗憾，但很庆幸我们没有为了见面冒险。","今天工作上又有了新的变化。","我想先和你确认再继续说。"],
+        E08: ["我把之前没有告诉你的线索重新整理了一遍。","这次我不想再让你从别人那里听到消息。","今天团队和公司的情况也有了变化。","我会把我知道的部分讲清楚。"],
+      };
+      const openingLines = openings[result] || node.lines;
+      const first = makeItem({ id: "boyfriend-stage2-K046-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: openingLines[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K046" } });
       const start = Date.now();
-      const queued = node.lines.slice(1).map((body, index) => {
+      const queued = openingLines.slice(1).map((body, index) => {
         const item = makeItem({ id: "boyfriend-stage2-K046-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K046" } });
         const typingAt = start + index * 5000 + 2000;
         return { item, typingAt, deliverAt: typingAt + 3000 };
@@ -951,7 +961,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
-  }, [ready, creator, selectedBoyfriend, app, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["boyfriend-stage2-started"], s.ui?.kakao?.["boyfriend-stage2-trigger-at"], s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, creator, selectedBoyfriend, app, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["romance-node"], s.ui?.kakao?.["boyfriend-stage2-started"], s.ui?.kakao?.["boyfriend-stage2-trigger-at"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator) return;
