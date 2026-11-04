@@ -505,3 +505,30 @@
 .tr-fan-reply{padding:10px 14px;border-bottom:1px solid #eee}.tr-fan-reply>p{padding:0;margin:3px 0 6px}.tr-fan-reply>button{font-size:12px;color:#777}.tr-nested-reply{margin:8px 0 4px 18px!important;padding:8px 10px!important;border-left:2px solid #ddd;background:#fafafa}.tr-compose-photo{margin-top:10px}.tr-compose-photo img{display:block;max-width:100%;max-height:180px;border-radius:12px;object-fit:contain}.tr-compose-photo button{margin-top:6px;color:#c44;font-size:12px}
 
 .tr-fan-reply.is-targeted{background:#fff8e9;outline:2px solid #e8c98c;border-radius:12px;scroll-margin:24px}
+
+
+/* Stable fan avatars, comment metadata and inline image gallery */
+.tr-comments { padding: 4px 0 16px; }
+.tr-comment-row { display:flex; align-items:flex-start; gap:11px; padding:12px 14px; border-bottom:1px solid #f0f0f0; }
+.tr-comment-row > .catalog-avatar { width:38px; height:38px; flex:0 0 38px; }
+.tr-comment-main { min-width:0; flex:1; }
+.tr-comment-byline { display:flex; align-items:center; gap:8px; min-height:20px; }
+.tr-comment-byline b { font-size:13px; font-weight:650; color:#171717; }
+.tr-comment-byline small { color:#999; font-size:11px; }
+.tr-comment-main > p { margin:4px 0 7px; padding:0; border:0; line-height:1.45; overflow-wrap:anywhere; font-size:14px; }
+.tr-comment-actions { display:flex; align-items:center; gap:16px; color:#888; }
+.tr-comment-actions button { display:inline-flex; align-items:center; gap:4px; font-size:11px; color:#888; }
+.tr-comment-actions svg { width:15px; height:15px; }
+.tr-fan-reply { padding:0; border-bottom:1px solid #f0f0f0; }
+.tr-fan-reply > .tr-comment-row { border-bottom:0; }
+.tr-fan-reply > button { margin:0 0 8px 63px; font-size:12px; color:#777; }
+.tr-post-media { display:flex; gap:8px; overflow-x:auto; max-width:100%; padding:7px 0 3px; scroll-snap-type:x mandatory; scrollbar-width:thin; }
+.tr-post-media-item { flex:0 0 min(82%, 330px); max-width:82%; overflow:hidden; border-radius:14px; background:#f4f4f4; scroll-snap-align:start; }
+.tr-post-media-item img { display:block; width:100%; max-height:390px; aspect-ratio:auto; object-fit:contain; border-radius:14px; }
+.tr-compose-photo-list { display:flex; gap:8px; overflow-x:auto; max-width:100%; padding:4px 0; }
+.tr-compose-photo { flex:0 0 42%; min-width:0; margin-top:10px; }
+.tr-compose-photo img { width:100%; height:110px; max-height:110px; object-fit:cover; border-radius:12px; }
+.tr-image-lightbox { position:absolute; inset:0; z-index:60; display:flex; align-items:center; justify-content:center; padding:22px; background:#000e; }
+.tr-image-lightbox > img { max-width:100%; max-height:100%; object-fit:contain; border-radius:12px; }
+.tr-image-lightbox > button { position:absolute; top:16px; right:18px; width:38px; height:38px; border-radius:50%; background:#ffffffdd; color:#111; text-align:center; font-size:28px; line-height:34px; }
+.tr-ig-evidence { box-sizing:border-box; }
