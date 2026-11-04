@@ -99,3 +99,5 @@ export const STAGE2_X002={
  "@starlane_2w：希望大家先停止传播未经证实的截图和所谓内部消息。"
  ]
 };
+
+export const RESERVED_STAGE3_X_EVENT_IDS = ["X004","X005","X006","X007","X008"] as const;
