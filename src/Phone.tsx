@@ -2283,10 +2283,6 @@ function AppContent({
 }) {
   const [detail, setDetail] = useState<Item | null>(null);
   useEffect(() => {
-    if (app.id !== "threads" || !targetThreadsPostId) return;
-    onTargetThreadsPostHandled?.();
-  }, [app.id, targetThreadsPostId, onTargetThreadsPostHandled]);
-  useEffect(() => {
     if (app.id !== "twitter" || !targetXPostId) return;
     const target = items.find(item => item.id === targetXPostId);
     if (target) setDetail(target);
