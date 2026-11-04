@@ -1,7 +1,7 @@
 /* React/data adapters for dudwo5/Mymy UI templates: kt/ktn/KHD/bub,
  * igHome/igProfile/igDM/igSheet, xHome. See NOTICE.txt for permission.
  * Author content, DOM globals, timers and media dependencies are excluded. */
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   Search,
@@ -211,6 +211,8 @@ export function MymyKakao(p: SkinProps) {
           <div className="msgs kk" ref={scroll}>
             {messages.map((m, i) => {
               const run = messageRun(messages, i);
+              const dateLabel = m.time.slice(0, 10);
+              const showDate = i === 0 || dateLabel !== messages[i - 1]?.time.slice(0, 10);
               const bubble = (
                 <button
                   className={"kzbub" + (m.media ? " kzimg" : "")}
@@ -221,7 +223,9 @@ export function MymyKakao(p: SkinProps) {
               );
               if (m.outgoing) {
                 return (
-                  <div key={m.id} className={"kzm kzmy" + (run.first ? " first" : "")}>
+                  <Fragment key={m.id}>
+                    {showDate && <div className="kz-date">{dateLabel}</div>}
+                    <div className={"kzm kzmy" + (run.first ? " first" : "")}>
                     {run.last && (
                       <span className="kzt">
                         {m.meta.unread || ""}
@@ -230,12 +234,14 @@ export function MymyKakao(p: SkinProps) {
                       </span>
                     )}
                     {bubble}
-                  </div>
+                    </div>
+                  </Fragment>
                 );
               }
               return (
-                <div
-                  key={m.id}
+                <Fragment key={m.id}>
+                  {showDate && <div className="kz-date">{dateLabel}</div>}
+                  <div
                   className={"kzm kzot" + (run.first ? " first" : " continuation")}
                 >
                   {run.first && (
@@ -258,7 +264,8 @@ export function MymyKakao(p: SkinProps) {
                       {run.last && <span className="kzt">{m.time.slice(-5)}</span>}
                     </div>
                   </div>
-                </div>
+                  </div>
+                </Fragment>
               );
             })}
             {(() => {
