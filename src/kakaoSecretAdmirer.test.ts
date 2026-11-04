@@ -6,6 +6,7 @@ import {
   getSecretAdmirerChoice,
   getSecretAdmirerNode,
   getSecretAdmirerNodeCount,
+  isAdultMember,
   memberIdForName,
   secureRandomIndex,
 } from "./kakaoSecretAdmirer";
@@ -17,7 +18,7 @@ describe("KakaoTalk secret admirer", () => {
   it("only draws from adult members and excludes boyfriend and close friend by stable ID", () => {
     const candidates = getSecretAdmirerCandidates(boyfriendId, friendId);
     expect(candidates.length).toBeGreaterThan(0);
-    expect(candidates.every((member) => member.adult)).toBe(true);
+    expect(candidates.every((member) => isAdultMember(member, new Date("2026-11-04T00:00:00Z")))).toBe(true);
     expect(candidates.some((member) => member.id === boyfriendId)).toBe(false);
     expect(candidates.some((member) => member.id === friendId)).toBe(false);
     expect(new Set(candidates.map((member) => member.id)).size).toBe(candidates.length);
