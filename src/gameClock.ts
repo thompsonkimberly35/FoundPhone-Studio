@@ -137,7 +137,7 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
         return item;
       }
       const source = fixedNine ? { ...item, time: "09:00" } : item;
-      const sentAt = inferLegacyTime(source, runtime.date || work.phone.date || formatGameDate(cursor, timezone), timezone, cursor - 1);
+      const sentAt = inferLegacyTime(source, legacyDate, timezone, cursor - 1);
       cursor = Math.max(cursor, sentAt);
       return { ...item, sentAt, time: formatGameDateTime(sentAt, timezone) };
     });
@@ -184,11 +184,14 @@ function applyTextTimeHint(item: Item, timestamp: number, timezone: string): num
 export function normalizeStoryItems(items: Item[], date: string, timezone = DEFAULT_TIMEZONE): Item[] {
   if (!items.length) return items;
   const fixedNine = items.length > 1 && items.every((item) => /(?:^|\s)09:00$/.test(item.time)) && items.every((item) => !Number.isFinite(item.sentAt));
-  const baseline = zonedDateTimeToTimestamp(date, "00:00", timezone);
   const explicitTimes = items.map((item) => {
     const match = item.time.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{1,2}:\d{2})/);
     return match ? zonedDateTimeToTimestamp(match[1], match[2], timezone) : Number.POSITIVE_INFINITY;
   });
+  const legacyDate = fixedNine && Number.isFinite(Math.min(...explicitTimes))
+    ? formatGameDate(Math.min(...explicitTimes), timezone)
+    : date;
+  const baseline = zonedDateTimeToTimestamp(legacyDate, "00:00", timezone);
   let cursor = Math.min(baseline, ...explicitTimes) - 1;
   return items.map((item) => {
     if (Number.isFinite(item.sentAt)) {
@@ -196,7 +199,7 @@ export function normalizeStoryItems(items: Item[], date: string, timezone = DEFA
       return item;
     }
     const source = fixedNine ? { ...item, time: "09:00" } : item;
-    const sentAt = inferLegacyTime(source, date, timezone, cursor - 1);
+    const sentAt = inferLegacyTime(source, legacyDate, timezone, cursor - 1);
     cursor = Math.max(cursor, sentAt);
     return { ...item, sentAt, time: formatGameDateTime(sentAt, timezone) };
   });
