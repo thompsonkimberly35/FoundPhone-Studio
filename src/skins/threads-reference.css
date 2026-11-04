@@ -490,3 +490,21 @@
 .tr-ig-evidence{display:block;width:calc(100% - 28px);text-align:left;cursor:zoom-in}
 .tr-ig-evidence.is-expanded{position:absolute;z-index:45;inset:12px;width:auto;height:calc(100% - 24px);margin:0;display:flex;flex-direction:column;justify-content:center;box-shadow:0 8px 36px #0004;background:#fafafa;cursor:zoom-out}
 .tr-ig-evidence.is-expanded .tr-ig-evidence-bubble,.tr-ig-evidence.is-expanded .tr-ig-evidence-player{font-size:16px;padding:16px 18px;max-width:88%}
+
+/* Player-generated Threads activity */
+.tr-activity {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #e7e7e7;
+  background: #fff;
+  color: #111;
+  text-align: left;
+  cursor: pointer;
+  align-items: flex-start;
+}
+.tr-activity > .catalog-avatar { width: 44px; height: 44px; flex: 0 0 44px; }
+.tr-activity > div { min-width: 0; flex: 1; }
+.tr-activity-original { color: #999; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+.tr-activity > div > p:not(.tr-activity-original) { font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; }
+.tr-activity .tr-actions { display: flex; gap: 22px; color: #555; margin-top: 10px; }
+.tr-activity .tr-actions svg { width: 21px; height: 21px; }
