@@ -292,7 +292,7 @@ function PhoneRuntime({
           time: formatGameTime(reply.deliveredAt || committed.gameClock?.currentGameTimestamp || Date.now(), committed.gameClock?.timezone || "Asia/Seoul"),
           meta: { notificationAppId: "threads", notificationPostId: reply.postId, notificationReplyId: reply.id },
         })).filter(item => !existingIds.has(item.id));
-        if (notices.length && app !== "threads") {
+        if (notices.length) {
           committed = { ...committed, ui: { ...committed.ui, kakao: { ...kakaoUi, "global-notification-queue": JSON.stringify([...globalQueue, ...notices].slice(-100)) } } };
         }
       }
@@ -591,7 +591,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
 
   useEffect(() => {
-    if (globalNotificationItem && String(globalNotificationItem.meta?.notificationAppId || "kakao") === app) {
+    if (globalNotificationItem && String(globalNotificationItem.meta?.notificationAppId || "kakao") === app && app !== "threads") {
       setGlobalNotificationItem(null);
     }
   }, [app, globalNotificationItem]);
@@ -611,7 +611,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const sourceAppId = String(next.meta?.notificationAppId || "kakao");
       const batch = [next];
       while (sourceAppId !== "instagram" && remaining.length && String(remaining[0].meta?.notificationAppId || "kakao") === sourceAppId) batch.push(remaining.shift()!);
-      if (sourceAppId === app) {
+      if (sourceAppId === app && sourceAppId !== "threads") {
         const dismissedPostIds = new Set(batch.map(item => String(item.meta?.notificationPostId || "")).filter(Boolean));
         let dismissedStoryEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
         try { dismissedStoryEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { dismissedStoryEvents = []; }
@@ -1497,7 +1497,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const kakaoUi = current.ui?.kakao || {};
                     let pendingNotifications: Item[] = [];
                     try { pendingNotifications = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { pendingNotifications = []; }
-                    if (app !== "threads" && !pendingNotifications.some((item) => item.id === notice.id)) pendingNotifications.push(notice);
+                    if (!pendingNotifications.some((item) => item.id === notice.id)) pendingNotifications.push(notice);
                     update({
                       ...current,
                       messages: {
@@ -1507,7 +1507,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       },
                       ui: {
                         ...current.ui,
-                        kakao: app !== "threads" ? { ...kakaoUi, "global-notification-queue": JSON.stringify(pendingNotifications.slice(-40)) } : kakaoUi,
+                        kakao: { ...kakaoUi, "global-notification-queue": JSON.stringify(pendingNotifications.slice(-40)) },
                         threads: {
                           ...threadsUi,
                           "threads-backlash-event-id": "threads-backlash-after-first-ig-reply",
