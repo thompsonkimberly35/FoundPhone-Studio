@@ -6,6 +6,7 @@ import {
   formatGameDate,
   formatGameDateTime,
   formatGameTime,
+  formatRelativeGameTime,
   migrateRuntimeGameClock,
   normalizeStoryItems,
   stampNewMessages,
@@ -137,5 +138,11 @@ describe("global story clock", () => {
     expect(normalized[0].time).toContain("08:30");
     expect(normalized[1].time).toContain("23:00");
     expect(source.every((item) => item.time === "09:00")).toBe(true);
+  });
+  it("formats Threads relative times against the virtual game timestamp", () => {
+    const now = zonedDateTimeToTimestamp("2026-10-25", "15:40");
+    expect(formatRelativeGameTime(now - 5 * 60_000, now)).toBe("5分钟前");
+    expect(formatRelativeGameTime(now - 2 * 60 * 60_000, now)).toBe("2小时前");
+    expect(formatRelativeGameTime(now - 2 * 86_400_000, now)).toBe("2天前");
   });
 });
