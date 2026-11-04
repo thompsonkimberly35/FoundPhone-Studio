@@ -34,6 +34,8 @@ const node = (id: string, line: string, targets: string[], result = ""): TeamCon
 // B is selected only after A has been persisted. Unknown birth dates are never treated as adult.
 export function getTeamConflictCandidates(boyfriendId: string, friendId: string, admirerId: string, asOf = new Date()) {
   if (!boyfriendId || !friendId || !admirerId) return [];
+  const admirer = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === admirerId);
+  if (!admirer || !/^\d{4}-\d{2}-\d{2}$/.test(admirer.birthDate) || !isAdultMember(admirer, asOf)) return [];
   return ALD1_SECRET_ADMIRER_MEMBERS.filter(member =>
     member.id !== boyfriendId && member.id !== friendId && member.id !== admirerId &&
     /^\d{4}-\d{2}-\d{2}$/.test(member.birthDate) && isAdultMember(member, asOf)
