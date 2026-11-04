@@ -110,7 +110,22 @@ export function MymyKakao(p: SkinProps) {
   const secretAdmirerThread = Boolean(secretAdmirerMember && p.thread === secretAdmirerMember.name);
   const secretAdmirerNodeId = String(p.ui?.["secret-admirer-story-node"] || "");
   const secretAdmirerNode = secretAdmirerThread ? getSecretAdmirerNode(secretAdmirerNodeId) : undefined;
-  const queuePending = (() => { try { return (JSON.parse(String(p.ui?.["delivery-queue"] || "[]")) as unknown[]).length > 0; } catch { return false; } })() || Boolean(p.ui?.["typing-state"]);
+  const queuePending = (() => {
+    let pending: Array<{ item?: { title?: string }; typingAt?: number; deliverAt?: number }> = [];
+    try { pending = JSON.parse(String(p.ui?.["delivery-queue"] || "[]")); } catch { pending = []; }
+    let typing: Record<string, number> = {};
+    try {
+      const parsed = JSON.parse(String(p.ui?.["typing-state"] || "{}"));
+      if (parsed && typeof parsed === "object" && "title" in parsed) {
+        const legacy = parsed as { title?: string; until?: number };
+        if (legacy.title) typing[legacy.title] = Number(legacy.until || 0);
+      } else if (parsed && typeof parsed === "object") {
+        typing = parsed as Record<string, number>;
+      }
+    } catch { typing = {}; }
+    return pending.some((entry) => entry.item?.title === p.thread)
+      || Number(typing[p.thread] || 0) > Date.now();
+  })();
   const romancePaused = romanceNodeId === "K014" && p.ui?.["romance-pending-node"] === "K030";
   useEffect(() => {
     if (!p.thread) return;
