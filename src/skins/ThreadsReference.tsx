@@ -38,7 +38,7 @@ export function ThreadsReference(p: SkinProps) {
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
   useEffect(() => {
-    const cleanPosts = posts.filter((body) => !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(body));
+    const cleanPosts = posts.filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body));
     if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
   }, [posts, setPosts]);
   const replyRecords: ThreadsReplyRecord[] = (() => {
@@ -59,7 +59,7 @@ export function ThreadsReference(p: SkinProps) {
     [selected, setSelected] = useState<Item | null>(null),
     [evidenceExpanded, setEvidenceExpanded] = useState(false);
   const local = posts
-    .filter((body) => !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test(body))
+    .filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body))
     .map((body, n) =>
       makeItem({
         id: "local-thread-" + n,
@@ -72,7 +72,7 @@ export function ThreadsReference(p: SkinProps) {
     );
   const feed = [
       ...local,
-      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\\s_-])(test|demo|sample)(?:$|[\\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
+      ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
     activities = p.items.filter((i) => i.meta.activityType),
