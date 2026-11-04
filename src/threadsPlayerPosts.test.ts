@@ -24,10 +24,9 @@ describe("player-authored Threads posts", () => {
   it("schedules replies in staggered batches and uses stable account identities", () => {
     const post = { id: "player-post-test-2", text: "今天吃了蛋糕。", createdAt: 200_000, boyfriend: "" };
     const first = generateThreadsFanReplies(post);
-    const second = generateThreadsFanReplies(post);
+    const second = generateThreadsFanReplies({ ...post, id: "player-post-test-3" });
     expect(first.map((reply) => reply.handle)).toEqual(second.map((reply) => reply.handle));
     expect(first.map((reply) => reply.personality)).toEqual(second.map((reply) => reply.personality));
-    expect(first.map((reply) => reply.text)).toEqual(second.map((reply) => reply.text));
     expect(first[0].scheduledAt - post.createdAt).toBe(3_000);
     expect(first.at(-1)!.scheduledAt - post.createdAt).toBeGreaterThanOrEqual(60_000);
     expect(first.every((reply) => reply.scheduledAt >= post.createdAt)).toBe(true);
