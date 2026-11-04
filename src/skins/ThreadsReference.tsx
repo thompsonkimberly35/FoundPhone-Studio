@@ -29,7 +29,7 @@ import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
 import { useSkinState } from "../skinState";
-import { formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
+import { formatGameDateTime, formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
 export function ThreadsReference(p: SkinProps) {
   const relativeTime = (item: Item) => {
@@ -43,6 +43,13 @@ export function ThreadsReference(p: SkinProps) {
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
+  const [localPostsJson, setLocalPostsJson] = useSkinState<string>(p, "threads-posts-timestamps-v1", "[]");
+  const localPostRecords: Array<{ id: string; text: string; createdAt: number }> = (() => {
+    try {
+      const value: unknown = JSON.parse(localPostsJson);
+      return Array.isArray(value) ? value.filter((entry): entry is { id: string; text: string; createdAt: number } => !!entry && typeof entry.id === "string" && typeof entry.text === "string" && typeof entry.createdAt === "number") : [];
+    } catch { return []; }
+  })();
   useEffect(() => {
     const cleanPosts = posts.filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body));
     if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
@@ -186,7 +193,7 @@ export function ThreadsReference(p: SkinProps) {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (draft.trim()) {
-                  const record = createThreadsReplyRecord(selected.id, draft.trim());
+                  const record = createThreadsReplyRecord(selected.id, draft.trim(), p.virtualTimestamp ?? 0);
                   setReplyRecordsJson(JSON.stringify([...replyRecords, record]));
                   setDraft("");
                 }
@@ -497,7 +504,11 @@ export function ThreadsReference(p: SkinProps) {
             <button
               disabled={!draft.trim()}
               onClick={() => {
-                setPosts([draft.trim(), ...posts]);
+                const text = draft.trim();
+                const createdAt = p.virtualTimestamp ?? 0;
+                const record = { id: "local-thread-" + createdAt + "-" + Math.random().toString(36).slice(2, 8), text, createdAt };
+                setLocalPostsJson(JSON.stringify([record, ...localPostRecords]));
+                setPosts([text, ...posts]);
                 setDraft("");
                 setCompose(false);
                 setKeyboard(false);
