@@ -11,6 +11,10 @@ export type GameClockState = {
 
 const DEFAULT_TIMEZONE = "Asia/Seoul";
 const pad = (value: number) => String(value).padStart(2, "0");
+const dayNumber = (value: string) => {
+  const [year, month, day] = value.split("-").map(Number);
+  return Date.UTC(year, month - 1, day) / 86_400_000;
+};
 
 function zonedParts(timestamp: number, timezone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -126,7 +130,7 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
   const migratedClock = {
     ...clock,
     currentGameTimestamp,
-    currentStoryDay: Math.max(clock.currentStoryDay, Math.floor((Date.UTC(Number(formatGameDate(currentGameTimestamp, timezone).slice(0, 4)), Number(formatGameDate(currentGameTimestamp, timezone).slice(5, 7)) - 1, Number(formatGameDate(currentGameTimestamp, timezone).slice(8, 10))) - Date.UTC(Number(formatGameDate(clock.currentGameTimestamp, timezone).slice(0, 4)), Number(formatGameDate(clock.currentGameTimestamp, timezone).slice(5, 7)) - 1, Number(formatGameDate(clock.currentGameTimestamp, timezone).slice(8, 10)))) / 86_400_000) + 1),
+    currentStoryDay: clock.currentStoryDay + Math.max(0, dayNumber(formatGameDate(currentGameTimestamp, timezone)) - dayNumber(formatGameDate(clock.currentGameTimestamp, timezone))),
     lastRealTimestamp: Date.now(),
     migrationVersion: 1,
   };
@@ -170,9 +174,9 @@ export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
     const oldIds = new Set((previous.messages?.[appId] || []).map((item) => item.id));
     messages[appId] = (items || []).map((item) => {
       if (oldIds.has(item.id) || Number.isFinite(item.sentAt)) return item;
-      if (hasStampedMessage) cursor += 60_000;
-      else cursor = applyTextTimeHint(item, cursor, clock.timezone);
-      const sentAt = cursor;
+      const hinted = applyTextTimeHint(item, cursor, clock.timezone);
+      const sentAt = Math.max(hasStampedMessage ? cursor + 60_000 : cursor, hinted);
+      cursor = sentAt;
       hasStampedMessage = true;
       changed = true;
       return { ...item, sentAt, time: formatGameDateTime(sentAt, clock.timezone) };
@@ -180,7 +184,12 @@ export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
   }
   if (!changed) return next;
   const currentGameTimestamp = Math.max(clock.currentGameTimestamp, cursor);
-  const gameClock = { ...clock, currentGameTimestamp, lastRealTimestamp: Date.now() };
+  const gameClock = {
+    ...clock,
+    currentGameTimestamp,
+    currentStoryDay: clock.currentStoryDay + Math.max(0, dayNumber(formatGameDate(currentGameTimestamp, clock.timezone)) - dayNumber(formatGameDate(clock.currentGameTimestamp, clock.timezone))),
+    lastRealTimestamp: Date.now(),
+  };
   return {
     ...next,
     messages,
@@ -199,10 +208,6 @@ export function setGameClockTime(clock: GameClockState, time: string, date?: str
   }
   timestamp = Math.max(clock.currentGameTimestamp, timestamp);
   const nextDate = formatGameDate(timestamp, clock.timezone);
-  const dayNumber = (value: string) => {
-    const [year, month, day] = value.split("-").map(Number);
-    return Date.UTC(year, month - 1, day) / 86_400_000;
-  };
   const dayDelta = Math.max(0, dayNumber(nextDate) - dayNumber(currentDate));
   return {
     ...clock,
