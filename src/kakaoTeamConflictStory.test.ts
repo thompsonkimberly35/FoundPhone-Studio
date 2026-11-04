@@ -10,7 +10,7 @@ describe("KakaoTalk team-conflict story", () => {
     const candidates = getTeamConflictCandidates(boyfriend, friend, admirer, new Date("2026-11-04T00:00:00Z"));
     expect(candidates.length).toBeGreaterThan(0);
     expect(candidates.every(m => m.id !== boyfriend && m.id !== friend && m.id !== admirer)).toBe(true);
-    expect(candidates.every(m => m.birthDate && /^\\d{4}-\\d{2}-\\d{2}$/.test(m.birthDate))).toBe(true);
+    expect(candidates.every(m => m.birthDate && /^\d{4}-\d{2}-\d{2}$/.test(m.birthDate))).toBe(true);
     expect(candidates.some(m => m.isAdult === false)).toBe(false);
     expect(getTeamConflictCandidates(boyfriend, friend, "unknown")).toEqual([]);
   });
