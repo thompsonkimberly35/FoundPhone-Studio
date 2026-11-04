@@ -128,6 +128,12 @@ export function ThreadsReference(p: SkinProps) {
       ...p.items.filter((i) => i.folder !== "私信" && i.folder !== "threads-reply" && !i.meta.activityType && (!i.hidden || ["T029", "T030"].includes(String(i.meta.postId))) && !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test([i.id, i.title, i.sender, i.body, i.folder, ...Object.values(i.meta ?? {})].join(" "))),
     ],
     messages = p.items.filter((i) => i.folder === "私信"),
+  useEffect(() => {
+    if (!p.targetPostId) return;
+    const target = feed.find((item) => item.id === p.targetPostId);
+    if (target) setSelected(target);
+    p.onTargetPostHandled?.();
+  }, [p.targetPostId, feed.map((item) => item.id).join("|")]);
     activities = [
       ...p.items.filter((i) => i.meta.activityType),
       ...fanReplies.filter((reply) => reply.deliveredAt !== null).map((reply) => makeItem({
