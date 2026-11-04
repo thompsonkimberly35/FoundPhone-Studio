@@ -40,8 +40,11 @@ test("Threads player post image, fan activity, nested reply and save recovery", 
   await expect(page.locator(".tr-post").filter({ hasText: text })).toBeVisible();
   await expect(page.locator(".tr-post").filter({ hasText: text }).locator("img")).toBeVisible();
 
-  await expect(page.getByRole("button", { name: "Threads动态", exact: true })).toBeVisible();
-  await page.waitForTimeout(4500);
+  await page.getByRole("button", { name: "返回桌面", exact: true }).click();
+  await page.waitForTimeout(3600);
+  await expect(page.locator(".global-kakao-notification")).toBeVisible();
+  await openThreads(page);
+  await expect(page.locator(".global-kakao-notification")).toHaveCount(0);
   await page.getByRole("button", { name: "Threads动态", exact: true }).click();
   await expect(page.locator(".tr-activity").first()).toBeVisible({ timeout: 10000 });
   await page.locator(".tr-activity").first().click();
