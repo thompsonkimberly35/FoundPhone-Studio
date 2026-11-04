@@ -311,6 +311,15 @@ export function MymyKakao(p: SkinProps) {
                     </button>
                   ))}
                 </div>
+              ) : ["distance", "rejected"].includes(String(p.ui?.["secret-admirer-boundary"] || "")) ? (
+                Date.now() >= Number(p.ui?.["secret-admirer-boundary-until-at"] || 0) ? (
+                  <button type="button" className="go" style={{ display: "block", boxSizing: "border-box", width: "100%", borderRadius: 14, padding: "11px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, whiteSpace: "normal" }}
+                    onClick={() => p.onKakaoChoice?.(p.thread, "我想重新联系你。", "", "", "admirer:reconnect")}>
+                    我想重新联系你
+                  </button>
+                ) : (
+                  <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>他会尊重你的决定，不会主动打扰你。</div>
+                )
               ) : (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一阶段暂时告一段落。</div>
               )}
