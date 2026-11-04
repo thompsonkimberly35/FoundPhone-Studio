@@ -776,8 +776,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       catch { return []; }
                     };
                     const currentQueue = readQueue();
-                    const queueLines = (bodies: string[], prefix: string) => {
-                      let cursor = Math.max(stamp, currentQueue.at(-1)?.deliverAt ?? stamp);
+                    const queueLines = (bodies: string[], prefix: string, afterQueue = currentQueue) => {
+                      let cursor = Math.max(stamp, afterQueue.at(-1)?.deliverAt ?? stamp);
                       return bodies.map((body, index) => {
                         const item = makeItem({
                           id: prefix + "-" + index,
@@ -887,8 +887,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const nextMessages = [...existing, outgoing];
                     let messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
                     const queuedReply = queueLines([reply], "kakao-reply-" + character + "-" + stamp);
-                    const queuedFollowUp = followUpReply ? queueLines([followUpReply], "kakao-reply-followup-" + character + "-" + stamp) : [];
-                    const nextQueue = [...currentQueue, ...queuedReply, ...queuedFollowUp];
+                    const queueAfterReply = [...currentQueue, ...queuedReply];
+                    const queuedFollowUp = followUpReply ? queueLines([followUpReply], "kakao-reply-followup-" + character + "-" + stamp, queueAfterReply) : [];
+                    const nextQueue = [...queueAfterReply, ...queuedFollowUp];
                     if (character === selectedBoyfriend && reply === "你的身份好像已经被扒出来了" && !(currentMessages.instagram ?? []).some((item) => item.id === "ig-backlash-1")) {
                       const backlash = createInstagramBacklash(time);
                       messages = { ...messages, instagram: [...(currentMessages.instagram ?? []), ...backlash] };
