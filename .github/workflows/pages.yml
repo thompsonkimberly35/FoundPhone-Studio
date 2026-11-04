@@ -40,3 +40,4 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+# Deployment refresh: rebuild Pages for the current main branch.
