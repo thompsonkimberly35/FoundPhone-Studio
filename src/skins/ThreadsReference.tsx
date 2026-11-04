@@ -29,7 +29,7 @@ import type { SkinProps } from "../AppSkins";
 import { Avatar, Media } from "./shared";
 import { makeItem, type Item } from "../schema";
 import { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
-import { createThreadsAvatar, generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
+import { createThreadsAvatar, createThreadsCommentIdentity, generateThreadsFanReplies, type ThreadsPlayerPost, type ThreadsFanReply } from "../threadsPlayerPosts";
 import { useSkinState } from "../skinState";
 import { formatGameDateTime, formatRelativeGameTime, zonedDateTimeToTimestamp } from "../gameClock";
 import "./threads-reference.css";
@@ -139,7 +139,7 @@ export function ThreadsReference(p: SkinProps) {
     activities = [
       ...p.items.filter((i) => i.meta.activityType),
       ...fanReplies.filter((reply) => reply.deliveredAt !== null).map((reply) => makeItem({
-        id: "activity-" + reply.id, title: "回复了你的串文", sender: reply.displayName || reply.handle, avatar: reply.avatar,
+        id: "activity-" + reply.id, title: "回复了你的串文", sender: reply.displayName || reply.handle, avatar: createThreadsAvatar(reply.handle),
         body: reply.text, time: formatGameDateTime(reply.deliveredAt || reply.scheduledAt),
         meta: { activityType: reply.text.includes("@") ? "mention" : "reply", handle: reply.handle, postId: reply.postId, replyId: reply.id,
           originalPreview: playerPosts.find((post) => post.id === reply.postId)?.text || "",
@@ -194,6 +194,7 @@ export function ThreadsReference(p: SkinProps) {
           {i.body}
           {getPostImages(i.media).length > 0 && <div className="tr-post-media" onClick={(event) => event.stopPropagation()}>{getPostImages(i.media).map((src, index) => <button type="button" className="tr-post-media-item" key={src + index} aria-label="放大图片" onClick={() => setLightboxImage(src)}><img src={src} alt={"贴文图片 " + (index + 1)} loading="lazy" /></button>)}</div>}
         </button>
+        {i.meta.evidenceId === "ig-first-reply-evidence" && <button type="button" className="tr-ig-evidence" aria-label="查看Instagram私信截图" onClick={() => open(i)}><div className="tr-ig-evidence-head">Instagram · 私信对话截图</div><div className="tr-ig-evidence-user">@{i.meta.evidenceAttackerHandle || "unknown"}</div><div className="tr-ig-evidence-bubble">{i.meta.evidenceAttackerText || "Instagram 私信内容"}</div><div className="tr-ig-evidence-player">{i.meta.evidencePlayerReplyText || "玩家回复"}</div><small>游戏内对话引用</small></button>}
         <div className="tr-actions">
           <button
             aria-label={"喜欢" + i.title}
@@ -255,8 +256,8 @@ export function ThreadsReference(p: SkinProps) {
                 
                 ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => {
-                const handle = "threadfan_" + (n + 1).toString(36) + "x";
-                return <div className="tr-comment-row" key={selected.id + "-legacy-comment-" + n}><Avatar name={handle} src={createThreadsAvatar(selected.id + ":" + n + ":" + c)} /><div className="tr-comment-main"><div className="tr-comment-byline"><b>@{handle}</b><small>{relativeTime(selected)}</small></div><p>{c}</p><div className="tr-comment-actions"><button type="button" aria-label="点赞评论"><Heart size={15} /></button><button type="button" aria-label="回复评论" onClick={() => setReplyTarget(selected.id)}><MessageCircleIcon /></button></div></div></div>;
+                const identity = createThreadsCommentIdentity(c);
+                return <div className="tr-comment-row" key={selected.id + "-legacy-comment-" + n}><Avatar name={identity.handle} src={identity.avatar} /><div className="tr-comment-main"><div className="tr-comment-byline"><b>@{identity.handle}</b><small>{relativeTime(selected)}</small></div><p>{c}</p><div className="tr-comment-actions"><button type="button" aria-label="点赞评论"><Heart size={15} /></button><button type="button" aria-label="回复评论" onClick={() => setReplyTarget(selected.id)}><MessageCircleIcon /></button></div></div></div>;
               })}
               {fanReplies.filter((reply) => reply.postId === selected.id && reply.deliveredAt !== null).map((reply) => (
                 <div className={"tr-fan-reply" + (highlightedReplyId === reply.id ? " is-targeted" : "")} key={reply.id}>
