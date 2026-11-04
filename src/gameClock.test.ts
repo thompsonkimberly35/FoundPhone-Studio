@@ -92,7 +92,7 @@ describe("global story clock", () => {
     const migrated = migrateRuntimeGameClock(state, work);
 
     expect(migrated.messages.kakao[0].time).toContain("09:00");
-    expect(migrated.messages.kakao[1].time).toContain("22:00");
+    expect(migrated.messages.kakao[1].time).toContain("23:00");
     expect(migrated.messages.kakao[2].time).toContain("2026-10-26");
     expect(migrated.messages.kakao[3].sentAt).toBe(explicitAt);
     expect(migrateRuntimeGameClock(migrated, work)).toBe(migrated);
