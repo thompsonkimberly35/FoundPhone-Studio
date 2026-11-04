@@ -1,7 +1,8 @@
+import { STAGE2_A } from "./kakaoBoyfriendStage2A";
 export type BoyfriendStage2Choice={key:string;text:string;next:string};
 export type BoyfriendStage2Node={id:string;lines:string[];choices:BoyfriendStage2Choice[];result?:string};
 const n=(id:string,lines:string[],choices:[string,string,string][]=[]):BoyfriendStage2Node=>({id,lines,choices:choices.map(([key,text,next])=>({key,text,next})),...(id.startsWith("E")?{result:id}:{})});
-export const BOYFRIEND_STAGE2:Record<string,BoyfriendStage2Node>={
+export const BOYFRIEND_STAGE2:Record<string,BoyfriendStage2Node>={...STAGE2_A,
 K113:n("K113",["声明出来了。","我刚刚确认过。","他们有把私人资料跟恶意攻击的部分写进去。","但现在留言区又吵起来了。"],[["A","至少公司有正式表态。","K114"],["B","我看到有人说声明根本没有回答问题。","K115"],["C","你现在还好吗？","K116"]]),
 K114:n("K114",["嗯。","至少这次不是完全沉默。","可是我刚刚收到经纪人的讯息。","原本这周的公开活动，主办方决定先暂缓公告细节。"],[["A","是因为我们的事情吗？","K117"],["B","其他成员知道了吗？","K118"],["C","你是不是又在怪自己？","K119"]]),
 K115:n("K115",["我也看到了。","有人说公司在逃避问题。","也有人说我们不需要向任何人交代私人感情。","我以前很少看到 ALLYZ 吵成这样。"],[["A","你不可能让所有人都满意。","K119"],["B","我不想再看那些留言了。","K120"],["C","公司接下来打算怎么做？","K117"]]),
