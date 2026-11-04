@@ -612,7 +612,20 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const batch = [next];
       while (sourceAppId !== "instagram" && remaining.length && String(remaining[0].meta?.notificationAppId || "kakao") === sourceAppId) batch.push(remaining.shift()!);
       if (sourceAppId === app) {
-        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "global-notification-queue": JSON.stringify(remaining) } } });
+        const dismissedPostIds = new Set(batch.map(item => String(item.meta?.notificationPostId || "")).filter(Boolean));
+        let dismissedStoryEvents: Array<{postId:string;notificationDelivered:boolean;[key:string]:unknown}> = [];
+        try { dismissedStoryEvents = JSON.parse(String(current.ui?.kakao?.["story-x-events"] || "[]")); } catch { dismissedStoryEvents = []; }
+        const currentUi = current.ui?.kakao || {};
+        const dismissedLastInstagramNotice = batch.some(item => item.id === "ig-backlash-60");
+        update({
+          ...current,
+          ui: { ...current.ui, kakao: {
+            ...currentUi,
+            "global-notification-queue": JSON.stringify(remaining),
+            ...(dismissedPostIds.size ? { "story-x-events": JSON.stringify(dismissedStoryEvents.map(event => dismissedPostIds.has(event.postId) ? { ...event, notificationDelivered: true } : event)) } : {}),
+            ...(dismissedLastInstagramNotice && !currentUi["ig-backlash-notifications-finished-at"] ? { "ig-backlash-notifications-finished-at": String(Date.now()) } : {}),
+          } },
+        });
         return;
       }
       const bannerItem = batch.length > 1 ? makeItem({
