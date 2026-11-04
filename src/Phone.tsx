@@ -67,6 +67,8 @@ import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
 import { enqueueIncomingKakaoNotifications } from "./kakaoNotifications";
+import { ensureJapanLotteryMail } from "./mail";
+import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
@@ -216,6 +218,12 @@ function PhoneRuntime({
     if (previousApp.current === "kakao" && app !== "kakao") activeKakaoThread.current = "";
     previousApp.current = app;
   }, [app]);
+  useEffect(() => {
+    if (creator || !ready) return;
+    const current = runtimeRef.current;
+    const seeded = ensureJapanLotteryMail(current);
+    if (seeded !== current) update(seeded);
+  }, [creator, ready, work.id, work.updatedAt, external]);
   const update = (next: Runtime) => {
     const previous = runtimeRef.current;
     let committed = next;
@@ -1140,6 +1148,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       update({ ...current, messages: { ...current.messages, instagram: (current.messages.instagram ?? []).map((item) => item.id === id ? { ...item, read: true } : item) } });
                     } else if ((current.messages.kakao ?? []).some((item) => item.id === id)) {
                       update({ ...current, messages: { ...current.messages, kakao: (current.messages.kakao ?? []).map((item) => item.id === id ? { ...item, read: true } : item) } });
+                    } else if ((current.messages.mail ?? []).some((item) => item.id === id)) {
+                      update({ ...current, messages: { ...current.messages, mail: (current.messages.mail ?? []).map((item) => item.id === id ? { ...item, read: true } : item) } });
                     }
                   }}
                   onEdit={(item) => onEdit?.(app, item)}
@@ -1972,6 +1982,8 @@ function AppContent({
     else if (thread) setThread("");
     else onBack();
   };
+  if (app.id === "mail")
+    return <MailApp items={shown} onRead={onRead} onBack={onBack} />;
   const Skin =
     app.id === "wechat"
       ? WeChatSkin
