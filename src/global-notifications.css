@@ -54,6 +54,23 @@
   color: #241d0b;
   background: #fee500;
 }
+.global-notification-threads .global-kakao-app-icon {
+  color: #fff;
+  background: #101010;
+}
+.global-notification-twitter .global-kakao-app-icon {
+  color: #fff;
+  background: #111;
+}
+.global-x-glyph {
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+}
+.global-notification-kakao .global-kakao-app-icon {
+  color: #241d0b;
+  background: #fee500;
+}
 
 .global-kakao-copy {
   display: flex;
