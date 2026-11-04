@@ -41,3 +41,21 @@ describe("Threads backlash event", () => {
     expect(hasThreadsX002([{ ...after[24], id: "x-story-X002", meta: { eventId: "X002" } }])).toBe(true);
   });
 });
+
+import { createThreadsReplyRecord } from "./threadsBacklash";
+
+describe("Threads player replies", () => {
+  it("creates uniquely identified replies with persistent author and timestamp fields", () => {
+    const first = createThreadsReplyRecord("threads-backlash-t001", "玩家自定义回复", 1234);
+    const second = createThreadsReplyRecord("threads-backlash-t001", "第二条回复", 1235);
+    expect(first.id).not.toBe(second.id);
+    expect(first).toMatchObject({
+      postId: "threads-backlash-t001",
+      authorId: "player-allyz_1101",
+      authorHandle: "@allyz_1101",
+      text: "玩家自定义回复",
+      createdAt: 1234,
+      isPlayerReply: true,
+    });
+  });
+});

@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import type { SkinProps } from "../AppSkins";
 import { Avatar, Media } from "./shared";
-import { makeItem, type Item } from "../schema";
+import { makeItem, type Item } from "../schema";\nimport { createThreadsReplyRecord, type ThreadsReplyRecord } from "../threadsBacklash";
 import { useSkinState } from "../skinState";
 import "./threads-reference.css";
 export function ThreadsReference(p: SkinProps) {
@@ -35,7 +35,7 @@ export function ThreadsReference(p: SkinProps) {
     [saved, setSaved] = useSkinState<string[]>(p, "threads-saved", []),
     [posts, setPosts] = useSkinState<string[]>(p, "threads-posts", []),
     [replies, setReplies] = useSkinState<string[]>(p, "threads-replies", []);
-  const [draft, setDraft] = useState(""),
+  const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");\n  const replyRecords: ThreadsReplyRecord[] = (() => {\n    try {\n      const value: unknown = JSON.parse(replyRecordsJson);\n      return Array.isArray(value) ? value.filter((entry): entry is ThreadsReplyRecord => !!entry && typeof entry.id === "string" && typeof entry.postId === "string" && typeof entry.text === "string" && typeof entry.createdAt === "number" && entry.isPlayerReply === true) : [];\n    } catch { return []; }\n  })();\n  const [draft, setDraft] = useState(""),
     [query, setQuery] = useState(""),
     [filter, setFilter] = useState("全部"),
     [side, setSide] = useState(false),
@@ -155,7 +155,7 @@ export function ThreadsReference(p: SkinProps) {
                 ...replies
                   .filter((v) => v.startsWith(selected.id + "\t"))
                   .map((v) => "@allyz_1101：" + v.split("\t").slice(1).join("\t")),
-                ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
+                ...replyRecords.filter((r) => r.postId === selected.id).map((r) => r.authorHandle + "：" + r.text),\n                ...playerReplies.filter((r) => r.meta.postId === selected.meta.postId).map((r) => r.sender + "：" + r.body),
               ].map((c, n) => (
                 <p key={n}>{c}</p>
               ))}

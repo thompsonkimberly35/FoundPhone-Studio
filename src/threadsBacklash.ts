@@ -58,3 +58,24 @@ export function createThreadsPlayerReply(postId:string,text:string,time:string):
  return makeItem({id:"threads-player-reply-"+crypto.randomUUID(),title:postId,sender:"allyz_1101",body:text,time,folder:"threads-reply",outgoing:true,meta:{postId,authorHandle:"@allyz_1101",isPlayerReply:"true",createdAt:String(Date.now())}});
 }
 export function hasThreadsX002(posts:Item[]):boolean{return posts.some(p=>p.meta?.eventId==="X002"||p.id==="boyfriend-stage2-X002"||p.id==="x-story-X002"||p.meta?.stage2Event==="X002");}
+
+export type ThreadsReplyRecord = {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorHandle: string;
+  text: string;
+  createdAt: number;
+  isPlayerReply: boolean;
+};
+export function createThreadsReplyRecord(postId: string, text: string, createdAt = Date.now()): ThreadsReplyRecord {
+  return {
+    id: "threads-reply-" + crypto.randomUUID(),
+    postId,
+    authorId: "player-allyz_1101",
+    authorHandle: "@allyz_1101",
+    text,
+    createdAt,
+    isPlayerReply: true,
+  };
+}
