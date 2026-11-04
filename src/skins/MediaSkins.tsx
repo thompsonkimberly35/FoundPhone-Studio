@@ -59,95 +59,173 @@ function TrackPlayer({
     </div>
   );
 }
+const SPOTIFY_BASE = import.meta.env.BASE_URL;
+const ALD1_RELEASES = [
+  {
+    id: "talk-to-me",
+    title: "Talk to me",
+    date: "2026/10/22",
+    kind: "單曲",
+    cover: "",
+    spotifyUrl: "",
+    tracks: [
+      ["Talk to me", "2:36"],
+      ["Talk to me (Dance Break Ver.)", "2:51"],
+      ["Talk to me (Instrumental)", "2:36"],
+    ],
+  },
+  {
+    id: "unbreakable",
+    title: "UNBREAKABLE : 少年BEAST",
+    date: "2026/08/24",
+    kind: "迷你專輯",
+    cover: "ald1-spotify/unbreakable.webp",
+    spotifyUrl: "https://open.spotify.com/album/630xDApcVnwfx60F1s4Srn",
+    tracks: [
+      ["BORN DIRE", "2:42"],
+      ["Diamond Hour", "2:49"],
+      ["One More Time", "3:02"],
+      ["Talk to me", "2:36"],
+      ["OMG!", "2:24"],
+      ["Good Life", "3:00"],
+      ["WELCOME home", "2:29"],
+    ],
+  },
+  {
+    id: "agent-kim-ost",
+    title: "Agent Kim Reactivated, Pt. 1 (Original Soundtrack)",
+    date: "2026/06/26",
+    kind: "原聲帶單曲",
+    cover: "ald1-spotify/agent-kim-ost.webp",
+    spotifyUrl: "https://open.spotify.com/album/1DDfQfHYYHQuLG23Z6EtdA",
+    tracks: [
+      ["GO! GO! (Agent Kim Reactivated : Original Television Soundtrack)", "3:05"],
+      ["GO! GO! (Agent Kim Reactivated : Original Television Soundtrack) (Instrumental)", "3:05"],
+    ],
+  },
+  {
+    id: "no-school-tomorrow",
+    title: "No School Tomorrow",
+    date: "2026/05/26",
+    kind: "單曲",
+    cover: "ald1-spotify/no-school-tomorrow.webp",
+    spotifyUrl: "https://open.spotify.com/album/65vrCYeYYfKhk6Q8e1rAvS",
+    tracks: [
+      ["OMG!", "2:24"],
+      ["Good Life", "3:00"],
+    ],
+  },
+  {
+    id: "euphoria",
+    title: "EUPHORIA",
+    date: "2026/01/12",
+    kind: "迷你專輯",
+    cover: "ald1-spotify/euphoria.webp",
+    spotifyUrl: "https://open.spotify.com/album/5nefAD1EsXbLksNfBJorPV",
+    tracks: [
+      ["FORMULA", "3:08"],
+      ["FREAK ALARM", "3:08"],
+      ["Raw Flame", "3:02"],
+      ["Chains", "3:17"],
+      ["Never Been 2 Heaven", "3:26"],
+      ["Cinnamon Shake", "2:55"],
+    ],
+  },
+  {
+    id: "formula",
+    title: "FORMULA",
+    date: "2025/12/03",
+    kind: "單曲",
+    cover: "",
+    spotifyUrl: "",
+    tracks: [["FORMULA", "3:08"]],
+  },
+] as const;
+
 export function SpotifySkin(p: Props) {
-  const { tab, setTab, q, setQ, items } = useContent(p, "首页");
-  const [playlist, setPlaylist] = useState(""),
-    [track, setTrack] = useTrack(p, items);
-  const list = playlist
-    ? items.filter((i) => (i.folder || "我的音乐") === playlist)
-    : items;
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedTrack, setSelectedTrack] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const selected = ALD1_RELEASES.find((release) => release.id === selectedId);
+  const releases = ALD1_RELEASES.filter((release) =>
+    release.title.toLowerCase().includes(query.toLowerCase()) ||
+    release.tracks.some(([title]) => title.toLowerCase().includes(query.toLowerCase())),
+  );
+  const coverUrl = (path: string) =>
+    path ? `${SPOTIFY_BASE}${path}` : `${SPOTIFY_BASE}spotify-default-cover.svg`;
+
   return (
-    <div className="catalog-skin spotify-ui">
+    <div className="catalog-skin spotify-ui ald1-spotify">
       <Header p={p} />
-      <div className="catalog-scroll">
-        <div className="spotify-heading">
-          <Avatar name={p.owner ?? "我"} />
-          <button
-            className={tab === "首页" ? "selected" : ""}
-            onClick={() => setTab("首页")}
-          >
-            音乐
-          </button>
-          <button
-            className={tab === "音乐库" ? "selected" : ""}
-            onClick={() => setTab("音乐库")}
-          >
-            音乐库
-          </button>
-        </div>
-        {tab === "搜索" && <SearchBox value={q} set={setQ} />}
-        <h1>{playlist || (tab === "音乐库" ? "音乐库" : "为你收藏")}</h1>
-        {!playlist && (
-          <div className="spotify-playlists">
-            {groupItems(items, "我的音乐").map((g) => (
-              <button key={g} onClick={() => setPlaylist(g)}>
-                <Music size={29} />
-                <strong>{g}</strong>
-              </button>
-            ))}
-          </div>
-        )}
-        {playlist && (
-          <button className="playlist-back" onClick={() => setPlaylist("")}>
-            返回全部音乐
-          </button>
-        )}
-        <div className="spotify-tracks">
-          {list.map((i, n) => (
-            <button
-              key={i.id}
-              onClick={() => {
-                setTrack(i);
-              }}
-            >
-              <span>{n + 1}</span>
-              <div>
-                <strong>{i.title}</strong>
-                <small>
-                  {i.sender} · {meta(i, "album")}
-                </small>
-              </div>
-              <small>{meta(i, "duration")}</small>
+      <div className="catalog-scroll ald1-spotify-scroll">
+        {selected ? (
+          <>
+            <button className="ald1-spotify-back" onClick={() => { setSelectedId(null); setSelectedTrack(null); }}>
+              <span aria-hidden="true">‹</span> 返回 ALPHA DRIVE ONE
             </button>
-          ))}
-        </div>
-        <Empty items={list} />
+            <div className="ald1-spotify-album-hero">
+              <img src={coverUrl(selected.cover)} alt={selected.title + " 專輯封面"} />
+              <div>
+                <small>{selected.kind}</small>
+                <h1>{selected.title}</h1>
+                <strong>ALPHA DRIVE ONE</strong>
+                <small>{selected.date.replaceAll("/", ".")} · {selected.tracks.length} 首歌曲</small>
+              </div>
+            </div>
+            <div className="ald1-spotify-album-actions">
+              <span>專輯</span>
+              <button type="button" aria-label="播放按鈕（僅介面示意，不播放音樂）" onClick={() => setSelectedTrack(selectedTrack === "all" ? null : "all")}>
+                {selectedTrack === "all" ? "Ⅱ" : "▶"}
+              </button>
+            </div>
+            <div className="ald1-spotify-track-list">
+              {selected.tracks.map(([title, duration], index) => (
+                <div className="ald1-spotify-track" key={title}>
+                  <button className="ald1-spotify-track-info" type="button" onClick={() => setSelectedTrack(selectedTrack === title ? null : title)}>
+                    <span className="ald1-spotify-track-index">{selectedTrack === title ? "Ⅱ" : index + 1}</span>
+                    <span><strong>{title}</strong><small>ALPHA DRIVE ONE</small></span>
+                  </button>
+                  <small>{duration}</small>
+                  <button className="ald1-spotify-track-play" type="button" aria-label={title + " 播放按鈕（無聲）"} onClick={() => setSelectedTrack(selectedTrack === title ? null : title)}>▶</button>
+                </div>
+              ))}
+            </div>
+            <p className="ald1-spotify-footnote">播放控制僅供介面展示，不會載入或播放音訊。</p>
+            {selected.spotifyUrl && <a className="ald1-spotify-external" href={selected.spotifyUrl} target="_blank" rel="noreferrer">在 Spotify 查看此發行作品 ↗</a>}
+          </>
+        ) : (
+          <>
+            <div className="ald1-spotify-artist-hero">
+              <img src={`${SPOTIFY_BASE}ald1-avatar.jpg`} alt="ALPHA DRIVE ONE 團體照片" />
+              <div className="ald1-spotify-artist-overlay">
+                <small>藝人</small>
+                <h1>ALPHA DRIVE ONE</h1>
+                <span>ALD1 · 2026</span>
+              </div>
+            </div>
+            <div className="ald1-spotify-artist-summary">
+              <div><strong>ALPHA DRIVE ONE</strong><small>官方音樂作品</small></div>
+              <button type="button" aria-label="播放按鈕（僅介面示意）" onClick={() => setSelectedTrack(selectedTrack === "artist" ? null : "artist")}>{selectedTrack === "artist" ? "Ⅱ" : "▶"}</button>
+            </div>
+            <div className="ald1-spotify-section-heading"><h2>發行作品</h2><span>按發行日期排序</span></div>
+            <label className="ald1-spotify-search"><Search size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜尋專輯或歌曲" /></label>
+            <div className="ald1-spotify-release-list">
+              {releases.map((release) => (
+                <button className="ald1-spotify-release" key={release.id} onClick={() => { setSelectedId(release.id); setSelectedTrack(null); }}>
+                  <img src={coverUrl(release.cover)} alt={release.title + " 專輯封面"} />
+                  <span><strong>{release.title}</strong><small>{release.date.replaceAll("/", ".")} · {release.kind} · {release.tracks.length} 首歌曲</small></span>
+                  <span className="ald1-spotify-release-chevron">›</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
-      {track && (
-        <TrackPlayer
-          item={track}
-          p={p}
-          onNext={() =>
-            setTrack(
-              items[
-                (items.findIndex((i) => i.id === track.id) + 1) % items.length
-              ],
-            )
-          }
-        />
-      )}
-      <Tabs
-        tabs={["首页", "搜索", "音乐库"]}
-        value={tab}
-        set={(t) => {
-          setTab(t);
-          setPlaylist("");
-        }}
-        icons={[<Home />, <Search />, <Music />]}
-      />
+      <div className="ald1-spotify-bottom-nav"><span className={!selected ? "active" : ""}>⌂<small>首頁</small></span><span>⌕<small>搜尋</small></span><span>▤<small>音樂庫</small></span></div>
     </div>
   );
 }
+
 export function NeteaseSkin(p: Props) {
   const { tab, setTab, q, setQ, items } = useContent(p, "发现");
   const [folder, setFolder] = useState(""),
