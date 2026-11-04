@@ -217,15 +217,30 @@ function PhoneRuntime({
     // Story notifications wait until the player unlocks the phone.
     if (locked || igBanner || !igQueue.length) return;
     const timer = window.setTimeout(() => {
-      setIgBanner(igQueue[0]);
+      const next = igQueue[0];
+      setIgBanner(next);
       setIgQueue((items) => items.slice(1));
+      const current = runtimeRef.current;
+      const index = Number(next?.id.split("-").at(-1) || 0);
+      if (index > Number(current.ui?.kakao?.["ig-backlash-notification-index"] || 0)) {
+        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "ig-backlash-notification-index": index, "ig-backlash-notifications-started": true } } });
+      }
     }, 0);
     return () => window.clearTimeout(timer);
   }, [igQueue, igBanner, locked]);
   useEffect(() => {
     // Keep the current banner paused while the phone is locked.
     if (!igBanner || locked) return;
-    const timer = window.setTimeout(() => setIgBanner(null), 500);
+    const timer = window.setTimeout(() => {
+      setIgBanner(null);
+      if (igBanner.id === "ig-backlash-60") {
+        const current = runtimeRef.current;
+        const currentUi = current.ui?.kakao || {};
+        if (!currentUi["ig-backlash-notifications-finished-at"]) {
+          update({ ...current, ui: { ...current.ui, kakao: { ...currentUi, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
+        }
+      }
+    }, 500);
     return () => window.clearTimeout(timer);
   }, [igBanner, locked]);
   useEffect(() => {
@@ -421,12 +436,41 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [app, work.apps]);
   const displayTime = creator ? work.phone.time : s.time || work.phone.time;
   const plugin = getApp(app);
-  const backlashNotificationsComplete = (s.messages.instagram ?? []).some((item) => item.id === "ig-backlash-60");
+  const backlashNotificationsComplete = Number(s.ui?.kakao?.["ig-backlash-notifications-finished-at"] || 0) > 0;
   const friendStoryDueAt = s.ui?.kakao?.["friend-story-trigger-at"];
   const friendStoryTriggered = s.ui?.kakao?.["friend-story-triggered"] === true;
   const checkinDueAt = s.ui?.kakao?.["ig-backlash-checkin-due-at"];
   const checkinSent = s.ui?.kakao?.["ig-backlash-checkin-sent"] === true;
   const kakaoDeliveryQueue = s.ui?.kakao?.["delivery-queue"] || "[]";
+  useEffect(() => {
+    if (!ready || igQueue.length > 0 || igBanner) return;
+    const currentUi = s.ui?.kakao || {};
+    const instagram = (s.messages.instagram ?? []).filter(item => /^ig-backlash-\\d+$/.test(item.id)).sort((a,b) => Number(a.id.split("-").at(-1)) - Number(b.id.split("-").at(-1)));
+    if (instagram.length !== 60) return;
+    if (currentUi["ig-backlash-notifications-started"] !== true) {
+      const legacyDue = Number(currentUi["ig-backlash-checkin-due-at"] || 0);
+      const now = Date.now();
+      update({
+        ...runtimeRef.current,
+        ui: { ...runtimeRef.current.ui, kakao: {
+          ...runtimeRef.current.ui?.kakao,
+          "ig-backlash-notifications-started": true,
+          "ig-backlash-notification-index": 60,
+          "ig-backlash-notifications-finished-at": String(legacyDue > 0 ? legacyDue - 60_000 : now),
+        } },
+      });
+      return;
+    }
+    const progress = Math.max(0, Math.min(60, Number(currentUi["ig-backlash-notification-index"] || 0)));
+    if (progress >= 60) {
+      if (!currentUi["ig-backlash-notifications-finished-at"]) {
+        const current = runtimeRef.current;
+        update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "ig-backlash-notifications-finished-at": String(Date.now()) } } });
+      }
+      return;
+    }
+    setIgQueue(instagram.slice(progress));
+  }, [ready, s.messages.instagram, s.ui?.kakao?.["ig-backlash-notifications-started"], s.ui?.kakao?.["ig-backlash-notification-index"], s.ui?.kakao?.["ig-backlash-notifications-finished-at"], igQueue.length, igBanner]);
   const kakaoPendingReadIds = (s.messages.kakao ?? [])
     .filter((item) => item.outgoing && item.meta.unread === "1" && item.meta.unreadUntilAt)
     .map((item) => ({ id: item.id, due: Number(item.meta.unreadUntilAt) }))
@@ -508,6 +552,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           update({
             ...latest,
             messages: { ...latest.messages, instagram: [...(latest.messages.instagram ?? []), ...backlash] },
+            ui: { ...latest.ui, kakao: { ...latest.ui?.kakao, "ig-backlash-notifications-started": true, "ig-backlash-notification-index": 0, "ig-backlash-notifications-finished-at": "" } },
           });
           setIgQueue(backlash);
         }
