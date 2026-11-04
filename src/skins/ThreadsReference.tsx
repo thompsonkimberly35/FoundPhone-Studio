@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Home,
   Send,
@@ -44,12 +44,12 @@ export function ThreadsReference(p: SkinProps) {
     [replies] = useSkinState<string[]>(p, "threads-replies", []);
   const [replyRecordsJson, setReplyRecordsJson] = useSkinState<string>(p, "threads-replies-v2", "[]");
   const [localPostsJson, setLocalPostsJson] = useSkinState<string>(p, "threads-posts-timestamps-v1", "[]");
-  const localPostRecords: Array<{ id: string; text: string; createdAt: number }> = (() => {
+  const localPostRecords = useMemo<Array<{ id: string; text: string; createdAt: number }>>(() => {
     try {
       const value: unknown = JSON.parse(localPostsJson);
       return Array.isArray(value) ? value.filter((entry): entry is { id: string; text: string; createdAt: number } => !!entry && typeof entry.id === "string" && typeof entry.text === "string" && typeof entry.createdAt === "number") : [];
     } catch { return []; }
-  })();
+  }, [localPostsJson]);
   useEffect(() => {
     const cleanPosts = posts.filter((body) => !/测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(body));
     if (cleanPosts.length !== posts.length) setPosts(cleanPosts);
@@ -60,7 +60,7 @@ export function ThreadsReference(p: SkinProps) {
       return current?.text === text ? current : { id: "legacy-thread-" + index, text, createdAt: p.virtualTimestamp ?? 0 };
     });
     if (JSON.stringify(next) !== localPostsJson) setLocalPostsJson(JSON.stringify(next));
-  }, [posts, localPostsJson, p.virtualTimestamp, setLocalPostsJson]);
+  }, [posts, localPostRecords, localPostsJson, p.virtualTimestamp, setLocalPostsJson]);
   const replyRecords: ThreadsReplyRecord[] = (() => {
     try {
       const value: unknown = JSON.parse(replyRecordsJson);
