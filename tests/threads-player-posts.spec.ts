@@ -11,7 +11,8 @@ async function start(page: Page) {
   story.content.threads = [];
   await page.route("**/work.json", (route) => route.fulfill({ json: compileStory(story).work }));
   await page.goto("/");
-  await page.getByRole("button", { name: "轻触解锁" }).click();
+  await page.locator(".unlock-btn").waitFor({ state: "visible", timeout: 15000 });
+  await page.locator(".unlock-btn").click();
 }
 
 async function openThreads(page: Page) {
@@ -55,7 +56,8 @@ test("Threads player post image, fan activity, nested reply and save recovery", 
   await expect(page.locator(".tr-nested-reply")).toContainText("謝謝你願意回覆我。");
 
   await page.reload();
-  await page.getByRole("button", { name: "轻触解锁" }).click();
+  await page.locator(".unlock-btn").waitFor({ state: "visible", timeout: 15000 });
+  await page.locator(".unlock-btn").click();
   await openThreads(page);
   await expect(page.locator(".tr-post").filter({ hasText: text })).toBeVisible();
   expect(errors).toEqual([]);
