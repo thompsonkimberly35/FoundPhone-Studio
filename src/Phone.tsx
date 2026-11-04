@@ -66,6 +66,7 @@ import { makeItem } from "./schema";
 import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
+import { enqueueIncomingKakaoNotifications } from "./kakaoNotifications";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
@@ -217,37 +218,30 @@ function PhoneRuntime({
   }, [app]);
   const update = (next: Runtime) => {
     const previous = runtimeRef.current;
-    const previousIds = new Set((previous.messages.kakao ?? []).map((item) => item.id));
-    const arrivals = (next.messages.kakao ?? []).filter((item) => !item.outgoing && !previousIds.has(item.id));
     let committed = next;
-    if (arrivals.length && !creator) {
+    if (!creator) {
       const kakaoUi = next.ui?.kakao ?? {};
       let seenIds: string[] = [];
       let queued: Item[] = [];
       try { seenIds = JSON.parse(String(kakaoUi["global-notification-seen-ids"] || "[]")); } catch { seenIds = []; }
       try { queued = JSON.parse(String(kakaoUi["global-notification-queue"] || "[]")); } catch { queued = []; }
-      const seen = new Set(seenIds);
-      const fresh = arrivals.filter((item) => !seen.has(item.id));
-      fresh.forEach((item) => seen.add(item.id));
-      if (fresh.length) {
-        if (work.phone.notifications) {
-          for (const item of fresh) {
-            const isBeingViewed = app === "kakao" && activeKakaoThread.current === item.title;
-            if (isBeingViewed) continue;
-            const sameSender = queued.findIndex((entry) => entry.title === item.title);
-            if (sameSender >= 0) queued[sameSender] = item;
-            else queued.push(item);
-          }
-        }
-        queued = queued.slice(-40);
+      const result = enqueueIncomingKakaoNotifications(
+        previous.messages.kakao ?? [],
+        next.messages.kakao ?? [],
+        seenIds,
+        queued,
+        app === "kakao" ? activeKakaoThread.current : "",
+        work.phone.notifications,
+      );
+      if (result.arrivals.length) {
         committed = {
           ...next,
           ui: {
             ...next.ui,
             kakao: {
               ...kakaoUi,
-              "global-notification-seen-ids": JSON.stringify([...seen].slice(-500)),
-              "global-notification-queue": JSON.stringify(queued),
+              "global-notification-seen-ids": JSON.stringify(result.seenIds),
+              "global-notification-queue": JSON.stringify(result.queue),
             },
           },
         };
