@@ -3,6 +3,7 @@ import {
   KAKAO_ROMANCE_STORY,
   getKakaoStoryChoice,
   getKakaoStoryNode,
+  getKakaoRomanceStageId,
 } from "./kakaoRomanceStory";
 
 describe("KakaoTalk romance story", () => {
@@ -64,6 +65,14 @@ describe("KakaoTalk romance story", () => {
     expect(getKakaoStoryNode(pause.pauseTo!)?.choices.length).toBeGreaterThan(0);
     expect(getKakaoStoryNode("K037")?.choices.every((choice) => choice.next !== "K037")).toBe(true);
     expect(getKakaoStoryNode("K040")?.choices.every((choice) => choice.next !== "K040")).toBe(true);
+  });
+
+  it("keeps letter-suffixed branch nodes in the same stage", () => {
+    expect(getKakaoRomanceStageId("K001")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("K002A")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("K002B")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("K045")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("K046")).toBe("boyfriend-main-2");
   });
 
   it("maps a selected option to one exact branch target", () => {
