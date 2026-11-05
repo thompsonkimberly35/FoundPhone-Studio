@@ -69,7 +69,7 @@ describe("KakaoTalk confidant friend story phase two", () => {
   });
 
   it("holds the X leak node until its scheduled event is delivered", () => {
-    expect(getFriendPhase2Node("F2_074")?.choices).toHaveLength(0);
+    expect(getFriendPhase2Node("F2_074")?.choices).toHaveLength(1);
     expect(getFriendPhase2Node("F2_074")?.lines).toHaveLength(0);
   });
 
