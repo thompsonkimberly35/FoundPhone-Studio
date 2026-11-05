@@ -3,6 +3,7 @@ import {
   FRIEND_PHASE2_STORY,
   getFriendPhase2Node,
   getFriendPhase2NodeCount,
+  getFriendPhase2Opening,
   getFriendPhase2OutcomeLabel,
   getFriendPhase2OutcomeClass,
   resolveFriendPhase2Next,
@@ -77,6 +78,13 @@ describe("KakaoTalk confidant friend story phase two", () => {
   it("holds the X leak node until its scheduled event is delivered", () => {
     expect(getFriendPhase2Node("F2_074")?.choices).toHaveLength(1);
     expect(getFriendPhase2Node("F2_074")?.lines).toHaveLength(0);
+  });
+
+  it("uses the prior ending as a unique prelude before the F2_070 question", () => {
+    for (let i = 1; i <= 12; i++) {
+      const opening = getFriendPhase2Opening("H" + String(i).padStart(2, "0"));
+      expect(opening[0]).not.toBe("你现在方便说话吗？");
+    }
   });
 
   it("stores a distinct Simplified Chinese name for every ending", () => {
