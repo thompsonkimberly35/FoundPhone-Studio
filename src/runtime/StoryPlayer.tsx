@@ -161,36 +161,25 @@ function StoryPlayer() {
           } catch {
             throw new Error("浏览器无法保存更新状态，请检查隐私或存储设置后重试。");
           }
+
+          // Service Worker 更新检查只在后台触发，不等待其网络响应；
+          // 某些移动浏览器会让 registration.update() 长时间 pending。
           try {
             if ("serviceWorker" in navigator) {
-              const registration = await navigator.serviceWorker.getRegistration();
-              if (registration) {
-                await registration.update();
-                const worker = registration.waiting || registration.installing;
-                if (registration.waiting) {
-                  registration.waiting.postMessage({ type: "SKIP_WAITING" });
-                }
-                if (worker && worker.state !== "activated") {
-                  await Promise.race([
-                    new Promise<void>((resolve) => {
-                      const finish = () => {
-                        if (worker.state === "installed" || worker.state === "activated" || worker.state === "redundant") {
-                          worker.removeEventListener("statechange", finish);
-                          resolve();
-                        }
-                      };
-                      worker.addEventListener("statechange", finish);
-                      finish();
-                    }),
-                    new Promise<void>((resolve) => window.setTimeout(resolve, 8000)),
-                  ]);
-                }
-              }
+              void navigator.serviceWorker.getRegistration()
+                .then((registration) => {
+                  if (!registration) return;
+                  void registration.update().catch(() => undefined);
+                  if (registration.waiting) {
+                    registration.waiting.postMessage({ type: "SKIP_WAITING" });
+                  }
+                })
+                .catch(() => undefined);
             }
-          } catch (error) {
-            try { window.sessionStorage.removeItem("foundphone:update-mode"); } catch { /* storage may be unavailable */ }
-            throw new Error(error instanceof Error ? "检查更新失败：" + error.message : "检查更新失败，请确认网络连接后重试。");
+          } catch {
+            // 即使 Service Worker 不可用，也继续重新载入页面。
           }
+
           const refreshUrl = new URL(window.location.href);
           refreshUrl.searchParams.set("_fp_update", String(Date.now()));
           window.location.replace(refreshUrl.toString());
