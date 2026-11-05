@@ -199,11 +199,13 @@ function StoryPlayer() {
           await db.manualSaves.delete(work.id);
           await db.saves.delete(work.id);
           setLastSavedAt("");
+          setSessionSavedForUpdate(false);
           setSelectedBoyfriend("");
           setSelectedFriend("");
           setSelectionComplete(false);
         }}
       /> : <CharacterSelection onComplete={(boyfriend, friend) => {
+        setSessionSavedForUpdate(false);
         setSelectedBoyfriend(boyfriend);
         setSelectedFriend(friend);
         playMusic(1);
