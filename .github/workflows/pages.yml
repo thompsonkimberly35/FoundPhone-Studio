@@ -25,6 +25,10 @@ jobs:
       - run: npm test
       - run: npm run story:validate
       - run: npm run story:test
+      - name: Stamp deployed build version
+        run: |
+          echo "export const BUILD_VERSION = \"${GITHUB_SHA}\";" > src/buildVersion.ts
+          echo "{\"version\":\"${GITHUB_SHA}\"}" > public/build-version.json
       - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
