@@ -247,7 +247,9 @@ export function stampNewMessages(previous: Runtime, next: Runtime): Runtime {
       const hinted = explicit
         ? zonedDateTimeToTimestamp(explicit[1], explicit[2], clock.timezone)
         : applyTextTimeHint(item, cursor, clock.timezone);
-      const sentAt = Math.max(hasStampedMessage ? cursor + 60_000 : cursor, hinted);
+      const stageTiming = String(item.meta?.kakaoStageTiming || "");
+      const minimumMessageGap = stageTiming === "same-stage" ? 5_000 : 60_000;
+      const sentAt = Math.max(hasStampedMessage ? cursor + minimumMessageGap : cursor, hinted);
       cursor = sentAt;
       hasStampedMessage = true;
       changed = true;
