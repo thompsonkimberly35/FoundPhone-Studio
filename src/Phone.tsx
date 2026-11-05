@@ -77,7 +77,7 @@ import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode, getTeamConflictBoyfriendFollowupState } from "./kakaoTeamConflictStory";
-import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
+import { formatGameTime, migrateRuntimeGameClock, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
   /测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(
@@ -1725,8 +1725,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     };
                     const currentQueue = readQueue();
                     const queueLines = (bodies: string[], prefix: string, afterQueue = currentQueue) => {
-                      const sameThreadQueue = afterQueue.filter((entry) => entry.item.title === character);
-                      let cursor = Math.max(stamp, ...sameThreadQueue.map((entry) => entry.deliverAt));
+                      // Every new story stage waits at least one minute after the choice
+                      // and one minute after any pending stage in any other KKT thread.
+                      let cursor = nextKakaoStageStartAt(
+                        stamp,
+                        afterQueue.map((entry) => entry.deliverAt),
+                      );
                       return bodies.map((body, index) => {
                         const item = makeItem({
                           id: prefix + "-" + index,
