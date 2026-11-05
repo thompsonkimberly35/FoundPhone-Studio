@@ -87,11 +87,11 @@ export function NativeSettings({
     [updateError, setUpdateError] = useState("");
   useEffect(() => setSavedAtText(savedAt || ""), [savedAt]);
   const formattedSavedAt = savedAtText
-    ? new Date(savedAtText).toLocaleString("zh-TW", {
+    ? new Date(savedAtText).toLocaleString("zh-CN", {
         year: "numeric", month: "2-digit", day: "2-digit",
         hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
       })
-    : "尚未儲存";
+    : "尚未保存";
   const row = (label: string, value?: string, click?: () => void) => (
     <button key={label} className="settings-native-row" onClick={click}>
       <span>{label}</span>
@@ -135,7 +135,7 @@ export function NativeSettings({
                   opacity: saving || !onSaveProgress ? 0.6 : 1,
                 }}
               >
-                {saving ? "正在儲存…" : "儲存當前進度"}
+                {saving ? "正在保存…" : "保存当前进度"}
               </button>
               {saveError && <p role="alert" style={{ color: "#c62828", fontSize: 12, margin: "10px 2px 0", lineHeight: 1.5 }}>{saveError}</p>}
               <button
@@ -248,7 +248,7 @@ export function NativeSettings({
               )}
             </div>
             <p className="settings-page-caption">
-              最近一次儲存：{formattedSavedAt}
+              最近一次保存：{formattedSavedAt}
             </p>
             <p className="settings-page-caption">
               重新進入遊戲時，會自動載入最近一次手動儲存的進度。
