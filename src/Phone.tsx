@@ -942,16 +942,20 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const ui = current.ui?.kakao || {};
     const outcome = String(ui["friend-story-outcome"] || "");
     if (!/^H(?:0[1-9]|1[0-2])$/.test(outcome) || ui["friend-story-phase2-started"] === true) return;
+    const gameNow = Number(current.gameClock?.currentGameTimestamp || Date.now());
+    const timeScale = Number(current.gameClock?.timeScale ?? 1);
     let dueAt = Number(ui["friend-story-phase2-trigger-at"] || 0);
     if (!dueAt) {
       const delay = outcome === "H04" ? 25 * 60 * 60 * 1000 : outcome === "H08" ? 24 * 60 * 60 * 1000 : 30 * 60 * 1000;
-      dueAt = Date.now() + delay;
+      dueAt = gameNow + delay;
       update({ ...current, ui: { ...current.ui, kakao: { ...ui, "friend-story-phase2-trigger-at": String(dueAt) } } });
       return;
     }
-    if (!Number.isFinite(dueAt)) return;
+    if (!Number.isFinite(dueAt) || timeScale <= 0) return;
     const timer = window.setTimeout(() => {
       const latest = runtimeRef.current;
+      const latestGameNow = Number(latest.gameClock?.currentGameTimestamp || Date.now());
+      if (latestGameNow < dueAt) return;
       const latestUi = latest.ui?.kakao || {};
       if (latestUi["friend-story-phase2-started"] === true) return;
       const messages = latest.messages.kakao || [];
@@ -1001,9 +1005,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "global-notification-queue": JSON.stringify([...globalQueue, notice]),
         } },
       });
-    }, Math.max(0, dueAt - Date.now()));
+    }, Math.max(0, (dueAt - gameNow) / timeScale));
     return () => window.clearTimeout(timer);
-  }, [ready, creator, friendStoryTriggered, selectedFriend, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-phase2-trigger-at"], s.ui?.kakao?.["friend-story-phase2-started"], s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, creator, friendStoryTriggered, selectedFriend, s.gameClock?.currentGameTimestamp, s.gameClock?.timeScale, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-phase2-trigger-at"], s.ui?.kakao?.["friend-story-phase2-started"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
