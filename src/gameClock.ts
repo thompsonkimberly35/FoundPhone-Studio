@@ -58,6 +58,15 @@ export function formatGameDateTime(timestamp: number, timezone = DEFAULT_TIMEZON
   return `${formatGameDate(timestamp, timezone)} ${formatGameTime(timestamp, timezone)}`;
 }
 
+/** Enforce a shared cooldown between every player-triggered KakaoTalk story stage. */
+export function nextKakaoStageStartAt(now: number, pendingDeliveries: number[], minimumGapMs = 60_000): number {
+  const latestPendingDelivery = pendingDeliveries.reduce(
+    (latest, value) => Number.isFinite(value) ? Math.max(latest, value) : latest,
+    0,
+  );
+  return Math.max(now + minimumGapMs, latestPendingDelivery + minimumGapMs);
+}
+
 export function formatRelativeGameTime(timestamp: number, now: number, timezone = DEFAULT_TIMEZONE): string {
   const minutes = Math.max(0, Math.floor((now - timestamp) / 60_000));
   if (minutes < 1) return "刚刚";
@@ -167,23 +176,34 @@ export function migrateRuntimeGameClock(runtime: Runtime, work: Work): Runtime {
 }
 
 function applyTextTimeHint(item: Item, timestamp: number, timezone: string): number {
-  const body = item.body;
+  const body = item.body.trim();
   const date = formatGameDate(timestamp, timezone);
   const time = formatGameTime(timestamp, timezone);
   const hour = Number(time.slice(0, 2));
   const choose = (targetDate: string, targetTime: string) => zonedDateTimeToTimestamp(targetDate, targetTime, timezone);
+  const nextDate = formatGameDate(timestamp + 86_400_000, timezone);
+  const nextDayOpening = body.match(/^(?:那)?(?:明天|隔天|第二天|次日)(早上|上午|中午|下午|晚上|夜里|凌晨)?/);
+  if (nextDayOpening) {
+    const period = nextDayOpening[1] || "";
+    const targetTime = /早上|上午|凌晨/.test(period) ? "08:30"
+      : /中午/.test(period) ? "12:00"
+      : /下午/.test(period) ? "15:00"
+      : /晚上|夜里/.test(period) ? "19:30"
+      : time;
+    return Math.max(timestamp, choose(nextDate, targetTime));
+  }
   if (/晚安|睡吧|早点休息|准备睡觉|要睡了|先睡了/.test(body)) {
     if (hour >= 23) return timestamp;
     const target = choose(date, "23:00");
-    return target > timestamp ? target : choose(formatGameDate(timestamp + 86_400_000, timezone), "23:00");
+    return target > timestamp ? target : choose(nextDate, "23:00");
   }
   if (/早安|早上好|起床了吗|醒了吗/.test(body)) {
-    const targetDate = hour >= 18 ? formatGameDate(timestamp + 86_400_000, timezone) : date;
+    const targetDate = hour >= 18 ? nextDate : date;
     const target = choose(targetDate, "08:30");
     return target > timestamp ? target : timestamp + 60_000;
   }
   if (/午安|午餐|午饭|中午/.test(body) && hour < 12) return choose(date, "12:00");
-  if (/晚上好|晚餐|下班了|练习结束|夜宵/.test(body) && hour < 19) return choose(date, "19:00");
+  if (/晚上好|今晚|今天晚上|晚餐|下班了|练习结束|夜宵/.test(body) && hour < 19) return choose(date, "19:30");
   return timestamp;
 }
 
