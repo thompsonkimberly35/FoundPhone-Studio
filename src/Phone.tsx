@@ -1005,9 +1005,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "global-notification-queue": JSON.stringify([...globalQueue, notice]),
         } },
       });
-    }, Math.max(0, (dueAt - gameNow) / timeScale));
+    }, Math.max(0, (dueAt - gameNow) / timeScale + 1000 / timeScale));
     return () => window.clearTimeout(timer);
-  }, [ready, creator, friendStoryTriggered, selectedFriend, s.gameClock?.currentGameTimestamp, s.gameClock?.timeScale, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-phase2-trigger-at"], s.ui?.kakao?.["friend-story-phase2-started"], s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, creator, friendStoryTriggered, selectedFriend, s.gameClock?.timeScale, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-phase2-trigger-at"], s.ui?.kakao?.["friend-story-phase2-started"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
