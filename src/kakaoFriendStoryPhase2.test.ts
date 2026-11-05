@@ -9,7 +9,7 @@ import {
 
 describe("KakaoTalk confidant friend story phase two", () => {
   it("keeps phase two independent from the original F001-F069 and H01-H12 identifiers", () => {
-    expect(getFriendPhase2NodeCount()).toBe(46);
+    expect(getFriendPhase2NodeCount()).toBe(54);
     expect(getFriendPhase2Node("F2_070")).toBeDefined();
     for (let i = 1; i <= 12; i++) {
       expect(FRIEND_PHASE2_STORY["H" + String(i).padStart(2, "0")]).toBeUndefined();
@@ -71,5 +71,14 @@ describe("KakaoTalk confidant friend story phase two", () => {
   it("holds the X leak node until its scheduled event is delivered", () => {
     expect(getFriendPhase2Node("F2_074")?.choices).toHaveLength(0);
     expect(getFriendPhase2Node("F2_074")?.lines).toHaveLength(0);
+  });
+
+  it("provides a distinct future conversation for each of the eight endings", () => {
+    for (let i = 13; i <= 20; i++) {
+      const outcome = "H" + i;
+      const followup = getFriendPhase2Node("F2_090_" + outcome);
+      expect(followup?.lines.length).toBeGreaterThan(0);
+      expect(followup?.choices).toHaveLength(3);
+    }
   });
 });
