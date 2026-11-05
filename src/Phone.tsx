@@ -1724,13 +1724,16 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       catch { return []; }
                     };
                     const currentQueue = readQueue();
-                    const queueLines = (bodies: string[], prefix: string, afterQueue = currentQueue) => {
-                      // Every new story stage waits at least one minute after the choice
-                      // and one minute after any pending stage in any other KKT thread.
-                      let cursor = nextKakaoStageStartAt(
-                        stamp,
-                        afterQueue.map((entry) => entry.deliverAt),
-                      );
+                    const queueLines = (bodies: string[], prefix: string, afterQueue = currentQueue, sameStage = false) => {
+                      // The one-minute cooldown applies only when crossing a story-stage boundary.
+                      // Additional messages belonging to the same stage continue after the current
+                      // queued messages using the normal short typing cadence.
+                      let cursor = sameStage
+                        ? Math.max(stamp, ...afterQueue.map((entry) => entry.deliverAt))
+                        : nextKakaoStageStartAt(
+                            stamp,
+                            afterQueue.map((entry) => entry.deliverAt),
+                          );
                       return bodies.map((body, index) => {
                         const item = makeItem({
                           id: prefix + "-" + index,
@@ -2217,7 +2220,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const messages: Runtime["messages"] = { ...currentMessages, kakao: nextMessages };
                     const queuedReply = queueLines([reply], "kakao-reply-" + character + "-" + stamp);
                     const queueAfterReply = [...currentQueue, ...queuedReply];
-                    const queuedFollowUp = followUpReply ? queueLines([followUpReply], "kakao-reply-followup-" + character + "-" + stamp, queueAfterReply) : [];
+                    const queuedFollowUp = followUpReply ? queueLines([followUpReply], "kakao-reply-followup-" + character + "-" + stamp, queueAfterReply, true) : [];
                     const nextQueue = [...queueAfterReply, ...queuedFollowUp];
                     update({
                       ...current,
