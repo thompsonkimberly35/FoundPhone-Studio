@@ -8,6 +8,7 @@ import { NativeDetail, nativeDetailApps } from "./ios/Details";
 import "./ios/details.css";
 import { SystemNotifications } from "./SystemNotifications";
 import { GlobalNotificationBanner } from "./GlobalNotificationBanner";
+import { UpdateAvailableBanner } from "./UpdateAvailableBanner";
 import "./global-notifications.css";
 import {
   readLauncherOrigin,
@@ -156,6 +157,8 @@ function PhoneRuntime({
   onRestartGame,
   onUpdateGame,
   hasSavedThisSession = false,
+  updateAvailable = false,
+  onDismissUpdateNotice,
   savedAt,
 }: {
   deviceLayout: ReturnType<typeof useDeviceLayout>;
@@ -173,6 +176,8 @@ function PhoneRuntime({
   onRestartGame?: () => Promise<void>;
   onUpdateGame?: () => Promise<void>;
   hasSavedThisSession?: boolean;
+  updateAvailable?: boolean;
+  onDismissUpdateNotice?: () => void;
   savedAt?: string;
 }) {
   const [app, setApp] = useState("");
@@ -1548,6 +1553,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
               </span>
             </button>
           </div>
+          {updateAvailable && !globalNotificationItem && !igBanner && !igQueue.length && !hasPendingKakaoNotification && (
+            <UpdateAvailableBanner onDismiss={() => onDismissUpdateNotice?.()} />
+          )}
           <GlobalNotificationBanner
             item={globalNotificationItem}
             onDismiss={() => {
