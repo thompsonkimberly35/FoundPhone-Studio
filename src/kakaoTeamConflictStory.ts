@@ -2,20 +2,6 @@ import { ALD1_SECRET_ADMIRER_MEMBERS, isAdultMember, secureRandomIndex } from ".
 
 export type TeamConflictChoice = { key: string; text: string; next: string };
 export type TeamConflictNode = { id: string; lines: string[]; choices: TeamConflictChoice[]; result?: string };
-const choiceSets: Array<{ test: RegExp; texts: [string, string, string] }> = [
-  { test: /分手|离开|分开|距离|继续这段关系/, texts: ["我不会因为你一句话就决定分手，我想先听听他的想法。", "你可以表达担心，但请不要替我决定要不要继续这段感情。", "这件事让我很难受，我想先暂停一下，等冷静后再谈。"] },
-  { test: /团队|团员|活动|行程|公司|责任|处罚|练习/, texts: ["我愿意听你说团队承受的压力，具体发生了什么？", "团队的责任不该只由我和他承担，请不要把所有问题推到我们的感情上。", "我需要一点时间想清楚，怎样才能同时顾及彼此和团队。"] },
-  { test: /嫉妒|不甘心|后悔|放弃|牺牲|以前/, texts: ["你刚才提到自己的过去，可以告诉我当时发生了什么吗？", "我理解你有遗憾，但不能因此要求我们重复你的选择。", "如果这让你很难受，我们可以先不谈他的事。"] },
-  { test: /道歉|越界|伤人|不公平|对不起|尊重/, texts: ["谢谢你愿意承认刚才的话伤到了我，我也愿意继续听。", "我接受你的道歉，但希望以后不要再替我做感情决定。", "我现在还没办法马上回应，先让我整理一下情绪。"] },
-  { test: /害怕|压力|累|受伤|粉丝|攻击|风险/, texts: ["我知道你也承受了很多，能不能告诉我你最担心的是什么？", "我也在承受压力，请不要把我的感受当成可以牺牲的部分。", "今天的信息太多了，我想先休息，之后再认真聊。"] },
-  { test: /联系|讯息|告白|喜欢|感情|那个人|联络/, texts: ["你愿意说起那个人，我想知道你当时为什么没有说出口。", "你的遗憾值得被理解，但不代表我的感情必须照你的方式发展。", "如果这段回忆让你难受，我们可以慢慢说，不用一次讲完。"] },
-  { test: /办法|选择|决定|答案|想清楚|证明/, texts: ["我们先把事实和担忧分开，一件一件找出能做的事。", "我可以一起讨论办法，但最终决定必须由当事人自己承担。", "现在还没有答案也没关系，不必逼我立刻表态。"] },
-];
-const fallbackChoices: [string, string, string] = [
-  "我想先听完你的想法，再判断这件事该怎么处理。",
-  "我愿意沟通，但请尊重我有自己的立场和决定。",
-  "我们先停一下，等情绪平复后再继续谈。",
-];
 const node = (id: string, line: string, targets: string[], result = ""): TeamConflictNode => {
   const choices = authoredChoices[id];
   if (!choices || targets.length !== 3) throw new Error("缺少 B 剧情原始选项：" + id);
