@@ -73,6 +73,7 @@ import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
+import { getFriendPhase2Node, getFriendPhase2Opening } from "./kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
 import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
@@ -934,6 +935,75 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
+
+  useEffect(() => {
+    if (!ready || creator || !friendStoryTriggered || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    const outcome = String(ui["friend-story-outcome"] || "");
+    if (!/^H(?:0[1-9]|1[0-2])$/.test(outcome) || ui["friend-story-phase2-started"] === true) return;
+    let dueAt = Number(ui["friend-story-phase2-trigger-at"] || 0);
+    if (!dueAt) {
+      const delay = outcome === "H04" ? 24 * 60 * 60 * 1000 : outcome === "H09" ? 15 * 60 * 1000 : 30 * 60 * 1000;
+      dueAt = Date.now() + delay;
+      update({ ...current, ui: { ...current.ui, kakao: { ...ui, "friend-story-phase2-trigger-at": String(dueAt) } } });
+      return;
+    }
+    if (!Number.isFinite(dueAt)) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["friend-story-phase2-started"] === true) return;
+      const messages = latest.messages.kakao || [];
+      if (messages.some(item => item.id === "friend-phase2-F2_070-0")) return;
+      let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+      let globalQueue: Item[] = [];
+      try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
+      try { globalQueue = JSON.parse(String(latestUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+      if (queue.some(entry => entry.item?.title === selectedFriend && entry.deliverAt > Date.now())) return;
+      const files: Record<string, string> = {
+        "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+        "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+        "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+        "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+      };
+      const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
+      const opening = getFriendPhase2Opening(outcome);
+      const first = makeItem({ id: "friend-phase2-F2_070-0", title: selectedFriend, sender: selectedFriend, avatar, body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_070" } });
+      const now = Date.now();
+      const pending = opening.slice(1).map((body, index) => {
+        const item = makeItem({ id: "friend-phase2-F2_070-" + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_070" } });
+        const typingAt = now + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      });
+      const trustByOutcome: Record<string, number> = {
+        H01: 2, H02: 1, H03: 1, H04: -2, H05: 2, H06: -1,
+        H07: 1, H08: -2, H09: 1, H10: -1, H11: -1, H12: 2,
+      };
+      const notice = { ...first, meta: { ...first.meta, notificationAppId: "kakao" } };
+      update({
+        ...latest,
+        messages: { ...latest.messages, kakao: [...messages, first] },
+        ui: { ...latest.ui, kakao: {
+          ...latestUi,
+          "friend-story-phase2-started": true,
+          "friend-story-phase2-node": "F2_070",
+          "friend-story-phase2-history": "[]",
+          "friend-story-phase2-completed-nodes": "[]",
+          "friend-story-phase2-trust": trustByOutcome[outcome] ?? 0,
+          "friend-story-phase2-suspicion": 0,
+          "friend-story-phase2-concealment": 0,
+          "friend-story-phase2-evidence-compared": false,
+          "friend-story-phase2-source-identified": false,
+          "friend-story-phase2-investigation-paused": false,
+          "friend-story-phase2-bf-informed": false,
+          "delivery-queue": JSON.stringify([...queue, ...pending]),
+          "global-notification-queue": JSON.stringify([...globalQueue, notice]),
+        } },
+      });
+    }, Math.max(0, dueAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, friendStoryTriggered, selectedFriend, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-phase2-trigger-at"], s.ui?.kakao?.["friend-story-phase2-started"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
