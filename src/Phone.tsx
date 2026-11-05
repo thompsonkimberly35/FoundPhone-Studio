@@ -954,6 +954,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     if (!/^H(?:0[1-9]|1[0-2])$/.test(outcome) || ui["friend-story-phase2-started"] === true) return;
     const gameNow = Number(current.gameClock?.currentGameTimestamp || Date.now());
     const timeScale = Number(current.gameClock?.timeScale ?? 1);
+    const savedNotBeforeRealAt = Number(ui["friend-story-phase2-not-before-real-at"] || 0);
+    if (!Number.isFinite(savedNotBeforeRealAt) || savedNotBeforeRealAt <= 0) {
+      let existingQueue: Array<{ deliverAt?: number }> = [];
+      try { existingQueue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { existingQueue = []; }
+      const pendingDeliveries = existingQueue.map(entry => Number(entry.deliverAt || 0)).filter(value => value > Date.now());
+      const notBeforeRealAt = nextKakaoStageStartAt(Date.now(), pendingDeliveries);
+      update({ ...current, ui: { ...current.ui, kakao: { ...ui, "friend-story-phase2-not-before-real-at": String(notBeforeRealAt) } } });
+      return;
+    }
     let dueAt = Number(ui["friend-story-phase2-trigger-at"] || 0);
     if (!dueAt) {
       const delay = outcome === "H04" ? 25 * 60 * 60 * 1000 : outcome === "H08" ? 24 * 60 * 60 * 1000 : 30 * 60 * 1000;
