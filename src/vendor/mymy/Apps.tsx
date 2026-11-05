@@ -41,7 +41,7 @@ import type { Item } from "../../schema";
 import { getKakaoStoryNode } from "../../kakaoRomanceStory";
 import { getBoyfriendStage2Node } from "../../kakaoBoyfriendStage2";
 import { getFriendStoryNode } from "../../kakaoFriendStory";
-import { getFriendPhase2Node } from "../../kakaoFriendStoryPhase2";
+import { getFriendPhase2Node, getFriendPhase2OutcomeLabel } from "../../kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, getSecretAdmirerNode } from "../../kakaoSecretAdmirer";
 import { getTeamConflictNode } from "../../kakaoTeamConflictStory";
 import "./ui.css";
@@ -419,7 +419,7 @@ export function MymyKakao(p: SkinProps) {
                   ))}
                 </div>
               ) : (
-                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一阶段已结束，聊天记录和结果已保存。</div>
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>阶段结果：{getFriendPhase2OutcomeLabel(friendPhase2Node.result || String(p.ui?.["friend-story-phase2-outcome"] || ""))}。聊天记录和结果已保存。</div>
               )}
             </div>
           ) : friendThread && friendStoryNode ? (
