@@ -158,11 +158,11 @@ export function NativeSettings({
                   marginTop: 16, padding: 16, borderRadius: 12,
                   background: "var(--settings-card-secondary, #f2f2f7)", textAlign: "center",
                 }}>
-                  <strong style={{ display: "block", marginBottom: 10, fontSize: 16 }}>发现游戏更新</strong>
+                  <strong style={{ display: "block", marginBottom: 10, fontSize: 16 }}>准备更新游戏</strong>
                   <p style={{ margin: "0 0 14px", color: "#686868", fontSize: 13, lineHeight: 1.6 }}>
                     {hasSavedThisSession
-                      ? "本次进度已保存。更新并重新加载后，会继续从保存的位置开始。"
-                      : "你尚未保存本次进度。更新并重新加载后，将返回男友和好友选择页面，重新开始游戏。"}
+                      ? "本次进度已保存。系统将检查并加载最新版本，重新加载后会继续从保存的位置开始。"
+                      : "你尚未保存本次进度。系统将检查并加载最新版本，重新加载后会返回男友和好友选择页面，重新开始游戏。"}
                   </p>
                   {updateError && <p role="alert" style={{ color: "#c62828", fontSize: 12, margin: "0 0 10px" }}>{updateError}</p>}
                   <button type="button" disabled={updating || !onUpdateGame} onClick={async () => {
