@@ -1961,7 +1961,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (nodeId === "F2_076" && choiceKey === "A") trust += 1;
                       if (nodeId === "F2_076" && choiceKey === "B") trust -= 1;
                       if (nodeId === "F2_075" && choiceKey === "C") concealment += 1;
-                      const resolvedNext = resolveFriendPhase2Next(nodeId, choiceKey, choice.next, trust, suspicion, concealment);
+                      const hasFriendEvidence = currentUi["friend-story-phase2-evidence-compared"] === true || currentUi["friend-story-phase2-source-identified"] === true;
+                      const resolvedNext = resolveFriendPhase2Next(nodeId, choiceKey, choice.next, trust, suspicion, concealment, hasFriendEvidence);
                       nextNode = getFriendPhase2Node(resolvedNext);
                       if (!nextNode) return;
                       const outgoing = makeItem({ id: "friend-phase2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
