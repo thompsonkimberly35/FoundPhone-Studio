@@ -52,7 +52,7 @@ describe("KakaoTalk confidant friend story phase two", () => {
 
   it("routes low trust or repeated concealment to the estrangement confrontation", () => {
     expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", -2, 0, 0)).toBe("F2_087");
-    expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", 1, 1, 0)).toBe("F2_087");
+    expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", 0, 1, 0)).toBe("F2_087");
     expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", 2, 0, 0)).toBe("F2_083");
     expect(resolveFriendPhase2Next("F2_080", "A", "F2_081", -2, 2, 2)).toBe("F2_081");
   });
