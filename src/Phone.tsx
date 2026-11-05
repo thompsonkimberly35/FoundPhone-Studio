@@ -73,7 +73,7 @@ import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
-import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
+import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
 import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
@@ -1994,6 +1994,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-phase2-suspicion": suspicion,
                         "friend-story-phase2-concealment": concealment,
                         "friend-story-phase2-outcome": outcome,
+                        "friend-story-phase2-outcome-name": getFriendPhase2OutcomeLabel(outcome),
                         "friend-story-phase2-followup-due-at": nextNode.result && !nodeId.startsWith("F2_090_") && currentUi["friend-story-phase2-followup-sent"] !== true
                           ? String(storyStamp + (outcome === "H18" || outcome === "H20" ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000))
                           : String(currentUi["friend-story-phase2-followup-due-at"] || ""),
