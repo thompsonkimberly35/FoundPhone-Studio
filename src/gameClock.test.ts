@@ -55,6 +55,15 @@ describe("global story clock", () => {
     expect(nextKakaoStageStartAt(now, [now + 30_000, now + 90_000])).toBe(now + 150_000);
   });
 
+  it("starts the friend's leaked-chat-records phase at least one real minute after the last phase-one message", () => {
+    const now = 1_000_000;
+    const lastPhaseOneDelivery = now + 35_000;
+    const otherKakaoThreadDelivery = now + 50_000;
+    const notBefore = nextKakaoStageStartAt(now, [lastPhaseOneDelivery, otherKakaoThreadDelivery]);
+    expect(notBefore).toBe(otherKakaoThreadDelivery + 60_000);
+    expect(notBefore - lastPhaseOneDelivery).toBeGreaterThanOrEqual(60_000);
+  });
+
   it("moves the shared timeline to the next day or evening when KKT dialogue says so", () => {
     const work = createWork();
     const previous = initialRuntime(work);
