@@ -1364,6 +1364,55 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     return () => window.clearTimeout(timer);
   }, [ready, creator, selectedFriend, s.ui?.kakao?.["friend-story-phase2-x-due-at"], s.ui?.kakao?.["friend-story-phase2-x-posted"]]);
 
+  useEffect(() => {
+    if (!ready || creator || !selectedFriend || s.ui?.kakao?.["friend-story-phase2-followup-sent"] === true) return;
+    const outcome = String(s.ui?.kakao?.["friend-story-phase2-outcome"] || "");
+    const dueAt = Number(s.ui?.kakao?.["friend-story-phase2-followup-due-at"] || 0);
+    if (!/^H(?:1[3-9]|20)$/.test(outcome) || !Number.isFinite(dueAt) || dueAt <= 0) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const ui = latest.ui?.kakao || {};
+      if (ui["friend-story-phase2-followup-sent"] === true) return;
+      const nodeId = getFriendPhase2FollowupNodeId(outcome);
+      const node = getFriendPhase2Node(nodeId);
+      if (!node || !node.lines.length) return;
+      const existing = latest.messages.kakao || [];
+      if (existing.some(item => item.id === "friend-phase2-followup-" + outcome + "-0")) return;
+      let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+      let globalQueue: Item[] = [];
+      try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+      try { globalQueue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+      if (queue.some(entry => entry.item?.title === selectedFriend && entry.deliverAt > Date.now())) return;
+      const files: Record<string, string> = {
+        "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+        "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+        "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+        "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+      };
+      const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
+      const first = makeItem({ id: "friend-phase2-followup-" + outcome + "-0", title: selectedFriend, sender: selectedFriend, avatar, body: node.lines[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: node.id } });
+      const now = Date.now();
+      const pending = node.lines.slice(1).map((body, index) => {
+        const item = makeItem({ id: "friend-phase2-followup-" + outcome + "-" + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: node.id } });
+        const typingAt = now + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      });
+      const notice = { ...first, meta: { ...first.meta, notificationAppId: "kakao" } };
+      update({
+        ...latest,
+        messages: { ...latest.messages, kakao: [...existing, first] },
+        ui: { ...latest.ui, kakao: {
+          ...ui,
+          "friend-story-phase2-node": node.id,
+          "friend-story-phase2-followup-sent": true,
+          "delivery-queue": JSON.stringify([...queue, ...pending]),
+          "global-notification-queue": JSON.stringify([...globalQueue, notice]),
+        } },
+      });
+    }, Math.max(0, dueAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, selectedFriend, s.ui?.kakao?.["friend-story-phase2-outcome"], s.ui?.kakao?.["friend-story-phase2-followup-due-at"], s.ui?.kakao?.["friend-story-phase2-followup-sent"], s.ui?.kakao?.["delivery-queue"]]);
+
   const dismissNotice = (index: number) =>
     update({
       ...runtimeRef.current,
