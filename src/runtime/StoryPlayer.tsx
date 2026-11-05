@@ -49,6 +49,7 @@ function StoryPlayer() {
     [error, setError] = useState("");
   const [selectionComplete, setSelectionComplete] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState("");
+  const [sessionSavedForUpdate, setSessionSavedForUpdate] = useState(false);
   const [selectedBoyfriend, setSelectedBoyfriend] = useState("");
   const [selectedFriend, setSelectedFriend] = useState("");
   const musicRef = useRef<HTMLAudioElement>(null);
@@ -86,7 +87,21 @@ function StoryPlayer() {
         document.title = w.title === "捡手机" ? "捡手机" : w.title + " · 捡手机";
         // A manual save is the only progress that survives a fresh page visit.
         // Restore it before mounting the phone; otherwise discard the previous run.
-        const manual = await db.manualSaves.get(w.id).catch(() => undefined);
+        let updateMode: string | null = null;
+        try {
+          updateMode = window.sessionStorage.getItem("foundphone:update-mode");
+          window.sessionStorage.removeItem("foundphone:update-mode");
+        } catch {
+          updateMode = null;
+        }
+        // An update without a manual save made during this play session starts a new run.
+        if (updateMode === "restart") {
+          await db.manualSaves.delete(w.id).catch(() => undefined);
+          await db.saves.delete(w.id).catch(() => undefined);
+        }
+        const manual = updateMode === "restart"
+          ? undefined
+          : await db.manualSaves.get(w.id).catch(() => undefined);
         // Keep manual saves across story-data revisions. A content update changes
         // work.updatedAt, but it must not invalidate a player's locally saved run.
         if (manual && manual.state.workId === w.id) {
@@ -135,7 +150,48 @@ function StoryPlayer() {
           });
           await db.saves.put({ id: work.id, state });
           setLastSavedAt(savedAt);
+          setSessionSavedForUpdate(true);
           return savedAt;
+        }}
+        hasSavedThisSession={sessionSavedForUpdate}
+        onUpdateGame={async () => {
+          const mode = sessionSavedForUpdate ? "preserve" : "restart";
+          try {
+            window.sessionStorage.setItem("foundphone:update-mode", mode);
+          } catch {
+            throw new Error("浏览器无法保存更新状态，请检查隐私或存储设置后重试。");
+          }
+          try {
+            if ("serviceWorker" in navigator) {
+              const registration = await navigator.serviceWorker.getRegistration();
+              if (registration) {
+                await registration.update();
+                const worker = registration.waiting || registration.installing;
+                if (registration.waiting) {
+                  registration.waiting.postMessage({ type: "SKIP_WAITING" });
+                }
+                if (worker && worker.state !== "activated") {
+                  await Promise.race([
+                    new Promise<void>((resolve) => {
+                      const finish = () => {
+                        if (worker.state === "installed" || worker.state === "activated" || worker.state === "redundant") {
+                          worker.removeEventListener("statechange", finish);
+                          resolve();
+                        }
+                      };
+                      worker.addEventListener("statechange", finish);
+                      finish();
+                    }),
+                    new Promise<void>((resolve) => window.setTimeout(resolve, 8000)),
+                  ]);
+                }
+              }
+            }
+          } catch (error) {
+            try { window.sessionStorage.removeItem("foundphone:update-mode"); } catch { /* storage may be unavailable */ }
+            throw new Error(error instanceof Error ? "检查更新失败：" + error.message : "检查更新失败，请确认网络连接后重试。");
+          }
+          window.location.reload();
         }}
         onRestartGame={async () => {
           await db.manualSaves.delete(work.id);
