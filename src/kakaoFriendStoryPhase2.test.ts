@@ -52,9 +52,14 @@ describe("KakaoTalk confidant friend story phase two", () => {
 
   it("routes low trust or repeated concealment to the estrangement confrontation", () => {
     expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", -2, 0, 0)).toBe("F2_087");
+    expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", -1, 0, 0)).toBe("F2_087");
     expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", 0, 1, 0)).toBe("F2_087");
     expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", 2, 0, 0)).toBe("F2_083");
     expect(resolveFriendPhase2Next("F2_080", "A", "F2_081", -2, 2, 2)).toBe("F2_081");
+    expect(resolveFriendPhase2Next("F2_081", "A", "H13", 2, 0, 0, true)).toBe("H13");
+    expect(resolveFriendPhase2Next("F2_081", "A", "H13", 2, 0, 0, false)).toBe("H14");
+    expect(resolveFriendPhase2Next("F2_081", "A", "H13", 0, 0, 0, true)).toBe("H14");
+    expect(resolveFriendPhase2Next("F2_084", "B", "H15", -1, 0, 0)).toBe("H14");
   });
 
   it("classifies all twelve previous outcomes without rewriting their meanings", () => {
@@ -65,7 +70,7 @@ describe("KakaoTalk confidant friend story phase two", () => {
     expect(getFriendPhase2OutcomeClass("H06")).toBe("tense");
     expect(getFriendPhase2OutcomeClass("H10")).toBe("tense");
     expect(getFriendPhase2OutcomeClass("H04")).toBe("distant");
-    expect(getFriendPhase2OutcomeClass("H08")).toBe("distant");
+    expect(getFriendPhase2OutcomeClass("H08")).toBe("ordinary");
   });
 
   it("holds the X leak node until its scheduled event is delivered", () => {
