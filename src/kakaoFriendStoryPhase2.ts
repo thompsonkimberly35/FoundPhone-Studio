@@ -132,3 +132,5 @@ export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defau
   if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) return "F2_087";
   return defaultNext;
 }
+
+export function getFriendPhase2FollowupNodeId(outcome: string): string { return "F2_090_" + outcome; }
