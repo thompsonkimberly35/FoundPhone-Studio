@@ -1782,6 +1782,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const outgoing = makeItem({ id: "team-conflict-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: storyChoice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), teamConflictNode: nodeId, teamConflictChoice: choiceKey };
                       const queued = queueLines(nextNode.lines, "team-conflict-" + nodeId + "-" + choiceKey);
+                      const outcome = nextNode.result || String(currentUi["team-conflict-story-outcome"] || "");
+                      const trustDelta = ["B010","B018","B028","B037","B047","B051","B073","B094"].includes(nextNode.id) ? 1 : 0;
+                      const angerDelta = ["B008","B015","B022","B025","B043","B046","B062","B088"].includes(nextNode.id) ? 1 : 0;
+                      const regretDelta = ["B052","B063","B080","B092","B099","B100","B101"].includes(nextNode.id) ? 1 : 0;
+                      const secretRevealed = currentUi["team-conflict-secret-revealed"] === true || ["B036","B051","B063","B076","B091","B099","B100","B101"].includes(nextNode.id);
+                      const breakupPressureDelta = ["B008","B015","B022","B023","B024","B029","B033","B041","B042","B045","B054","B055","B061"].includes(nextNode.id) ? 1 : 0;
                       update({
                         ...current,
                         messages: { ...currentMessages, kakao: [...existing, outgoing] },
@@ -1790,7 +1796,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                           "team-conflict-story-node": nextNode.id,
                           "team-conflict-history": JSON.stringify([...history, historyKey]),
                           "team-conflict-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
-                          "team-conflict-story-outcome": nextNode.result || String(currentUi["team-conflict-story-outcome"] || ""),
+                          "team-conflict-last-choice": historyKey,
+                          "team-conflict-story-outcome": outcome,
+                          "team-conflict-trust": Number(currentUi["team-conflict-trust"] || 0) + trustDelta,
+                          "team-conflict-anger": Number(currentUi["team-conflict-anger"] || 0) + angerDelta,
+                          "team-conflict-regret": Number(currentUi["team-conflict-regret"] || 0) + regretDelta,
+                          "team-conflict-secret-revealed": secretRevealed,
+                          "team-conflict-breakup-pressure": Number(currentUi["team-conflict-breakup-pressure"] || 0) + breakupPressureDelta,
                           "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
                         } },
                       });
