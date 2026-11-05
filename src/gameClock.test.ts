@@ -9,11 +9,40 @@ import {
   formatRelativeGameTime,
   migrateRuntimeGameClock,
   normalizeStoryItems,
+  nextKakaoStageStartAt,
   stampNewMessages,
   zonedDateTimeToTimestamp,
 } from "./gameClock";
 
 describe("global story clock", () => {
+  it("keeps a one-minute shared cooldown between KKT story stages across threads", () => {
+    const now = 1_000_000;
+    expect(nextKakaoStageStartAt(now, [])).toBe(now + 60_000);
+    expect(nextKakaoStageStartAt(now, [now + 30_000, now + 90_000])).toBe(now + 150_000);
+  });
+
+  it("moves the shared timeline to the next day or evening when KKT dialogue says so", () => {
+    const work = createWork();
+    const previous = initialRuntime(work);
+    previous.gameClock = { ...previous.gameClock!, currentGameTimestamp: zonedDateTimeToTimestamp("2026-10-25", "16:00") };
+    previous.date = "2026-10-25";
+    previous.time = "16:00";
+    const next = {
+      ...previous,
+      messages: {
+        kakao: [
+          makeItem({ id: "tomorrow-1", title: "好友", sender: "好友", body: "明天早上我们再谈。" }),
+          makeItem({ id: "evening-1", title: "男友", sender: "男友", body: "今晚我下班后再联系你。" }),
+        ],
+      },
+    };
+    const stamped = stampNewMessages(previous, next);
+    expect(stamped.messages.kakao[0].time).toBe("2026-10-26 08:30");
+    expect(stamped.messages.kakao[1].time).toBe("2026-10-26 19:30");
+    expect(stamped.date).toBe("2026-10-26");
+    expect(stamped.time).toBe("19:30");
+  });
+
   it("advances one game minute per real minute and rolls the story date at midnight", () => {
     const work = createWork();
     const state = initialRuntime(work);
