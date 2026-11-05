@@ -97,10 +97,8 @@ function StoryPlayer() {
           // Storage may be unavailable; still show this session's notice.
         }
         setUpdateAvailable(true);
-      } catch (error) {
-        if (error.name !== "AbortError") {
-          // A failed version check must never interrupt gameplay.
-        }
+      } catch {
+        // A failed version check must never interrupt gameplay.
       } finally {
         checking = false;
       }
