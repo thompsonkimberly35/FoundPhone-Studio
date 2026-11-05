@@ -73,7 +73,7 @@ import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
-import { getFriendPhase2Node, getFriendPhase2Opening } from "./kakaoFriendStoryPhase2";
+import { getFriendPhase2Node, getFriendPhase2Opening, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
 import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
@@ -1899,9 +1899,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (nodeId === "F2_076" && choiceKey === "B") trust -= 1;
                       if (nodeId === "F2_076" && choiceKey === "C") concealment += 1;
                       if (nodeId === "F2_075" && choiceKey === "C") concealment += 1;
-                      if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) {
-                        nextNode = getFriendPhase2Node("F2_087");
-                      }
+                      const resolvedNext = resolveFriendPhase2Next(nodeId, choiceKey, choice.next, trust, suspicion, concealment);
+                      nextNode = getFriendPhase2Node(resolvedNext);
                       if (!nextNode) return;
                       const outgoing = makeItem({ id: "friend-phase2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendPhase2Node: nodeId, friendPhase2Choice: choiceKey };
