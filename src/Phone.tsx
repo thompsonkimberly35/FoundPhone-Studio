@@ -1300,9 +1300,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   useEffect(() => {
     if (!ready || creator || s.ui?.kakao?.["friend-story-phase2-x-posted"] === true) return;
     const dueAt = Number(s.ui?.kakao?.["friend-story-phase2-x-due-at"] || 0);
-    if (!Number.isFinite(dueAt) || dueAt <= 0) return;
+    const gameNow = Number(s.gameClock?.currentGameTimestamp || Date.now());
+    const timeScale = Number(s.gameClock?.timeScale ?? 1);
+    if (!Number.isFinite(dueAt) || dueAt <= 0 || timeScale <= 0) return;
     const timer = window.setTimeout(() => {
       const latest = runtimeRef.current;
+      const latestGameNow = Number(latest.gameClock?.currentGameTimestamp || Date.now());
+      if (latestGameNow < dueAt) return;
       const ui = latest.ui?.kakao || {};
       if (ui["friend-story-phase2-x-posted"] === true) return;
       const posts = [...(latest.messages.twitter || [])];
@@ -1364,9 +1368,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "global-notification-queue": JSON.stringify([...globalQueue, notice]),
         } },
       });
-    }, Math.max(0, dueAt - Date.now()));
+    }, Math.max(0, (dueAt - gameNow) / timeScale));
     return () => window.clearTimeout(timer);
-  }, [ready, creator, selectedFriend, s.ui?.kakao?.["friend-story-phase2-x-due-at"], s.ui?.kakao?.["friend-story-phase2-x-posted"]]);
+  }, [ready, creator, selectedFriend, s.gameClock?.currentGameTimestamp, s.gameClock?.timeScale, s.ui?.kakao?.["friend-story-phase2-x-due-at"], s.ui?.kakao?.["friend-story-phase2-x-posted"]]);
 
   useEffect(() => {
     if (!ready || creator || !selectedFriend || s.ui?.kakao?.["friend-story-phase2-followup-sent"] === true) return;
