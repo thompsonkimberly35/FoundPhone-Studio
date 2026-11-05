@@ -73,7 +73,7 @@ import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
-import { getFriendPhase2Node, getFriendPhase2Opening, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
+import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
 import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
@@ -1932,6 +1932,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-phase2-suspicion": suspicion,
                         "friend-story-phase2-concealment": concealment,
                         "friend-story-phase2-outcome": outcome,
+                        "friend-story-phase2-followup-due-at": nextNode.result && !nodeId.startsWith("F2_090_") && currentUi["friend-story-phase2-followup-sent"] !== true
+                          ? String(stamp + (outcome === "H18" || outcome === "H20" ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000))
+                          : String(currentUi["friend-story-phase2-followup-due-at"] || ""),
+                        "friend-story-phase2-followup-completed": nodeId.startsWith("F2_090_") ? true : currentUi["friend-story-phase2-followup-completed"] === true,
                         "friend-story-phase2-x-due-at": nextNode.id === "F2_074" ? String(stamp + 30 * 60 * 1000) : String(currentUi["friend-story-phase2-x-due-at"] || ""),
                         "friend-story-phase2-evidence-compared": nextNode.effect === "evidence-compared" || currentUi["friend-story-phase2-evidence-compared"] === true,
                         "friend-story-phase2-source-identified": nextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
