@@ -968,6 +968,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (latestGameNow < dueAt) return;
       const latestUi = latest.ui?.kakao || {};
       if (latestUi["friend-story-phase2-started"] === true) return;
+      const phase2NotBeforeRealAt = Number(latestUi["friend-story-phase2-not-before-real-at"] || 0);
+      const remainingRealWaitMs = phase2NotBeforeRealAt - Date.now();
+      if (remainingRealWaitMs > 0) {
+        const nextDueAt = Math.max(dueAt, latestGameNow + remainingRealWaitMs * timeScale);
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "friend-story-phase2-trigger-at": String(nextDueAt) } } });
+        return;
+      }
       const messages = latest.messages.kakao || [];
       if (messages.some(item => item.id === "friend-phase2-F2_070-0")) return;
       let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
@@ -1023,7 +1030,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
     }, Math.max(0, (dueAt - gameNow) / timeScale + 1000 / timeScale));
     return () => window.clearTimeout(timer);
-  }, [ready, creator, friendStoryTriggered, selectedFriend, s.gameClock?.timeScale, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-phase2-trigger-at"], s.ui?.kakao?.["friend-story-phase2-started"], s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, creator, friendStoryTriggered, selectedFriend, s.gameClock?.timeScale, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-phase2-trigger-at"], s.ui?.kakao?.["friend-story-phase2-not-before-real-at"], s.ui?.kakao?.["friend-story-phase2-started"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
@@ -2140,6 +2147,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-completed-nodes": JSON.stringify([...new Set([...completed, friendNodeId])]),
                         "friend-story-last-choice": historyKey,
                         "friend-story-outcome": outcome,
+                        "friend-story-phase2-not-before-real-at": /^H(?:0[1-9]|1[0-2])$/.test(outcome)
+                          ? String(currentUi["friend-story-phase2-not-before-real-at"] || nextKakaoStageStartAt(
+                              stamp,
+                              [...currentQueue.map((entry) => entry.deliverAt), ...queued.map((entry) => entry.deliverAt)],
+                            ))
+                          : String(currentUi["friend-story-phase2-not-before-real-at"] || ""),
                         "friend-story-care-due-at": nextNode.id === "H09" ? String(stamp + 5 * 60 * 1000) : String(currentUi["friend-story-care-due-at"] || ""),
                         "friend-story-reconnect-due-at": nextNode.id === "H04" ? String(stamp + 24 * 60 * 60 * 1000) : String(currentUi["friend-story-reconnect-due-at"] || ""),
                         "friend-story-trust": friendState.trust,
