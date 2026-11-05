@@ -1941,12 +1941,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       let suspicion = Number(currentUi["friend-story-phase2-suspicion"] || 0);
                       let concealment = Number(currentUi["friend-story-phase2-concealment"] || 0);
                       if (nodeId === "F2_071" && choiceKey === "B") suspicion += 1;
+                      if (nodeId === "F2_072" && choiceKey === "B") suspicion += 1;
                       if (nodeId === "F2_073" && choiceKey === "A") trust += 1;
                       if (nodeId === "F2_073" && choiceKey === "B") trust -= 1;
                       if (nodeId === "F2_073" && choiceKey === "C") trust -= 1;
                       if (nodeId === "F2_076" && choiceKey === "A") trust += 1;
                       if (nodeId === "F2_076" && choiceKey === "B") trust -= 1;
-                      if (nodeId === "F2_076" && choiceKey === "C") concealment += 1;
                       if (nodeId === "F2_075" && choiceKey === "C") concealment += 1;
                       const resolvedNext = resolveFriendPhase2Next(nodeId, choiceKey, choice.next, trust, suspicion, concealment);
                       nextNode = getFriendPhase2Node(resolvedNext);
