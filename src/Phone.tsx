@@ -944,7 +944,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     if (!/^H(?:0[1-9]|1[0-2])$/.test(outcome) || ui["friend-story-phase2-started"] === true) return;
     let dueAt = Number(ui["friend-story-phase2-trigger-at"] || 0);
     if (!dueAt) {
-      const delay = outcome === "H04" ? 25 * 60 * 60 * 1000 : 30 * 60 * 1000;
+      const delay = outcome === "H04" ? 25 * 60 * 60 * 1000 : outcome === "H08" ? 24 * 60 * 60 * 1000 : 30 * 60 * 1000;
       dueAt = Date.now() + delay;
       update({ ...current, ui: { ...current.ui, kakao: { ...ui, "friend-story-phase2-trigger-at": String(dueAt) } } });
       return;
