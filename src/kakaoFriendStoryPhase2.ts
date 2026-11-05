@@ -129,7 +129,7 @@ export function getFriendPhase2OutcomeClass(outcome: string): "close" | "ordinar
 }
 
 export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defaultNext: string, trust: number, suspicion: number, concealment: number): string {
-  if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) return "F2_087";
+  if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -2 || (suspicion >= 1 && trust <= 0) || (concealment >= 1 && trust <= 0))) return "F2_087";
   return defaultNext;
 }
 
