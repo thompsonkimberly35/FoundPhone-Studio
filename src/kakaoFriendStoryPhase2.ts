@@ -122,14 +122,17 @@ export function getFriendPhase2Opening(outcome: string): string[] {
 }
 export function getFriendPhase2OutcomeClass(outcome: string): "close" | "ordinary" | "tense" | "distant" | "broken" {
   if (["H01", "H05", "H12"].includes(outcome)) return "close";
-  if (["H02", "H03", "H07", "H09"].includes(outcome)) return "ordinary";
+  if (["H02", "H03", "H07", "H08", "H09"].includes(outcome)) return "ordinary";
   if (["H06", "H10", "H11"].includes(outcome)) return "tense";
-  if (outcome === "H04" || outcome === "H08") return "distant";
+  if (outcome === "H04") return "distant";
   return "broken";
 }
 
-export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defaultNext: string, trust: number, suspicion: number, concealment: number): string {
-  if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -2 || (suspicion >= 1 && trust <= 0) || (concealment >= 1 && trust <= 0))) return "F2_087";
+export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defaultNext: string, trust: number, suspicion: number, concealment: number, hasEvidence = false): string {
+  if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) return "F2_087";
+  if (nodeId === "F2_081" && choiceKey === "A" && (trust <= 0 || !hasEvidence)) return "H14";
+  if (nodeId === "F2_081" && choiceKey === "B") return "H14";
+  if (nodeId === "F2_084" && choiceKey === "B" && trust < 0) return "H14";
   return defaultNext;
 }
 
