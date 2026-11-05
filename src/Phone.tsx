@@ -634,7 +634,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         id: "notification-batch-" + sourceAppId + "-" + batch.map(item => item.id).join("-").slice(0, 120),
         title: next.title,
         sender: sourceAppId === "threads" ? "Threads" : sourceAppId === "twitter" ? "𝕏" : sourceAppId === "kakao" ? "KakaoTalk" : next.sender,
-        body: sourceAppId === "threads" ? "你有 " + batch.length + " 則新留言" : sourceAppId === "twitter" ? "你有 " + batch.length + " 則新貼文通知" : "你有 " + batch.length + " 則新訊息",
+        body: sourceAppId === "threads" ? "你有 " + batch.length + " 条新留言" : sourceAppId === "twitter" ? "你有 " + batch.length + " 条新帖子通知" : "你有 " + batch.length + " 条新消息",
         time: next.time,
         meta: { ...next.meta, notificationAppId: sourceAppId, notificationBatchCount: String(batch.length) },
       }) : next;
