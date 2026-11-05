@@ -221,7 +221,26 @@ export function MymyKakao(p: SkinProps) {
                   className={"kzbub" + (m.media ? " kzimg" : "")}
                   onClick={() => m.meta.local !== "true" && read(p, m)}
                 >
-                  {m.media ? <Media item={m} /> : m.body}
+                  {m.meta.friendPhase2Screenshot ? (
+                    <div style={{ width: 250, maxWidth: "68vw", padding: 12, borderRadius: 13, background: "#f7f8fa", border: "1px solid #e3e6eb", color: "#30343b", textAlign: "left", boxShadow: "0 2px 8px rgba(0,0,0,.06)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 10, color: "#89909b" }}>
+                        <b>聊天记录截图</b><span>私人对话</span>
+                      </div>
+                      {m.meta.friendPhase2Screenshot === "original" ? (
+                        <div style={{ padding: 10, borderRadius: 9, background: "#fff", fontSize: 12, lineHeight: 1.8 }}>
+                          <div style={{ color: "#8a9099", fontSize: 10, marginBottom: 5 }}>我</div>
+                          我真的不知道那些粉丝到底想怎样。<br />难道我要为了她们的情绪，跟自己喜欢的人分手吗？
+                        </div>
+                      ) : (
+                        <div style={{ padding: 10, borderRadius: 9, background: "#fff", fontSize: 12, lineHeight: 1.8 }}>
+                          <div style={{ color: "#8a9099", fontSize: 10, marginBottom: 5 }}>我</div>
+                          我真的不知道那些粉丝到底想怎样。
+                          <div style={{ marginTop: 9, paddingTop: 8, borderTop: "1px dashed #d7dbe2", color: "#b35e62", fontSize: 10 }}>后续内容被裁掉，缺少完整上下文</div>
+                        </div>
+                      )}
+                      <div style={{ marginTop: 8, textAlign: "right", color: "#9aa1aa", fontSize: 9 }}>截图 · 仅供剧情调查</div>
+                    </div>
+                  ) : m.media ? <Media item={m} /> : m.body}
                 </button>
               );
               if (m.outgoing) {
