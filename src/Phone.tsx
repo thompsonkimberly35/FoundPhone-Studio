@@ -76,7 +76,7 @@ import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
-import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode } from "./kakaoTeamConflictStory";
+import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode, getTeamConflictBoyfriendFollowupState } from "./kakaoTeamConflictStory";
 import { formatGameTime, migrateRuntimeGameClock, normalizeStoryItems, stampNewMessages } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
@@ -1798,6 +1798,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                           "team-conflict-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
                           "team-conflict-last-choice": historyKey,
                           "team-conflict-story-outcome": outcome,
+                          "team-conflict-story-outcome-at": outcome ? String(stamp) : String(currentUi["team-conflict-story-outcome-at"] || ""),
+                          "team-conflict-boyfriend-followup-state": getTeamConflictBoyfriendFollowupState(outcome),
                           "team-conflict-trust": Number(currentUi["team-conflict-trust"] || 0) + trustDelta,
                           "team-conflict-anger": Number(currentUi["team-conflict-anger"] || 0) + angerDelta,
                           "team-conflict-regret": Number(currentUi["team-conflict-regret"] || 0) + regretDelta,
