@@ -3,6 +3,7 @@ import {
   FRIEND_PHASE2_STORY,
   getFriendPhase2Node,
   getFriendPhase2NodeCount,
+  getFriendPhase2OutcomeLabel,
   getFriendPhase2OutcomeClass,
   resolveFriendPhase2Next,
 } from "./kakaoFriendStoryPhase2";
@@ -76,6 +77,13 @@ describe("KakaoTalk confidant friend story phase two", () => {
   it("holds the X leak node until its scheduled event is delivered", () => {
     expect(getFriendPhase2Node("F2_074")?.choices).toHaveLength(1);
     expect(getFriendPhase2Node("F2_074")?.lines).toHaveLength(0);
+  });
+
+  it("stores a distinct Simplified Chinese name for every ending", () => {
+    const labels = ["重新相信", "有裂痕的友情", "共同面对", "替你承担", "两个重要的人", "无法原谅", "未完成的道歉", "第二次谎言"];
+    for (let i = 13; i <= 20; i++) {
+      expect(getFriendPhase2OutcomeLabel("H" + i)).toBe(labels[i - 13]);
+    }
   });
 
   it("provides a distinct future conversation for each of the eight endings", () => {
