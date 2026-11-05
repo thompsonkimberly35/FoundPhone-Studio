@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseTeamConflictMember, getTeamConflictCandidates, getTeamConflictChoice, getTeamConflictNode, getTeamConflictNodeCount, TEAM_CONFLICT_STORY } from "./kakaoTeamConflictStory";
+import { chooseTeamConflictMember, getTeamConflictCandidates, getTeamConflictChoice, getTeamConflictNode, getTeamConflictNodeCount, TEAM_CONFLICT_STORY, validateTeamConflictStory } from "./kakaoTeamConflictStory";
 
 describe("KakaoTalk team-conflict story", () => {
   const boyfriend = "ald1-li-liwu";
@@ -33,11 +33,17 @@ describe("KakaoTalk team-conflict story", () => {
   it("shows direct reply choices without repeating the previous message as a prefix", () => {
     const node = getTeamConflictNode("B009")!;
     expect(node.choices.map(choice => choice.text)).toEqual([
-      "我愿意听你说团队承受的压力，具体发生了什么？",
-      "团队的责任不该只由我和他承担，请不要把所有问题推到我们的感情上。",
-      "我需要一点时间想清楚，怎样才能同时顾及彼此和团队。",
+      "你现在是在对我发脾气。",
+      "你是不是有其他事情没说？",
+      "我们先冷静一下。",
     ]);
-    expect(node.choices.every(choice => !choice.text.startsWith("关于"))).toBe(true);
+    expect(getTeamConflictNode("B001")?.choices.map(choice => choice.text)).toEqual([
+      "你想说什么？",
+      "如果是关于今天的事，我已经很累了。",
+      "你是不是也在怪我？",
+    ]);
+    expect(Object.keys(TEAM_CONFLICT_STORY).filter(id => id.startsWith("B"))).toHaveLength(101);
+    expect(validateTeamConflictStory()).toEqual([]);
   });
   it("maps independent choices to different branches and all outcomes are terminal", () => {
     expect(getTeamConflictChoice("B001","A")?.next).toBe("B002");
