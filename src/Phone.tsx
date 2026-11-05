@@ -1909,6 +1909,17 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         ...entry,
                         item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
                       }));
+                      const addScreenshotToQueue = (id: string, variant: string, body: string, offset: number) => {
+                        const item = makeItem({ id, title: character, sender: character, avatar, body, time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: nextNode!.id, friendPhase2Screenshot: variant } });
+                        const baseAt = queued.length ? queued[queued.length - 1].deliverAt : stamp;
+                        const typingAt = baseAt + 2000 + offset;
+                        queued.push({ item, typingAt, deliverAt: typingAt + 3000 });
+                      };
+                      if (nextNode.id === "F2_071") addScreenshotToQueue("friend-phase2-screenshot-initial", "cropped", "聊天记录截图", 0);
+                      if (nextNode.id === "F2_078A") {
+                        addScreenshotToQueue("friend-phase2-screenshot-original", "original", "原始聊天截图", 0);
+                        addScreenshotToQueue("friend-phase2-screenshot-circulated", "cropped", "网上流传的截图", 5000);
+                      }
                       const nextHistory = [...history, historyKey];
                       const nextCompleted = [...new Set([...completed, nodeId])];
                       const outcome = nextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
@@ -1931,15 +1942,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
                       };
                       let nextMessages = [...existing, outgoing];
-                      if (nextNode.id === "F2_071") {
-                        const screenshot = makeItem({ id: "friend-phase2-screenshot-initial", title: character, sender: character, avatar, body: "聊天记录截图", time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: "F2_071", friendPhase2Screenshot: "cropped" } });
-                        nextMessages = [...nextMessages, screenshot];
-                      }
-                      if (nextNode.id === "F2_078A") {
-                        const original = makeItem({ id: "friend-phase2-screenshot-original", title: character, sender: character, avatar, body: "原始聊天截图", time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: "F2_078A", friendPhase2Screenshot: "original" } });
-                        const circulated = makeItem({ id: "friend-phase2-screenshot-circulated", title: character, sender: character, avatar, body: "网上流传的截图", time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: "F2_078A", friendPhase2Screenshot: "cropped" } });
-                        nextMessages = [...nextMessages, original, circulated];
-                      }
                       if (nodeId === "F2_080" && choiceKey === "C" && selectedBoyfriend) {
                         const boyfriendText = "我想告诉你一件事：我的知心好友曾经为了帮我，向韩知恩求助并分享过一小部分私人聊天截图。现在网上流传的版本还有被加工的痕迹，我想和你一起确认事实。";
                         const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, outgoing: true, read: true });
