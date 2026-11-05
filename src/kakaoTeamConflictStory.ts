@@ -703,5 +703,13 @@ export function validateTeamConflictStory(): string[] {
     }
   }
   for (const id of nodeIds) if (!authoredChoices[id]) errors.push(id + ": 缺少原始选项文本");
+  const canReachEnding = (id: string, visiting = new Set<string>()): boolean => {
+    if (resultIds.has(id)) return true;
+    if (!nodeIds.has(id) || visiting.has(id)) return false;
+    const nextVisiting = new Set(visiting);
+    nextVisiting.add(id);
+    return (TEAM_CONFLICT_STORY[id]?.choices || []).some(choice => canReachEnding(choice.next, nextVisiting));
+  };
+  for (const id of nodeIds) if (!canReachEnding(id)) errors.push(id + ": 无法到达任何阶段性结果");
   return errors;
 }
