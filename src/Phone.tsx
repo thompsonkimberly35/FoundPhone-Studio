@@ -1931,6 +1931,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
                       };
                       let nextMessages = [...existing, outgoing];
+                      if (nextNode.id === "F2_071") {
+                        const screenshot = makeItem({ id: "friend-phase2-screenshot-initial", title: character, sender: character, avatar, body: "聊天记录截图", time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: "F2_071", friendPhase2Screenshot: "cropped" } });
+                        nextMessages = [...nextMessages, screenshot];
+                      }
+                      if (nextNode.id === "F2_078A") {
+                        const original = makeItem({ id: "friend-phase2-screenshot-original", title: character, sender: character, avatar, body: "原始聊天截图", time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: "F2_078A", friendPhase2Screenshot: "original" } });
+                        const circulated = makeItem({ id: "friend-phase2-screenshot-circulated", title: character, sender: character, avatar, body: "网上流传的截图", time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: "F2_078A", friendPhase2Screenshot: "cropped" } });
+                        nextMessages = [...nextMessages, original, circulated];
+                      }
                       if (nodeId === "F2_080" && choiceKey === "C" && selectedBoyfriend) {
                         const boyfriendText = "我想告诉你一件事：我的知心好友曾经为了帮我，向韩知恩求助并分享过一小部分私人聊天截图。现在网上流传的版本还有被加工的痕迹，我想和你一起确认事实。";
                         const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, outgoing: true, read: true });
