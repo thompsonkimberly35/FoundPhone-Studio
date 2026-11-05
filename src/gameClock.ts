@@ -203,7 +203,7 @@ function applyTextTimeHint(item: Item, timestamp: number, timezone: string): num
     return target > timestamp ? target : timestamp + 60_000;
   }
   if (/午安|午餐|午饭|中午/.test(body) && hour < 12) return choose(date, "12:00");
-  if (/晚上好|今晚|今天晚上|晚餐|下班了|练习结束|夜宵/.test(body) && hour < 19) return choose(date, "19:30");
+  if (/晚上好|晚上|今晚|夜里|夜晚|夜间|晚餐|下班了|练习结束|夜宵/.test(body) && hour < 19) return choose(date, "19:30");
   return timestamp;
 }
 
