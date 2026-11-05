@@ -1376,9 +1376,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     if (!ready || creator || !selectedFriend || s.ui?.kakao?.["friend-story-phase2-followup-sent"] === true) return;
     const outcome = String(s.ui?.kakao?.["friend-story-phase2-outcome"] || "");
     const dueAt = Number(s.ui?.kakao?.["friend-story-phase2-followup-due-at"] || 0);
-    if (!/^H(?:1[3-9]|20)$/.test(outcome) || !Number.isFinite(dueAt) || dueAt <= 0) return;
+    const gameNow = Number(s.gameClock?.currentGameTimestamp || Date.now());
+    const timeScale = Number(s.gameClock?.timeScale ?? 1);
+    if (!/^H(?:1[3-9]|20)$/.test(outcome) || !Number.isFinite(dueAt) || dueAt <= 0 || timeScale <= 0) return;
     const timer = window.setTimeout(() => {
       const latest = runtimeRef.current;
+      const latestGameNow = Number(latest.gameClock?.currentGameTimestamp || Date.now());
+      if (latestGameNow < dueAt) return;
       const ui = latest.ui?.kakao || {};
       if (ui["friend-story-phase2-followup-sent"] === true) return;
       const nodeId = getFriendPhase2FollowupNodeId(outcome);
@@ -1417,9 +1421,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "global-notification-queue": JSON.stringify([...globalQueue, notice]),
         } },
       });
-    }, Math.max(0, dueAt - Date.now()));
+    }, Math.max(0, (dueAt - gameNow) / timeScale));
     return () => window.clearTimeout(timer);
-  }, [ready, creator, selectedFriend, s.ui?.kakao?.["friend-story-phase2-outcome"], s.ui?.kakao?.["friend-story-phase2-followup-due-at"], s.ui?.kakao?.["friend-story-phase2-followup-sent"], s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, creator, selectedFriend, s.gameClock?.currentGameTimestamp, s.gameClock?.timeScale, s.ui?.kakao?.["friend-story-phase2-outcome"], s.ui?.kakao?.["friend-story-phase2-followup-due-at"], s.ui?.kakao?.["friend-story-phase2-followup-sent"], s.ui?.kakao?.["delivery-queue"]]);
 
   const dismissNotice = (index: number) =>
     update({
