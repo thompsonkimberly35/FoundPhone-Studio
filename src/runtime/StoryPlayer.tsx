@@ -191,7 +191,9 @@ function StoryPlayer() {
             try { window.sessionStorage.removeItem("foundphone:update-mode"); } catch { /* storage may be unavailable */ }
             throw new Error(error instanceof Error ? "检查更新失败：" + error.message : "检查更新失败，请确认网络连接后重试。");
           }
-          window.location.reload();
+          const refreshUrl = new URL(window.location.href);
+          refreshUrl.searchParams.set("_fp_update", String(Date.now()));
+          window.location.replace(refreshUrl.toString());
         }}
         onRestartGame={async () => {
           await db.manualSaves.delete(work.id);
