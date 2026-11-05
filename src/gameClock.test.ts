@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { advance, dispatch } from "./engine";
+import { getKakaoRomanceStageId } from "./kakaoRomanceStory";
 import { createWork } from "./demo";
 import { initialRuntime, makeItem } from "./schema";
 import {
@@ -15,6 +16,39 @@ import {
 } from "./gameClock";
 
 describe("global story clock", () => {
+  it("classifies the boyfriend story by actual major-stage boundaries", () => {
+    expect(getKakaoRomanceStageId("K001")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("K045")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("E08")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("N_E03_A_END")).toBe("boyfriend-main-1");
+    expect(getKakaoRomanceStageId("K046")).toBe("boyfriend-main-2");
+    expect(getKakaoRomanceStageId("K139")).toBe("boyfriend-main-2");
+    expect(getKakaoRomanceStageId("E18")).toBe("boyfriend-main-2");
+    expect(getKakaoRomanceStageId("unknown")).toBeUndefined();
+  });
+
+  it("keeps multiple messages in one stage five seconds apart, while a stage boundary gets a full minute", () => {
+    const work = createWork();
+    const previous = initialRuntime(work);
+    const start = zonedDateTimeToTimestamp("2026-10-25", "10:00");
+    previous.gameClock = { ...previous.gameClock!, currentGameTimestamp: start };
+    previous.date = "2026-10-25";
+    previous.time = "10:00";
+    const next = {
+      ...previous,
+      messages: {
+        kakao: [
+          makeItem({ id: "stage-one", time: "10:00", body: "阶段开始。", meta: { kakaoStageTiming: "stage-boundary" } }),
+          makeItem({ id: "stage-one-followup", time: "10:00", body: "同一阶段的后续消息。", meta: { kakaoStageTiming: "same-stage" } }),
+          makeItem({ id: "stage-two", time: "10:00", body: "进入下一阶段。", meta: { kakaoStageTiming: "stage-boundary" } }),
+        ],
+      },
+    };
+    const stamped = stampNewMessages(previous, next);
+    const [first, followup, nextStage] = stamped.messages.kakao;
+    expect(followup.sentAt! - first.sentAt!).toBe(5_000);
+    expect(nextStage.sentAt! - followup.sentAt!).toBe(60_000);
+  });
   it("keeps a one-minute shared cooldown between KKT story stages across threads", () => {
     const now = 1_000_000;
     expect(nextKakaoStageStartAt(now, [])).toBe(now + 60_000);
