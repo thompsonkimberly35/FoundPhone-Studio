@@ -1,11 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { RefreshCw } from "lucide-react";
 
 export function UpdateAvailableBanner({ onDismiss }: { onDismiss: () => void }) {
+  const dismissRef = useRef(onDismiss);
+  dismissRef.current = onDismiss;
+
   useEffect(() => {
-    const timer = window.setTimeout(onDismiss, 5000);
+    const timer = window.setTimeout(() => dismissRef.current(), 5000);
     return () => window.clearTimeout(timer);
-  }, [onDismiss]);
+  }, []);
 
   return (
     <div className="global-notification-layer global-update-notification-layer" role="status" aria-live="polite">
