@@ -1293,6 +1293,77 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
   }, [ready, friendStoryTriggered, selectedFriend, s.ui?.kakao?.["friend-story-outcome"], s.ui?.kakao?.["friend-story-care-due-at"], s.ui?.kakao?.["friend-story-reconnect-due-at"], s.ui?.kakao?.["friend-story-care-sent"], s.ui?.kakao?.["friend-story-reconnect-sent"]]);
+  useEffect(() => {
+    if (!ready || creator || s.ui?.kakao?.["friend-story-phase2-x-posted"] === true) return;
+    const dueAt = Number(s.ui?.kakao?.["friend-story-phase2-x-due-at"] || 0);
+    if (!Number.isFinite(dueAt) || dueAt <= 0) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const ui = latest.ui?.kakao || {};
+      if (ui["friend-story-phase2-x-posted"] === true) return;
+      const posts = [...(latest.messages.twitter || [])];
+      if (posts.some(post => post.id === "friend-phase2-X001")) return;
+      const comments = [
+        "@bluehour_8m：如果是真的，希望先把完整对话放出来，不要继续断章取义。",
+        "@orbitallyz_4q：不喜欢这段恋情也不代表可以公开别人的私人聊天。",
+        "@nightletter_2p：她是不是说过这句话？我想看前后文。",
+        "@teamfirst_7v：现在连其他成员也被牵扯进来，真的够了。",
+        "@softpetal_3n：请停止转发未经证实的截图。",
+        "@duskarchive_6r：如果有证据就交给公司和法律渠道，不要人肉。",
+        "@silverorbit_9k：我很生气，但不支持去骚扰任何当事人。",
+        "@moonfilm_5x：希望 Wake One 能说明如何保护当事人的隐私。",
+      ];
+      const post = makeItem({
+        id: "friend-phase2-X001",
+        title: "独家后续：私人对话或有更多内容",
+        sender: "@inside_line_27",
+        body: "独家后续：ALD1 成员女友与友人的私人对话曝光，知情人士称还有更多内容。",
+        time: latest.time || displayTime,
+        kind: "post",
+        folder: "主页",
+        likes: 18600,
+        comments,
+        meta: { handle: "inside_line_27", verified: "false", reposts: "2840", views: "52.8万", storyEventId: "FRIEND_PHASE2_X001" },
+      });
+      const friend = selectedFriend || "";
+      const files: Record<string, string> = {
+        "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+        "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+        "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+        "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+      };
+      const avatar = files[friend] ? import.meta.env.BASE_URL + "kakao/" + files[friend] : "";
+      const node = getFriendPhase2Node("F2_075");
+      if (!node) return;
+      const existing = latest.messages.kakao || [];
+      const firstLine = node.lines[0];
+      const first = makeItem({ id: "friend-phase2-F2_075-0", title: friend, sender: friend, avatar, body: firstLine, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
+      const now = Date.now();
+      const queued = node.lines.slice(1).map((body, index) => {
+        const item = makeItem({ id: "friend-phase2-F2_075-" + (index + 1), title: friend, sender: friend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
+        const typingAt = now + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      });
+      let delivery: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+      let globalQueue: Item[] = [];
+      try { delivery = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { delivery = []; }
+      try { globalQueue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+      const notice = { ...post, meta: { ...post.meta, notificationAppId: "twitter", notificationPostId: post.id } };
+      update({
+        ...latest,
+        messages: { ...latest.messages, twitter: [...posts, post], kakao: [...existing, first] },
+        ui: { ...latest.ui, kakao: {
+          ...ui,
+          "friend-story-phase2-x-posted": true,
+          "friend-story-phase2-node": "F2_075",
+          "delivery-queue": JSON.stringify([...delivery, ...queued]),
+          "global-notification-queue": JSON.stringify([...globalQueue, notice]),
+        } },
+      });
+    }, Math.max(0, dueAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, selectedFriend, s.ui?.kakao?.["friend-story-phase2-x-due-at"], s.ui?.kakao?.["friend-story-phase2-x-posted"]]);
+
   const dismissNotice = (index: number) =>
     update({
       ...runtimeRef.current,
