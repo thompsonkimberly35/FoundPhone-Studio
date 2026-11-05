@@ -972,7 +972,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
       };
       const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
-      const opening = getFriendPhase2Opening(outcome);
+      const opening = [...getFriendPhase2Opening(outcome), ...(getFriendPhase2Node("F2_070")?.lines || [])];
       const first = makeItem({ id: "friend-phase2-F2_070-0", title: selectedFriend, sender: selectedFriend, avatar, body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_070" } });
       const now = Date.now();
       const pending = opening.slice(1).map((body, index) => {
