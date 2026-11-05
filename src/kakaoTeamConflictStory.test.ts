@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { chooseTeamConflictMember, getTeamConflictCandidates, getTeamConflictChoice, getTeamConflictNode, getTeamConflictNodeCount, TEAM_CONFLICT_STORY, validateTeamConflictStory } from "./kakaoTeamConflictStory";
+import { chooseTeamConflictMember, getTeamConflictCandidates, getTeamConflictChoice, getTeamConflictNode, getTeamConflictNodeCount, TEAM_CONFLICT_STORY, validateTeamConflictStory, getTeamConflictBoyfriendFollowupState } from "./kakaoTeamConflictStory";
 
 describe("KakaoTalk team-conflict story", () => {
   const boyfriend = "ald1-li-liwu";
@@ -44,6 +44,14 @@ describe("KakaoTalk team-conflict story", () => {
     ]);
     expect(Object.keys(TEAM_CONFLICT_STORY).filter(id => id.startsWith("B"))).toHaveLength(101);
     expect(validateTeamConflictStory()).toEqual([]);
+  });
+  it("maps B outcomes to boyfriend follow-up signals without leaking B's private conversation", () => {
+    expect(getTeamConflictBoyfriendFollowupState("S04")).toBe("notice-hesitation");
+    expect(getTeamConflictBoyfriendFollowupState("S05")).toBe("await-player-disclosure");
+    expect(getTeamConflictBoyfriendFollowupState("S09")).toBe("team-conversation-available");
+    expect(getTeamConflictBoyfriendFollowupState("S08")).toBe("respect-no-contact");
+    expect(getTeamConflictBoyfriendFollowupState("S12")).toBe("past-story-unlocked");
+    expect(getTeamConflictBoyfriendFollowupState("unknown")).toBe("none");
   });
   it("maps independent choices to different branches and all outcomes are terminal", () => {
     expect(getTeamConflictChoice("B001","A")?.next).toBe("B002");
