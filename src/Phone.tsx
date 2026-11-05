@@ -1905,7 +1905,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (!nextNode) return;
                       const outgoing = makeItem({ id: "friend-phase2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendPhase2Node: nodeId, friendPhase2Choice: choiceKey };
-                      const renderedLines = nextNode.lines.map(line => line.replace(/\\{\\{BOYFRIEND_NAME\\}\\}/g, selectedBoyfriend || "他"));
+                      const renderedLines = nextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
                       const queued = nextNode.id === "F2_074" ? [] : queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
                         ...entry,
                         item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
@@ -1913,7 +1913,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const nextHistory = [...history, historyKey];
                       const nextCompleted = [...new Set([...completed, nodeId])];
                       const outcome = nextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
-                      const nextUi: Record<string, unknown> = {
+                      const nextUi: Record<string, UiValue> = {
                         ...currentUi,
                         "friend-story-phase2-node": nextNode.id,
                         "friend-story-phase2-history": JSON.stringify(nextHistory),
