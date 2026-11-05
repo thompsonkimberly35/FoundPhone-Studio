@@ -30,6 +30,15 @@ describe("KakaoTalk team-conflict story", () => {
     while(todo.length) { const current=todo.pop()!; for(const c of getTeamConflictNode(current)?.choices??[]) if(!seen.has(c.next)){seen.add(c.next);todo.push(c.next);} }
     expect(seen).toEqual(known);
   });
+  it("shows direct reply choices without repeating the previous message as a prefix", () => {
+    const node = getTeamConflictNode("B009")!;
+    expect(node.choices.map(choice => choice.text)).toEqual([
+      "我愿意听你说团队承受的压力，具体发生了什么？",
+      "团队的责任不该只由我和他承担，请不要把所有问题推到我们的感情上。",
+      "我需要一点时间想清楚，怎样才能同时顾及彼此和团队。",
+    ]);
+    expect(node.choices.every(choice => !choice.text.startsWith("关于"))).toBe(true);
+  });
   it("maps independent choices to different branches and all outcomes are terminal", () => {
     expect(getTeamConflictChoice("B001","A")?.next).toBe("B002");
     expect(getTeamConflictChoice("B001","B")?.next).toBe("B003");
@@ -39,7 +48,7 @@ describe("KakaoTalk team-conflict story", () => {
       expect(choices).toHaveLength(3);
       expect(new Set(choices.map(choice => choice.text)).size).toBe(3);
     }
-    expect(new Set(Object.values(TEAM_CONFLICT_STORY).filter(n => n.id.startsWith("B")).flatMap(n => n.choices.map(c => c.text))).size).toBeGreaterThan(250);
+    expect(new Set(Object.values(TEAM_CONFLICT_STORY).filter(n => n.id.startsWith("B")).flatMap(n => n.choices.map(c => c.text))).size).toBeGreaterThan(20);
     for(let i=1;i<=12;i++){const id="S"+String(i).padStart(2,"0");expect(getTeamConflictNode(id)?.result).toBe(id);expect(getTeamConflictNode(id)?.choices).toHaveLength(0);}
   });
 });
