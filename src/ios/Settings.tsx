@@ -19,6 +19,7 @@ import {
   Globe,
   Mic,
   Save,
+  RefreshCw,
 } from "lucide-react";
 import type { Work, Item } from "../schema";
 import { IOSToggle } from "../vendor/konsta/Toggle";
@@ -55,6 +56,8 @@ export function NativeSettings({
   onSettings,
   onSaveProgress,
   onRestartGame,
+  onUpdateGame,
+  hasSavedThisSession = false,
   savedAt,
 }: {
   work: Work;
@@ -64,6 +67,8 @@ export function NativeSettings({
   onSettings?: () => void;
   onSaveProgress?: () => Promise<string | undefined>;
   onRestartGame?: () => Promise<void>;
+  onUpdateGame?: () => Promise<void>;
+  hasSavedThisSession?: boolean;
   savedAt?: string;
 }) {
   const nav = useNavigation(),
@@ -76,7 +81,10 @@ export function NativeSettings({
     [saving, setSaving] = useState(false),
     [showRestartPrompt, setShowRestartPrompt] = useState(false),
     [restarting, setRestarting] = useState(false),
-    [saveError, setSaveError] = useState("");
+    [saveError, setSaveError] = useState(""),
+    [showUpdatePrompt, setShowUpdatePrompt] = useState(false),
+    [updating, setUpdating] = useState(false),
+    [updateError, setUpdateError] = useState("");
   useEffect(() => setSavedAtText(savedAt || ""), [savedAt]);
   const formattedSavedAt = savedAtText
     ? new Date(savedAtText).toLocaleString("zh-TW", {
@@ -130,6 +138,53 @@ export function NativeSettings({
                 {saving ? "正在儲存…" : "儲存當前進度"}
               </button>
               {saveError && <p role="alert" style={{ color: "#c62828", fontSize: 12, margin: "10px 2px 0", lineHeight: 1.5 }}>{saveError}</p>}
+              <button
+                type="button"
+                disabled={updating || !onUpdateGame}
+                onClick={() => { setUpdateError(""); setShowUpdatePrompt(true); }}
+                style={{
+                  width: "100%", minHeight: 48, marginTop: 12, border: 0,
+                  borderRadius: 12, background: "#f3eee6", color: "#66513b",
+                  fontSize: 16, fontWeight: 650, cursor: updating ? "wait" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+                  opacity: updating || !onUpdateGame ? 0.6 : 1,
+                }}
+              >
+                <RefreshCw size={18} />
+                检查更新 / 立即更新
+              </button>
+              {showUpdatePrompt && (
+                <div role="alertdialog" aria-modal="true" aria-label="确认更新游戏" style={{
+                  marginTop: 16, padding: 16, borderRadius: 12,
+                  background: "var(--settings-card-secondary, #f2f2f7)", textAlign: "center",
+                }}>
+                  <strong style={{ display: "block", marginBottom: 10, fontSize: 16 }}>发现游戏更新</strong>
+                  <p style={{ margin: "0 0 14px", color: "#686868", fontSize: 13, lineHeight: 1.6 }}>
+                    {hasSavedThisSession
+                      ? "本次进度已保存。更新并重新加载后，会继续从保存的位置开始。"
+                      : "你尚未保存本次进度。更新并重新加载后，将返回男友和好友选择页面，重新开始游戏。"}
+                  </p>
+                  {updateError && <p role="alert" style={{ color: "#c62828", fontSize: 12, margin: "0 0 10px" }}>{updateError}</p>}
+                  <button type="button" disabled={updating || !onUpdateGame} onClick={async () => {
+                    if (!onUpdateGame) return;
+                    setUpdating(true);
+                    setUpdateError("");
+                    try {
+                      await onUpdateGame();
+                    } catch (error) {
+                      setUpdateError(error instanceof Error ? error.message : "更新失败，请检查网络后重试。");
+                      setUpdating(false);
+                    }
+                  }} style={{
+                    width: "100%", minHeight: 44, border: 0, borderRadius: 10,
+                    background: "#007aff", color: "#fff", fontSize: 15, fontWeight: 650,
+                  }}>{updating ? "正在准备更新…" : "立即更新"}</button>
+                  <button type="button" disabled={updating} onClick={() => setShowUpdatePrompt(false)} style={{
+                    width: "100%", minHeight: 40, marginTop: 8, border: 0,
+                    background: "transparent", color: "#007aff", fontSize: 15,
+                  }}>稍后更新</button>
+                </div>
+              )}
               <button
                 type="button"
                 disabled={restarting || !onRestartGame}
