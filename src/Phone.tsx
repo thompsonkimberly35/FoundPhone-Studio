@@ -887,6 +887,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         time: current.time || displayTime,
         outgoing: false,
         read: false,
+        meta: { kakaoStageTiming: "stage-boundary" },
       });
       update({
         ...current,
@@ -925,11 +926,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
       };
       const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
-      const first = makeItem({ id: "friend-story-F001-0", title: selectedFriend, sender: selectedFriend, avatar, body: "你现在方便回讯息吗？", time: current.time || displayTime, outgoing: false, read: false, meta: { friendStoryNode: "F001" } });
+      const first = makeItem({ id: "friend-story-F001-0", title: selectedFriend, sender: selectedFriend, avatar, body: "你现在方便回讯息吗？", time: current.time || displayTime, outgoing: false, read: false, meta: { friendStoryNode: "F001", kakaoStageTiming: "same-stage" } });
       const pending = ["我知道你今天应该收到很多不太好听的话。", "我本来不想在这个时候打扰你。", "可是有件事，我觉得你应该知道。"];
       const start = Date.now();
       const queue = pending.map((body, index) => {
-        const item = makeItem({ id: "friend-story-F001-" + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: current.time || displayTime, outgoing: false, read: false, meta: { friendStoryNode: "F001" } });
+        const item = makeItem({ id: "friend-story-F001-" + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: current.time || displayTime, outgoing: false, read: false, meta: { friendStoryNode: "F001", kakaoStageTiming: "same-stage" } });
         const typingAt = start + index * 5000 + 2000;
         return { item, typingAt, deliverAt: typingAt + 3000 };
       });
@@ -973,7 +974,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       let globalQueue: Item[] = [];
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
       try { globalQueue = JSON.parse(String(latestUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
-      if (queue.some(entry => entry.item?.title === selectedFriend && entry.deliverAt > Date.now())) return;
+      const latestPendingDeliveries = queue.map(entry => Number(entry.deliverAt || 0)).filter(value => value > Date.now());
+      if (latestPendingDeliveries.length) {
+        const realWaitMs = Math.max(...latestPendingDeliveries) - Date.now() + 60_000;
+        const nextDueAt = Math.max(dueAt, latestGameNow + realWaitMs * timeScale);
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "friend-story-phase2-trigger-at": String(nextDueAt) } } });
+        return;
+      }
       const files: Record<string, string> = {
         "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
         "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
@@ -982,10 +989,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       };
       const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
       const opening = [...getFriendPhase2Opening(outcome), ...(getFriendPhase2Node("F2_070")?.lines || [])];
-      const first = makeItem({ id: "friend-phase2-F2_070-0", title: selectedFriend, sender: selectedFriend, avatar, body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_070" } });
+      const first = makeItem({ id: "friend-phase2-F2_070-0", title: selectedFriend, sender: selectedFriend, avatar, body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_070", kakaoStageTiming: "stage-boundary" } });
       const now = Date.now();
       const pending = opening.slice(1).map((body, index) => {
-        const item = makeItem({ id: "friend-phase2-F2_070-" + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_070" } });
+        const item = makeItem({ id: "friend-phase2-F2_070-" + (index + 1), title: selectedFriend, sender: selectedFriend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_070", kakaoStageTiming: "same-stage" } });
         const typingAt = now + index * 5000 + 2000;
         return { item, typingAt, deliverAt: typingAt + 3000 };
       });
@@ -1039,7 +1046,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }
     const teamConflict = chooseTeamConflictMember(boyfriendId, friendId, picked.id);
     const selectedAt = Date.now();
-    const dualTriggerAt = teamConflict ? String(selectedAt + 60_000) : "";
+    let pendingStageDeliveries: number[] = [];
+    try {
+      pendingStageDeliveries = JSON.parse(String(currentUi["delivery-queue"] || "[]"))
+        .map((entry: { deliverAt?: number }) => Number(entry.deliverAt || 0))
+        .filter((value: number) => value > selectedAt);
+    } catch { pendingStageDeliveries = []; }
+    const dualTriggerAt = teamConflict ? String(nextKakaoStageStartAt(selectedAt, pendingStageDeliveries)) : "";
     update({
       ...current,
       ui: { ...current.ui, kakao: {
@@ -1191,6 +1204,14 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const timer = window.setTimeout(() => {
       const latest = runtimeRef.current;
       const latestUi = latest.ui?.kakao || {};
+      let pendingStageQueue: Array<{ item?: Item; deliverAt?: number }> = [];
+      try { pendingStageQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { pendingStageQueue = []; }
+      const pendingStageDeliveries = pendingStageQueue.map(entry => Number(entry.deliverAt || 0)).filter(value => value > Date.now());
+      if (pendingStageDeliveries.length) {
+        const nextTriggerAt = String(nextKakaoStageStartAt(Date.now(), pendingStageDeliveries));
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "dual-member-story-trigger-at": nextTriggerAt, "secret-admirer-trigger-at": nextTriggerAt, "team-conflict-trigger-at": nextTriggerAt } } });
+        return;
+      }
       const messages = latest.messages.kakao || [];
       const hasA = messages.some(item => item.id === "secret-admirer-A001-0");
       const hasB = messages.some(item => item.id === "team-conflict-B001-0");
@@ -1200,8 +1221,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const avatarA = import.meta.env.BASE_URL + "kakao/" + admirer.avatarFile;
       const avatarB = import.meta.env.BASE_URL + "kakao/" + conflict.avatarFile;
       const now = Date.now();
-      const firstA = !hasA ? makeItem({ id:"secret-admirer-A001-0", title:admirer.name, sender:admirer.name, avatar:avatarA, body:aNode.lines[0], time:latest.time || displayTime, outgoing:false, read:false, meta:{secretAdmirerNode:"A001",storyEventId:"DUAL_MEMBER_A_OPENING"} }) : undefined;
-      const firstB = !hasB ? makeItem({ id:"team-conflict-B001-0", title:conflict.name, sender:conflict.name, avatar:avatarB, body:bNode.lines[0], time:latest.time || displayTime, outgoing:false, read:false, meta:{teamConflictNode:"B001",storyEventId:"DUAL_MEMBER_B_OPENING"} }) : undefined;
+      const firstA = !hasA ? makeItem({ id:"secret-admirer-A001-0", title:admirer.name, sender:admirer.name, avatar:avatarA, body:aNode.lines[0], time:latest.time || displayTime, outgoing:false, read:false, meta:{secretAdmirerNode:"A001",storyEventId:"DUAL_MEMBER_A_OPENING",kakaoStageTiming:"stage-boundary"} }) : undefined;
+      const firstB = !hasB ? makeItem({ id:"team-conflict-B001-0", title:conflict.name, sender:conflict.name, avatar:avatarB, body:bNode.lines[0], time:latest.time || displayTime, outgoing:false, read:false, meta:{teamConflictNode:"B001",storyEventId:"DUAL_MEMBER_B_OPENING",kakaoStageTiming:"same-stage"} }) : undefined;
       const makeQueue = (node: {lines:string[]}, prefix:string, title:string, avatar:string, meta:Record<string,string>) => node.lines.slice(1).map((body,index) => {
         const item = makeItem({ id:prefix+"-"+(index+1), title, sender:title, avatar, body, time:latest.time || displayTime, outgoing:false, read:false, meta });
         const typingAt = now + index * 5_000 + 2_000;
@@ -1209,8 +1230,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
       let queue: Array<{item:Item;typingAt:number;deliverAt:number}> = [];
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
-      const queueA = !hasA ? makeQueue(aNode,"secret-admirer-A001",admirer.name,avatarA,{secretAdmirerNode:"A001",storyEventId:"DUAL_MEMBER_A_OPENING"}) : [];
-      const queueB = !hasB ? makeQueue(bNode,"team-conflict-B001",conflict.name,avatarB,{teamConflictNode:"B001",storyEventId:"DUAL_MEMBER_B_OPENING"}) : [];
+      const queueA = !hasA ? makeQueue(aNode,"secret-admirer-A001",admirer.name,avatarA,{secretAdmirerNode:"A001",storyEventId:"DUAL_MEMBER_A_OPENING",kakaoStageTiming:"same-stage"}) : [];
+      const queueB = !hasB ? makeQueue(bNode,"team-conflict-B001",conflict.name,avatarB,{teamConflictNode:"B001",storyEventId:"DUAL_MEMBER_B_OPENING",kakaoStageTiming:"same-stage"}) : [];
       const newMessages = [...messages, ...(firstA ? [firstA] : []), ...(firstB ? [firstB] : [])];
       const notices = [...(firstA ? [`KakaoTalk: ${admirer.name}：${firstA.body}`] : []), ...(firstB ? [`KakaoTalk: ${conflict.name}：${firstB.body}`] : [])];
       // Both opening messages and both independent story states are committed in one runtime update.
