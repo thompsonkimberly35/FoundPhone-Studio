@@ -134,3 +134,17 @@ export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defau
 }
 
 export function getFriendPhase2FollowupNodeId(outcome: string): string { return "F2_090_" + outcome; }
+
+export const FRIEND_PHASE2_OUTCOME_LABELS: Record<string, string> = {
+  H13: "重新相信",
+  H14: "有裂痕的友情",
+  H15: "共同面对",
+  H16: "替你承担",
+  H17: "两个重要的人",
+  H18: "无法原谅",
+  H19: "未完成的道歉",
+  H20: "第二次谎言",
+};
+export function getFriendPhase2OutcomeLabel(outcome: string): string {
+  return FRIEND_PHASE2_OUTCOME_LABELS[outcome] || "尚未完成";
+}
