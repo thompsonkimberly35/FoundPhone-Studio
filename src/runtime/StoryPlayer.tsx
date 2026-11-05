@@ -5,6 +5,7 @@ import { db } from "../persistence";
 import { validateWork, type Work } from "../schema";
 import "../styles.css";
 import "./player.css";
+import { BUILD_VERSION } from "../buildVersion";
 
 const MEMBERS = ["李相沅", "周安信", "贺鑫隆", "金虔佑", "张家豪", "李理悟", "郑相炫", "金俊抒"];
 
@@ -50,6 +51,7 @@ function StoryPlayer() {
   const [selectionComplete, setSelectionComplete] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState("");
   const [sessionSavedForUpdate, setSessionSavedForUpdate] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [selectedBoyfriend, setSelectedBoyfriend] = useState("");
   const [selectedFriend, setSelectedFriend] = useState("");
   const musicRef = useRef<HTMLAudioElement>(null);
@@ -68,6 +70,38 @@ function StoryPlayer() {
     const next = musicIndex.current >= 8 ? 1 : musicIndex.current + 1;
     playMusic(next);
   };
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("preview") === "test" || params.get("template") === "blank") return;
+    const controller = new AbortController();
+    fetch(import.meta.env.BASE_URL + "build-version.json?check=" + Date.now(), {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((response) => {
+        if (!response.ok) throw new Error("版本信息暂不可用");
+        return response.json() as Promise<{ version?: string }>;
+      })
+      .then((remote) => {
+        const latestVersion = String(remote.version || "");
+        if (!latestVersion || latestVersion === BUILD_VERSION) return;
+        const noticeKey = "foundphone:last-notified-build-version";
+        try {
+          if (window.localStorage.getItem(noticeKey) === latestVersion) return;
+          window.localStorage.setItem(noticeKey, latestVersion);
+        } catch {
+          // Storage may be unavailable; still show this session's notice.
+        }
+        setUpdateAvailable(true);
+      })
+      .catch((error) => {
+        if (error.name !== "AbortError") {
+          // A failed version check must never interrupt gameplay.
+        }
+      });
+    return () => controller.abort();
+  }, []);
+
   useEffect(() => {
     const abort = new AbortController();
     fetch(
@@ -154,6 +188,8 @@ function StoryPlayer() {
           return savedAt;
         }}
         hasSavedThisSession={sessionSavedForUpdate}
+        updateAvailable={updateAvailable}
+        onDismissUpdateNotice={() => setUpdateAvailable(false)}
         onUpdateGame={async () => {
           const mode = sessionSavedForUpdate ? "preserve" : "restart";
           try {
