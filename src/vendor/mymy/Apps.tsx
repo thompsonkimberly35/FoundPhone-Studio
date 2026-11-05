@@ -41,6 +41,7 @@ import type { Item } from "../../schema";
 import { getKakaoStoryNode } from "../../kakaoRomanceStory";
 import { getBoyfriendStage2Node } from "../../kakaoBoyfriendStage2";
 import { getFriendStoryNode } from "../../kakaoFriendStory";
+import { getFriendPhase2Node } from "../../kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, getSecretAdmirerNode } from "../../kakaoSecretAdmirer";
 import { getTeamConflictNode } from "../../kakaoTeamConflictStory";
 import "./ui.css";
@@ -109,6 +110,8 @@ export function MymyKakao(p: SkinProps) {
   const boyfriendStage2Node = getBoyfriendStage2Node(boyfriendStage2NodeId);
   const friendStoryNodeId = String(p.ui?.["friend-story-node"] || "");
   const friendStoryNode = getFriendStoryNode(friendStoryNodeId);
+  const friendPhase2NodeId = String(p.ui?.["friend-story-phase2-node"] || "");
+  const friendPhase2Node = getFriendPhase2Node(friendPhase2NodeId);
   const secretAdmirerMemberId = String(p.ui?.["secret-admirer-member-id"] || "");
   const secretAdmirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find((member) => member.id === secretAdmirerMemberId);
   const secretAdmirerThread = Boolean(secretAdmirerMember && p.thread === secretAdmirerMember.name);
@@ -378,6 +381,24 @@ export function MymyKakao(p: SkinProps) {
                 </div>
               ) : (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一阶段已结束，聊天记录已保存。</div>
+              )}
+            </div>
+          ) : friendThread && friendPhase2Node ? (
+            <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
+              {queuePending ? (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
+              ) : friendPhase2Node.choices.length ? (
+                <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
+                  {friendPhase2Node.choices.map((choice, index) => (
+                    <button key={choice.key} type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, maxWidth: "100%", width: "100%", minHeight: 42, borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", boxShadow: "0 2px 5px rgba(115, 87, 58, 0.06)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, letterSpacing: "0.1px", textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word", overflow: "visible" }}
+                      onClick={() => p.onKakaoChoice?.(p.thread, choice.text, "", "", "friend-phase2:" + friendPhase2Node.id + ":" + choice.key)}>
+                      <span style={{ display: "inline-block", marginRight: 7, color: "#c2a17c", fontSize: 11, fontWeight: 600 }}>{String(index + 1).padStart(2, "0")}</span>
+                      {choice.text}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>这一阶段已结束，聊天记录和结果已保存。</div>
               )}
             </div>
           ) : friendThread && friendStoryNode ? (
