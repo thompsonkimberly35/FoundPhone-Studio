@@ -2224,10 +2224,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), romanceNode: nodeId, romanceChoice: String(choiceId) };
                       const replyLines = [...nextNode.lines];
                       if (nodeId === "K044" && choiceId === "C") replyLines.push("你刚刚说会跟着哭，我现在真的有点舍不得挂断。");
-                      const currentStageId = getKakaoRomanceStageId(nodeId);
-                      const nextStageId = getKakaoRomanceStageId(nextNode.id);
-                      const sameStage = !!currentStageId && currentStageId === nextStageId;
-                      const queued = queueLines(replyLines, "kakao-romance-" + nodeId + "-" + choiceId, currentQueue, sameStage);
+                      // All selectable nodes within the first romance storyline continue at the
+                      // normal message cadence. The only 60-second pause is scheduled centrally
+                      // after E01-E08 has fully delivered and immediately before K046 starts.
+                      const queued = queueLines(replyLines, "kakao-romance-" + nodeId + "-" + choiceId, currentQueue, true);
                       const nextMessages = [...existing, outgoing];
                       const result = nextNode.result || (nextNode.id.startsWith("E0") ? nextNode.id : "");
                       let state: Record<string, number | boolean> = {};
