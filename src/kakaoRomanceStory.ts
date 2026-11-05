@@ -119,6 +119,15 @@ const endings: Record<string, string[]> = {
   N_E08_C_END:["好，我会把我知道的事情按时间顺序告诉你。","我们一起确认接下来怎么保护彼此。"],
 };
 for (const [id, lines] of Object.entries(endings)) KAKAO_ROMANCE_STORY[id] = n(id, lines);
+/** The cooldown boundary is between the first complete romance arc and the K046 follow-up arc. */
+export function getKakaoRomanceStageId(nodeId: string): "boyfriend-main-1" | "boyfriend-main-2" | undefined {
+  const match = nodeId.match(/^K(\d{3})$/);
+  const number = match ? Number(match[1]) : 0;
+  if ((number >= 1 && number <= 45) || /^E0[1-8]$/.test(nodeId) || /^N_E0[1-8]_/.test(nodeId)) return "boyfriend-main-1";
+  if ((number >= 46 && number <= 139) || /^E(?:09|1[0-8])$/.test(nodeId)) return "boyfriend-main-2";
+  return undefined;
+}
+
 export function getKakaoStoryNode(id: string): KakaoStoryNode | undefined { return KAKAO_ROMANCE_STORY[id]; }
 export function getKakaoStoryChoice(nodeId: string, key: string): KakaoStoryChoice | undefined {
   return KAKAO_ROMANCE_STORY[nodeId]?.choices.find((choice) => choice.key === key);
