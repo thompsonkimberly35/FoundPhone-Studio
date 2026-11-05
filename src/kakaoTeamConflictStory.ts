@@ -655,6 +655,36 @@ const authoredChoices: Record<string, [string, string, string]> = {
   ]
 };
 
+
+export type TeamConflictBoyfriendFollowupState =
+  | "notice-hesitation"
+  | "await-player-disclosure"
+  | "team-conversation-available"
+  | "respect-no-contact"
+  | "past-story-unlocked"
+  | "relationship-stable"
+  | "cooldown"
+  | "none";
+
+// B outcomes are signals for later boyfriend scenes, never automatic knowledge transfer.
+export function getTeamConflictBoyfriendFollowupState(outcome: string): TeamConflictBoyfriendFollowupState {
+  switch (outcome) {
+    case "S01": return "cooldown";
+    case "S02": return "relationship-stable";
+    case "S03": return "relationship-stable";
+    case "S04": return "notice-hesitation";
+    case "S05": return "await-player-disclosure";
+    case "S06": return "notice-hesitation";
+    case "S07": return "cooldown";
+    case "S08": return "respect-no-contact";
+    case "S09": return "team-conversation-available";
+    case "S10": return "relationship-stable";
+    case "S11": return "relationship-stable";
+    case "S12": return "past-story-unlocked";
+    default: return "none";
+  }
+}
+
 export const TEAM_CONFLICT_STORY: Record<string, TeamConflictNode> = Object.fromEntries(
   definitions.map(([id, line, a, b, c]) => [id, node(id, line, [a, b, c])])
 );
