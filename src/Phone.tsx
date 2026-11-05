@@ -1873,6 +1873,106 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: { ...currentUi, [usedKey]: true, "friend-story-link-history": JSON.stringify([...linkHistory, nodeId + ":" + linkType + ":" + linkKey]), "delivery-queue": JSON.stringify([...currentQueue, ...queued]) } } });
                       return;
                     }
+                    if (choiceId?.startsWith("friend-phase2:")) {
+                      const [, nodeId, choiceKey] = choiceId.split(":");
+                      const activeNodeId = String(currentUi["friend-story-phase2-node"] || "");
+                      if (nodeId !== activeNodeId) return;
+                      const node = getFriendPhase2Node(nodeId);
+                      const choice = node?.choices.find(entry => entry.key === choiceKey);
+                      if (!node || !choice) return;
+                      let history: string[] = [];
+                      let completed: string[] = [];
+                      try { history = JSON.parse(String(currentUi["friend-story-phase2-history"] || "[]")); } catch { history = []; }
+                      try { completed = JSON.parse(String(currentUi["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+                      const historyKey = nodeId + ":" + choiceKey;
+                      if (history.includes(historyKey)) return;
+                      let nextNode = getFriendPhase2Node(choice.next);
+                      if (!nextNode) return;
+                      let trust = Number(currentUi["friend-story-phase2-trust"] || 0);
+                      let suspicion = Number(currentUi["friend-story-phase2-suspicion"] || 0);
+                      let concealment = Number(currentUi["friend-story-phase2-concealment"] || 0);
+                      if (nodeId === "F2_071" && choiceKey === "B") suspicion += 1;
+                      if (nodeId === "F2_073" && choiceKey === "A") trust += 1;
+                      if (nodeId === "F2_073" && choiceKey === "B") trust -= 1;
+                      if (nodeId === "F2_073" && choiceKey === "C") trust -= 1;
+                      if (nodeId === "F2_076" && choiceKey === "A") trust += 1;
+                      if (nodeId === "F2_076" && choiceKey === "B") trust -= 1;
+                      if (nodeId === "F2_076" && choiceKey === "C") concealment += 1;
+                      if (nodeId === "F2_075" && choiceKey === "C") concealment += 1;
+                      if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) {
+                        nextNode = getFriendPhase2Node("F2_087");
+                      }
+                      if (!nextNode) return;
+                      const outgoing = makeItem({ id: "friend-phase2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
+                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendPhase2Node: nodeId, friendPhase2Choice: choiceKey };
+                      const renderedLines = nextNode.lines.map(line => line.replace(/\\{\\{BOYFRIEND_NAME\\}\\}/g, selectedBoyfriend || "他"));
+                      const queued = nextNode.id === "F2_074" ? [] : queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
+                        ...entry,
+                        item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
+                      }));
+                      const nextHistory = [...history, historyKey];
+                      const nextCompleted = [...new Set([...completed, nodeId])];
+                      const outcome = nextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
+                      const nextUi: Record<string, unknown> = {
+                        ...currentUi,
+                        "friend-story-phase2-node": nextNode.id,
+                        "friend-story-phase2-history": JSON.stringify(nextHistory),
+                        "friend-story-phase2-completed-nodes": JSON.stringify(nextCompleted),
+                        "friend-story-phase2-trust": trust,
+                        "friend-story-phase2-suspicion": suspicion,
+                        "friend-story-phase2-concealment": concealment,
+                        "friend-story-phase2-outcome": outcome,
+                        "friend-story-phase2-x-due-at": nextNode.id === "F2_074" ? String(stamp + 30 * 60 * 1000) : String(currentUi["friend-story-phase2-x-due-at"] || ""),
+                        "friend-story-phase2-evidence-compared": nextNode.effect === "evidence-compared" || currentUi["friend-story-phase2-evidence-compared"] === true,
+                        "friend-story-phase2-source-identified": nextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
+                        "friend-story-phase2-investigation-paused": nextNode.effect === "investigation-paused" || currentUi["friend-story-phase2-investigation-paused"] === true,
+                        "friend-story-phase2-bf-informed": nodeId === "F2_080" && choiceKey === "C" ? true : currentUi["friend-story-phase2-bf-informed"] === true,
+                        "friend-story-phase2-truth": outcome === "H20" ? "D" : currentUi["friend-story-phase2-evidence-compared"] === true || nextNode.effect === "evidence-compared" ? "B" : currentUi["friend-story-phase2-source-identified"] === true || nextNode.effect === "source-identified" ? "A" : currentUi["friend-story-phase2-investigation-paused"] === true || nextNode.effect === "investigation-paused" ? "C" : String(currentUi["friend-story-phase2-truth"] || "C"),
+                        "friend-story-phase2-ended": Boolean(outcome),
+                        "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                      };
+                      let nextMessages = [...existing, outgoing];
+                      if (nodeId === "F2_080" && choiceKey === "C" && selectedBoyfriend) {
+                        const boyfriendText = "我想告诉你一件事：我的知心好友曾经为了帮我，向韩知恩求助并分享过一小部分私人聊天截图。现在网上流传的版本还有被加工的痕迹，我想和你一起确认事实。";
+                        const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, outgoing: true, read: true });
+                        informed.meta = { ...informed.meta, friendPhase2Sync: "true" };
+                        const alreadyInformed = (currentMessages.kakao || []).some(item => item.id === informed.id);
+                        if (!alreadyInformed) nextMessages = [...nextMessages, informed];
+                      }
+                      let nextTwitter = [...(current.messages.twitter || [])];
+                      let globalQueue: Item[] = [];
+                      try { globalQueue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+                      if (nextNode.id === "F2_084" && !nextTwitter.some(post => post.id === "friend-phase2-X002")) {
+                        const secondPost = makeItem({
+                          id: "friend-phase2-X002", title: "友人承认曾向第三方提供私人对话资料",
+                          sender: "@timeline_watch_09",
+                          body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。相关截图仍有部分来源与传播过程未明。",
+                          time, kind: "post", folder: "主页", likes: 9200,
+                          comments: [
+                            "@bluehour_8m：承认提供资料不等于承认公开爆料，先把事实分清楚。",
+                            "@orbitallyz_4q：请不要去攻击任何一方的私人账号。",
+                            "@nightletter_2p：现在最重要的是停止继续传播截图。",
+                            "@teamfirst_7v：希望 Wake One 能处理隐私保护问题。",
+                            "@softpetal_3n：没有完整证据前不要替任何人定罪。",
+                            "@duskarchive_6r：朋友做错了也不代表可以网暴她。",
+                            "@silverorbit_9k：请把焦点放在资料如何外流。",
+                            "@moonfilm_5x：当事人有权利要求停止散播私人对话。",
+                          ],
+                          meta: { handle: "timeline_watch_09", verified: "false", reposts: "1360", views: "31.6万", storyEventId: "FRIEND_PHASE2_X002" },
+                        });
+                        nextTwitter = [...nextTwitter, secondPost];
+                        globalQueue = [...globalQueue, { ...secondPost, meta: { ...secondPost.meta, notificationAppId: "twitter", notificationPostId: secondPost.id } }];
+                      }
+                      if (nodeId === "F2_080" && choiceKey === "C") {
+                        nextUi["friend-story-phase2-boyfriend-notice-at"] = String(stamp);
+                      }
+                      update({
+                        ...current,
+                        messages: { ...currentMessages, kakao: nextMessages, twitter: nextTwitter },
+                        ui: { ...current.ui, kakao: { ...nextUi, "global-notification-queue": JSON.stringify(globalQueue) } },
+                      });
+                      return;
+                    }
                     if (choiceId?.startsWith("friend:")) {
                       const [, friendNodeId, friendChoiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["friend-story-node"] || "");
