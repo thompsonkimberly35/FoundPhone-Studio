@@ -74,17 +74,21 @@ function StoryPlayer() {
     const params = new URLSearchParams(location.search);
     if (params.get("preview") === "test" || params.get("template") === "blank") return;
     const controller = new AbortController();
-    fetch(import.meta.env.BASE_URL + "build-version.json?check=" + Date.now(), {
-      cache: "no-store",
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("版本信息暂不可用");
-        return response.json() as Promise<{ version?: string }>;
-      })
-      .then((remote) => {
+    let checking = false;
+    let active = true;
+
+    const checkForUpdate = async () => {
+      if (checking || !active) return;
+      checking = true;
+      try {
+        const response = await fetch(import.meta.env.BASE_URL + "build-version.json?check=" + Date.now(), {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        if (!response.ok) return;
+        const remote = await response.json() as { version?: string };
         const latestVersion = String(remote.version || "");
-        if (!latestVersion || latestVersion === BUILD_VERSION) return;
+        if (!active || !latestVersion || latestVersion === BUILD_VERSION) return;
         const noticeKey = "foundphone:last-notified-build-version";
         try {
           if (window.localStorage.getItem(noticeKey) === latestVersion) return;
@@ -93,13 +97,22 @@ function StoryPlayer() {
           // Storage may be unavailable; still show this session's notice.
         }
         setUpdateAvailable(true);
-      })
-      .catch((error) => {
+      } catch (error) {
         if (error.name !== "AbortError") {
           // A failed version check must never interrupt gameplay.
         }
-      });
-    return () => controller.abort();
+      } finally {
+        checking = false;
+      }
+    };
+
+    void checkForUpdate();
+    const poll = window.setInterval(() => void checkForUpdate(), 60_000);
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearInterval(poll);
+    };
   }, []);
 
   useEffect(() => {
