@@ -405,7 +405,7 @@ export function MymyKakao(p: SkinProps) {
           ) : friendThread && friendPhase2Node ? (
             <div className="kzinp" style={{ minHeight: 48, padding: "5px 10px" }}>
               {friendPhase2Node.id === "F2_074" ? (
-                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>我先等一会儿，等有新的消息再告诉妳。</div>
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>我先等一会儿，等有新的消息再告诉你。</div>
               ) : queuePending ? (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
               ) : friendPhase2Node.choices.length ? (
