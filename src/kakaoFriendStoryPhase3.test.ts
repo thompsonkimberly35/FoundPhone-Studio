@@ -36,7 +36,8 @@ describe("KakaoTalk confidant friend story phase three", () => {
   });
 
   it("does not reveal A's private disclosure without a trusted source", () => {
-    expect(getFriendPhase3Node("F115", { secretSource: "observed-only" })?.lines.join(" ")).not.toContain("亲口告诉我");
+    expect(getFriendPhase3Node("F115", { secretSource: "observed-only" })?.lines.join(" ")).not.toContain("我之前就听 A 提过");
+    expect(getFriendPhase3Node("F115", { secretSource: "observed-only" })?.lines.join(" ")).toContain("没有亲口告诉我");
     expect(getFriendPhase3Node("F115", { secretSource: "A-direct" })?.lines.join(" ")).toContain("听");
   });
 
