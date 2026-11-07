@@ -11,6 +11,7 @@ import {
   migrateRuntimeGameClock,
   normalizeStoryItems,
   nextKakaoStageStartAt,
+  nextGameDayAt,
   stampNewMessages,
   zonedDateTimeToTimestamp,
 } from "./gameClock";
@@ -25,6 +26,13 @@ describe("global story clock", () => {
     expect(getKakaoRomanceStageId("K139")).toBe("boyfriend-main-2");
     expect(getKakaoRomanceStageId("E18")).toBe("boyfriend-main-2");
     expect(getKakaoRomanceStageId("unknown")).toBeUndefined();
+  });
+
+  it("schedules a next-day 10:00 story event without relying on the device timezone", () => {
+    const lateNight = zonedDateTimeToTimestamp("2026-11-07", "23:18", "Asia/Seoul");
+    const nextMorning = nextGameDayAt(lateNight, "10:00", "Asia/Seoul");
+    expect(formatGameDate(nextMorning, "Asia/Seoul")).toBe("2026-11-08");
+    expect(formatGameTime(nextMorning, "Asia/Seoul")).toBe("10:00");
   });
 
   it("keeps multiple messages in one stage five seconds apart, while a stage boundary gets a full minute", () => {
