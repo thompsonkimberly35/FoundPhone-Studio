@@ -104,12 +104,10 @@ export function getFriendPhase3Choice(nodeId: string, key: string, context: Frie
   if (!choice) return undefined;
   if (nodeId === "F108") {
     if (key === "A") {
-      const wording = context.aOutcome === "R12" ? "我已经拒绝他了。" :
-        context.aOutcome === "R13" ? "我已经决定和他保持距离了。" :
-        context.aOutcome === "R16" ? "他之前越过界线，我现在不太信任他。" :
-        context.aOutcome === "R18" ? "我还没有完全想清楚自己的感受。" :
-        "我还没有给他一个明确答案。";
-      return { ...choice, text: wording };
+      if (context.aOutcome === "R12") return { ...choice, text: "我已经拒绝他了。" };
+      if (context.aOutcome === "R13") return { ...choice, text: "我已经决定和他保持距离了。" };
+      if (context.aOutcome === "R16") return { ...choice, text: "他之前越过界线，我现在不太信任他。" };
+      return undefined;
     }
     if (key === "B" && ["R12", "R13", "R16"].includes(context.aOutcome || "")) return undefined;
   }
