@@ -1123,7 +1123,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       migratedQueue.push({ item, typingAt: scriptedAt, deliverAt: scriptedAt });
       cursor = scriptedAt;
       if (!hasF083Messages) {
-        const nextLineIndex = node.scriptedPlayerLines[index + 1]?.afterLineIndex ?? node.lines.length;
+        const nextLineIndex = node.scriptedPlayerLines?.[index + 1]?.afterLineIndex ?? node.lines.length;
         const currentLineIndex = scriptedLine.afterLineIndex;
         addIncoming(node.lines.slice(currentLineIndex, nextLineIndex), "friend-phase2-migration-F2_083-between-" + index);
       }
