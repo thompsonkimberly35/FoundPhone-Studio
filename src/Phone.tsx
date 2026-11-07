@@ -1178,15 +1178,49 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
     }
     if (!added.length) return;
+    const publishesX002 = added.some(event => event.eventId === "X002");
+    const kakaoMessages = [...(current.messages.kakao || [])];
+    let deliveryQueue: Array<{item:Item;typingAt:number;deliverAt:number}> = [];
+    try { deliveryQueue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { deliveryQueue = []; }
+    let boyfriendNotice: string[] = [];
+    let nextUi: Record<string, unknown> = {
+      ...ui,
+      ...Object.fromEntries(added.map(event => ["x-event-" + event.eventId + "-created", true])),
+      "story-x-events": JSON.stringify([...events, ...added]),
+      "global-notification-queue": JSON.stringify(queue),
+    };
+    if (publishesX002 && !kakaoMessages.some(item => item.id === "boyfriend-stage2-K113-0")) {
+      const node = getBoyfriendStage2Node("K113");
+      if (node) {
+        const now = Date.now();
+        const avatar = boyfriendAvatarPath(selectedBoyfriend);
+        const first = makeItem({
+          id: "boyfriend-stage2-K113-0", title: selectedBoyfriend, sender: selectedBoyfriend,
+          avatar, body: node.lines[0], time: current.time || displayTime,
+          outgoing: false, read: false,
+          meta: { boyfriendStage2Node: "K113", kakaoStageTiming: "stage-boundary" },
+        });
+        kakaoMessages.push(first);
+        boyfriendNotice = [`KakaoTalk: ${selectedBoyfriend}：${first.body}`];
+        const followups = node.lines.slice(1).map((body, index) => {
+          const item = makeItem({
+            id: "boyfriend-stage2-K113-" + (index + 1), title: selectedBoyfriend,
+            sender: selectedBoyfriend, avatar, body, time: current.time || displayTime,
+            outgoing: false, read: false,
+            meta: { boyfriendStage2Node: "K113", kakaoStageTiming: "same-stage" },
+          });
+          const typingAt = now + index * 5_000 + 2_000;
+          return { item, typingAt, deliverAt: typingAt + 3_000 };
+        });
+        deliveryQueue = [...deliveryQueue, ...followups];
+        nextUi = { ...nextUi, "boyfriend-stage2-node": "K113", "boyfriend-stage2-x002-k113-unlocked": true, "delivery-queue": JSON.stringify(deliveryQueue) };
+      }
+    }
     update({
       ...current,
-      messages: { ...current.messages, twitter: posts },
-      ui: { ...current.ui, kakao: {
-        ...ui,
-        ...Object.fromEntries(added.map(event => ["x-event-" + event.eventId + "-created", true])),
-        "story-x-events": JSON.stringify([...events, ...added]),
-        "global-notification-queue": JSON.stringify(queue),
-      } }
+      messages: { ...current.messages, twitter: posts, kakao: kakaoMessages },
+      notifications: app === "kakao" ? current.notifications : [...current.notifications, ...boyfriendNotice],
+      ui: { ...current.ui, kakao: nextUi }
     });
   }, [ready, creator, s.messages.kakao, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"]]);
 
@@ -1200,7 +1234,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const pendingDeliveries = pending.map(entry => Number(entry.deliverAt || 0)).filter(value => value > Date.now());
     const due = Number(ui["boyfriend-stage2-trigger-at"] || 0);
     if (!due) {
-      update({ ...current, ui: { ...current.ui, kakao: { ...ui, "boyfriend-stage2-trigger-at": String(nextKakaoStageStartAt(Date.now(), pendingDeliveries)) } } });
+      update({ ...current, ui: { ...current.ui, kakao: { ...ui, "boyfriend-stage2-trigger-at": String(nextKakaoStageStartAt(Date.now(), pendingDeliveries, 90_000)) } } });
       return;
     }
     const timer = window.setTimeout(() => {
