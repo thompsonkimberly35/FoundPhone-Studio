@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeItem } from "./schema";
-import { enqueueIncomingKakaoNotifications } from "./kakaoNotifications";
+import { enqueueIncomingKakaoNotifications, getCompletedKakaoStoryNodeIds } from "./kakaoNotifications";
 
 describe("global KakaoTalk notification queue", () => {
   it("collects only newly appended incoming messages and ignores outgoing messages", () => {
@@ -12,6 +12,14 @@ describe("global KakaoTalk notification queue", () => {
     );
     expect(result.arrivals.map((item) => item.id)).toEqual(["incoming"]);
     expect(result.queue.map((item) => item.id)).toEqual(["incoming"]);
+  });
+
+  it("waits for every queued bubble in a story node before marking that node complete", () => {
+    const first = makeItem({ id: "K047-0", title: "男友", meta: { boyfriendStage2Node: "K047" } });
+    const last = makeItem({ id: "K047-1", title: "男友", meta: { boyfriendStage2Node: "K047" } });
+    const completed = makeItem({ id: "K048-0", title: "男友", meta: { boyfriendStage2Node: "K048" } });
+    expect([...getCompletedKakaoStoryNodeIds([first, completed], [last], "boyfriendStage2Node")]).toEqual(["K048"]);
+    expect([...getCompletedKakaoStoryNodeIds([first, last, completed], [], "boyfriendStage2Node")]).toEqual(["K047", "K048"]);
   });
 
   it("deduplicates stable message IDs across repeated updates", () => {

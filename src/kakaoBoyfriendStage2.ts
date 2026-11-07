@@ -80,8 +80,8 @@ export const STAGE2_X001={
  translation:"MIDNIGHT FILM 宣布停止所有拍摄及更新活动。她珍惜从练习生时期一路记录舞台的回忆，不后悔曾经支持过他，但目前已无法继续以过去的心情支持。她呼吁不要攻击任何人或责怪其他粉丝，过去照片暂时保留，账号不再更新。",
  likes:48200,reposts:12600,
  comments:[
- "@starry_4nq：看到这篇真的哭了……妳陪他走了那么久。",
- "@allyzmoon_83：喜欢一个人是自由的，离开也是。谢谢妳以前拍的照片。",
+ "@starry_4nq：看到这篇真的哭了……你陪他走了那么久。",
+ "@allyzmoon_83：喜欢一个人是自由的，离开也是。谢谢你以前拍的照片。",
  "@vivid_7pk：我理解站姐，但我不认为他谈恋爱就代表以前对粉丝的真心都是假的。",
  "@dawnfilm_x2：我也是因为这个站才开始认识他的，真的好难过。",
  "@cloud_9rz：不是不能谈恋爱，是这件事让很多人觉得自己被瞒着。",
@@ -90,8 +90,8 @@ export const STAGE2_X001={
  "@hush_3vt：站姐做了自己的选择，其他 ALLYZ 也有权利继续支持。"
  ],
  commentDetails:[
-  {handle:"@starry_4nq",displayName:"星夜留影",text:"看到这篇真的哭了……妳陪他走了那么久。",likes:12840,time:"23:19"},
-  {handle:"@allyzmoon_83",displayName:"月亮收集者",text:"喜欢一个人是自由的，离开也是。谢谢妳以前拍的照片。",likes:9360,time:"23:20"},
+  {handle:"@starry_4nq",displayName:"星夜留影",text:"看到这篇真的哭了……你陪他走了那么久。",likes:12840,time:"23:19"},
+  {handle:"@allyzmoon_83",displayName:"月亮收集者",text:"喜欢一个人是自由的，离开也是。谢谢你以前拍的照片。",likes:9360,time:"23:20"},
   {handle:"@vivid_7pk",displayName:"Vivid蓝",text:"我理解站姐，但我不认为他谈恋爱就代表以前对粉丝的真心都是假的。",likes:7120,time:"23:21"},
   {handle:"@dawnfilm_x2",displayName:"Dawn Film",text:"我也是因为这个站才开始认识他的，真的好难过。",likes:5840,time:"23:22"},
   {handle:"@cloud_9rz",displayName:"云层之外",text:"不是不能谈恋爱，是这件事让很多人觉得自己被瞒着。",likes:4690,time:"23:23"},

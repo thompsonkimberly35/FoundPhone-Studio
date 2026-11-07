@@ -108,7 +108,7 @@ export function MymyKakao(p: SkinProps) {
   const hasBacklashCheckin = messages.some((item) => item.id === "boyfriend-backlash-checkin");
   const romanceNodeId = String(p.ui?.["romance-node"] || "");
   const romanceNode = getKakaoStoryNode(romanceNodeId);
-  const boyfriendStage2NodeId = String(p.ui?.["boyfriend-stage2-node"] || "");
+  const boyfriendStage2NodeId = String(p.ui?.["boyfriend-stage3-started"] === true ? p.ui?.["boyfriend-stage3-node"] || p.ui?.["boyfriend-stage2-node"] || "" : p.ui?.["boyfriend-stage2-node"] || "");
   const boyfriendStage2Node = getBoyfriendStage2Node(boyfriendStage2NodeId);
   const friendStoryNodeId = String(p.ui?.["friend-story-node"] || "");
   const friendStoryNode = getFriendStoryNode(friendStoryNodeId);
@@ -181,7 +181,9 @@ export function MymyKakao(p: SkinProps) {
     .map(choice => ({ ...choice, text: choice.text.replace(/\{\{ADMIRER_NAME\}\}/g, secretAdmirerMember?.name || "那位成员") })) || [];
 
   const boyfriendContext = romanceNode?.lines.join("") || "";
-  const friendLinkOptions = boyfriendThread && romanceNode
+  // These cross-story prompts belong only to the first boyfriend arc. Once a
+  // follow-up node exists, the stale first-arc node must not add choices to it.
+  const friendLinkOptions = boyfriendThread && romanceNode && !boyfriendStage2Node && romanceNode.choices.length > 0
     ? p.ui?.["friend-story-handoff"] === "H07" && /公司|经纪人|活动/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-handoff"]
       ? (messages.some(item => /公司.{0,8}警告|警告.{0,8}公司/.test(item.body))
           ? [
@@ -450,6 +452,8 @@ export function MymyKakao(p: SkinProps) {
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>我先等一会儿，等有新的消息再告诉你。</div>
               ) : queuePending ? (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
+              ) : friendPhase2Node.effect === "wait-for-boyfriend-reaction" ? (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>等待男友在 KakaoTalk 中作出真实回应后，再继续这段对话。</div>
               ) : friendPhase2Node.choices.length ? (
                 <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
                   {friendPhase2Node.choices.map((choice, index) => (
@@ -823,7 +827,7 @@ export function MymyInstagram(p: SkinProps) {
             <button aria-label={selected ? "返回收件匣" : "返回"} onClick={() => selected ? setSelected(null) : p.onBack()}><ArrowLeft size={25}/></button>
             <b>allyz_1101</b><ChevronDown size={16}/>
             <span/>
-            <button aria-label="新增訊息"><SquarePen size={23}/></button>
+            <button aria-label="新增消息"><SquarePen size={23}/></button>
           </header>
         ) : selected?.folder === "私信" ? null : (
           <header className="igh">
@@ -838,7 +842,7 @@ export function MymyInstagram(p: SkinProps) {
               <header className="ig-dm-person">
                 <button aria-label="返回收件匣" onClick={() => setSelected(null)}><ArrowLeft size={23}/></button>
                 <Avatar name={selected.sender} /><span><b>{selected.sender}</b><small>活跃状态不可用</small></span>
-                <button aria-label="语音通话"><Phone size={21}/></button><button aria-label="視訊通話"><Video size={21}/></button><button aria-label="對話資訊"><Info size={21}/></button>
+                <button aria-label="语音通话"><Phone size={21}/></button><button aria-label="视频通话"><Video size={21}/></button><button aria-label="对话信息"><Info size={21}/></button>
               </header>
               <div className="ig-dm-thread">
                 <div className="ig-dm-date">今天 {selected.time.slice(-5)}</div>
@@ -941,12 +945,12 @@ export function MymyInstagram(p: SkinProps) {
                 {dmTab === "一般" ? (
                   <>
                     <b>消息</b>
-                    <button onClick={() => setDmTab("陌生讯息")}>陌生訊息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
+                    <button onClick={() => setDmTab("陌生讯息")}>陌生消息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
                   </>
                 ) : (
                   <>
                     <button className="ig-dm-requests-back" onClick={() => setDmTab("一般")}><ArrowLeft size={17}/> 返回消息</button>
-                    <b>陌生訊息</b>
+                    <b>陌生消息</b>
                     <span />
                   </>
                 )}

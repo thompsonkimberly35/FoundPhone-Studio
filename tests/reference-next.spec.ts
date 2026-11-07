@@ -44,7 +44,11 @@ async function enter(page: Page) {
     r.fulfill({ json: compileStory(story).work }),
   );
   await page.goto("/");
-  await page.locator("button.unlock-btn").click();
+  await page.locator("#ald1-person").waitFor({ state: "visible" });
+  await page.locator("#ald1-person").selectOption("李相沅");
+  await page.locator(".ald1-next").click();
+  await page.locator("#ald1-person").selectOption("周安信");
+  await page.locator(".ald1-next").click();
 }
 async function open(page: Page, name: string) {
   await page
@@ -132,7 +136,11 @@ test("Threads reference messages activity menu and composer persist local posts"
   await page.getByRole("button", { name: "发布", exact: true }).click();
   await expect(page.locator(".tr-scroll")).toContainText("本地串文测试");
   await page.reload();
-  await page.locator("button.unlock-btn").click();
+  await page.locator("#ald1-person").waitFor({ state: "visible" });
+  await page.locator("#ald1-person").selectOption("李相沅");
+  await page.locator(".ald1-next").click();
+  await page.locator("#ald1-person").selectOption("周安信");
+  await page.locator(".ald1-next").click();
   await open(page, "Threads");
   await expect(page.locator(".tr-scroll")).toContainText("本地串文测试");
 });

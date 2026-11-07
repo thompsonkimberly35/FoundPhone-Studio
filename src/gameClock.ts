@@ -58,6 +58,12 @@ export function formatGameDateTime(timestamp: number, timezone = DEFAULT_TIMEZON
   return `${formatGameDate(timestamp, timezone)} ${formatGameTime(timestamp, timezone)}`;
 }
 
+/** Return the timestamp for a clock time on the next story-calendar day. */
+export function nextGameDayAt(timestamp: number, time: string, timezone = DEFAULT_TIMEZONE): number {
+  const nextDate = formatGameDate(timestamp + 24 * 60 * 60 * 1000, timezone);
+  return zonedDateTimeToTimestamp(nextDate, time, timezone);
+}
+
 /** Enforce a shared cooldown between every player-triggered KakaoTalk story stage. */
 export function nextKakaoStageStartAt(now: number, pendingDeliveries: number[], minimumGapMs = 60_000): number {
   const latestPendingDelivery = pendingDeliveries.reduce(

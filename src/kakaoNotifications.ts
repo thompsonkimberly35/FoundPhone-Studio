@@ -43,3 +43,25 @@ export function enqueueIncomingKakaoNotifications(
     queue: queue.slice(-Math.max(1, maxQueue)),
   };
 }
+
+
+/**
+ * Story-triggered posts must wait until every message belonging to a node has
+ * left the delivery queue. The first bubble arriving is not the end of a node.
+ */
+export function getCompletedKakaoStoryNodeIds(
+  messages: Item[],
+  pendingItems: Item[],
+  metaKey: string,
+): Set<string> {
+  const pendingNodeIds = new Set(
+    pendingItems
+      .map((item) => String(item.meta?.[metaKey] || ""))
+      .filter(Boolean),
+  );
+  return new Set(
+    messages
+      .map((item) => String(item.meta?.[metaKey] || ""))
+      .filter((id) => Boolean(id) && !pendingNodeIds.has(id)),
+  );
+}

@@ -34,6 +34,7 @@ import "./ios/status-bar.css";
 import { WeChatSkin, WhatsAppSkin } from "./AppSkins";
 import { RichText } from "./RichText";
 import { getBoyfriendStage2Node, getBoyfriendStage2Choice, STAGE2_X001, STAGE2_X002, STAGE2_X003 } from "./kakaoBoyfriendStage2";
+import { getBoyfriendStageResultKey, getBoyfriendStageHistoryKey, getBoyfriendStageNodeKey } from "./kakaoBoyfriendProgress";
 import { BOYFRIEND_STAGE3_OPENINGS } from "./kakaoBoyfriendStage3";
 import { getBoyfriendAdmirerChoice, getBoyfriendAdmirerNode, getBoyfriendAdmirerOpening } from "./kakaoBoyfriendAdmirerDiscovery";
 import {
@@ -71,17 +72,17 @@ import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
 import { makeThreadsBacklash, type InstagramReplyEvidence, hasThreadsX002 } from "./threadsBacklash";
-import { enqueueIncomingKakaoNotifications } from "./kakaoNotifications";
+import { enqueueIncomingKakaoNotifications, getCompletedKakaoStoryNodeIds } from "./kakaoNotifications";
 import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
-import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
-import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
+import { getFriendStoryNode } from "./kakaoFriendStory";
+import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, isExplicitBoyfriendAngerResponse, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { getFriendPhase3Node, getFriendPhase3Choice, getFriendPhase3Opening } from "./kakaoFriendStoryPhase3";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { SECRET_ADMIRER_STAGE2_OPENINGS, getSecretAdmirerStage2Choice, getSecretAdmirerStage2Node } from "./kakaoSecretAdmirerStage2";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode, getTeamConflictBoyfriendFollowupState } from "./kakaoTeamConflictStory";
-import { formatGameDate, formatGameDateTime, formatGameTime, migrateRuntimeGameClock, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages, zonedDateTimeToTimestamp } from "./gameClock";
+import { formatGameDate, formatGameDateTime, formatGameTime, migrateRuntimeGameClock, nextGameDayAt, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages, zonedDateTimeToTimestamp } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
   /测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(
@@ -769,7 +770,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const existing = current.messages.kakao ?? [];
     const delivered = due
       .filter((entry) => !existing.some((item) => item.id === entry.item.id))
-      .map((entry) => ({ ...entry.item, read: false }));
+      .map((entry) => ({ ...entry.item, sentAt: entry.item.sentAt || Date.now(), read: entry.item.outgoing ? true : false }));
     const startsBacklash = delivered.some((item) =>
       item.body === "你的身份好像已经被扒出来了"
       && !(current.messages.instagram ?? []).some((entry) => entry.id === "ig-backlash-1")
@@ -818,7 +819,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const latestExisting = latest.messages.kakao ?? [];
       const newMessages = dueNow
         .filter((entry) => !latestExisting.some((item) => item.id === entry.item.id))
-        .map((entry) => ({ ...entry.item, read: false }));
+        .map((entry) => ({ ...entry.item, sentAt: entry.item.sentAt || Date.now(), read: entry.item.outgoing ? true : false }));
       const latestTyping = JSON.stringify(Object.fromEntries(activeNow.map((entry) => [entry.item.title, entry.deliverAt])));
       const backlashStarts = newMessages.some((item) =>
         item.body === "你的身份好像已经被扒出来了"
@@ -1069,6 +1070,383 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     return () => window.clearTimeout(timer);
   }, [ready, creator, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, s.messages.kakao, s.ui?.kakao?.["ig-backlash-checkin-due-at"], s.ui?.kakao?.["friend-story-node"], s.ui?.kakao?.["friend-story-triggered"], s.ui?.kakao?.["delivery-queue"]]);
 
+  // Migrate older F083 saves: preserve existing chat, add the missing scripted player lines, then continue to F084.
+  useEffect(() => {
+    if (!ready || creator || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-phase2-node"] !== "F2_083" || ui["friend-story-phase2-auto-next-node"] === "F2_084") return;
+
+    let queue: Array<{ item?: Item; typingAt?: number; deliverAt?: number }> = [];
+    let completed: string[] = [];
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    try { completed = JSON.parse(String(ui["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+    if (queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_083")) return;
+
+    const node = getFriendPhase2Node("F2_083");
+    if (!node?.scriptedPlayerLines?.length) return;
+    const messages = current.messages.kakao || [];
+    const hasF083Messages = messages.some(item => item.meta?.friendPhase2Node === "F2_083");
+    const avatar = boyfriendAvatarPath(selectedFriend);
+    let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+    const migratedQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    const addIncoming = (lines: string[], prefix: string) => {
+      lines.forEach((body, index) => {
+        const typingAt = cursor + 2000;
+        const deliverAt = typingAt + 3000;
+        const item = makeItem({
+          id: prefix + "-" + index, title: selectedFriend, sender: selectedFriend, avatar,
+          body: body.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+          time: current.time || displayTime, outgoing: false, read: false,
+          meta: { friendPhase2Node: "F2_083" },
+        });
+        migratedQueue.push({ item, typingAt, deliverAt });
+        cursor = deliverAt;
+      });
+    };
+    if (!hasF083Messages) {
+      const first = node.scriptedPlayerLines?.[0];
+      if (first) addIncoming(node.lines.slice(0, first.afterLineIndex), "friend-phase2-migration-F2_083-before-0");
+    }
+
+    node.scriptedPlayerLines?.forEach((scriptedLine, index) => {
+      const id = "friend-phase2-F2_083-scripted-player-" + index;
+      const alreadyExists = messages.some(item => item.id === id) || queue.some(entry => entry.item?.id === id);
+      if (alreadyExists) return;
+      const scriptedAt = cursor + 5000;
+      const item = makeItem({
+        id, title: selectedFriend, sender: "我",
+        body: scriptedLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+        time: current.time || displayTime, outgoing: true, read: true,
+        meta: { friendPhase2Node: "F2_083", friendPhase2ScriptedPlayer: String(index) },
+      });
+      migratedQueue.push({ item, typingAt: scriptedAt, deliverAt: scriptedAt });
+      cursor = scriptedAt;
+      if (!hasF083Messages) {
+        const nextLineIndex = node.scriptedPlayerLines?.[index + 1]?.afterLineIndex ?? node.lines.length;
+        const currentLineIndex = scriptedLine.afterLineIndex;
+        addIncoming(node.lines.slice(currentLineIndex, nextLineIndex), "friend-phase2-migration-F2_083-between-" + index);
+      }
+    });
+
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-phase2-auto-next-node": "F2_084",
+        "friend-story-phase2-friend-took-responsibility": true,
+        "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_083"])]),
+        "delivery-queue": JSON.stringify([...queue, ...migratedQueue]),
+      } },
+    });
+  }, [ready, creator, selectedFriend, selectedBoyfriend, s.messages.kakao, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-auto-next-node"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"]]);
+
+  // The F083 conversation must finish before its X disclosure is published and F084 begins.
+  useEffect(() => {
+    if (!ready || creator || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-phase2-node"] !== "F2_083" || ui["friend-story-phase2-auto-next-node"] !== "F2_084") return;
+
+    let queue: Array<{ item?: Item; typingAt?: number; deliverAt?: number }> = [];
+    let completed: string[] = [];
+    let globalQueue: Item[] = [];
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    try { completed = JSON.parse(String(ui["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+    try { globalQueue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+
+    if (queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_083")) return;
+    if (!(current.messages.kakao || []).some(item => item.meta?.friendPhase2Node === "F2_083")) return;
+    const node = getFriendPhase2Node("F2_084");
+    if (!node) return;
+
+    const posts = [...(current.messages.twitter || [])];
+    const existingPost = posts.find(post => post.id === "friend-phase2-X002");
+    const createdPost = !existingPost;
+    const post = existingPost || makeItem({
+      id: "friend-phase2-X002",
+      title: "友人承认曾向第三方提供私人对话资料",
+      sender: "@timeline_watch_09",
+      body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。",
+      time: current.time || displayTime,
+      kind: "post",
+      folder: "主页",
+      likes: 9200,
+      comments: [
+        "@bluehour_8m：承认提供资料不等于承认公开爆料，先把事实分清楚。",
+        "@orbitallyz_4q：请不要去攻击任何一方的私人账号。",
+        "@nightletter_2p：现在最重要的是停止继续传播截图。",
+        "@teamfirst_7v：希望 Wake One 能处理隐私保护问题。",
+        "@softpetal_3n：没有完整证据前不要替任何人定罪。",
+        "@duskarchive_6r：朋友做错了也不代表可以网暴她。",
+        "@silverorbit_9k：请把焦点放在资料如何外流。",
+        "@moonfilm_5x：当事人有权利要求停止散播私人对话。",
+      ],
+      meta: { handle: "timeline_watch_09", verified: "false", reposts: "1360", views: "31.6万", storyEventId: "FRIEND_PHASE2_X002" },
+    });
+
+    const hasF084Messages = (current.messages.kakao || []).some(item => item.meta?.friendPhase2Node === "F2_084")
+      || queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_084");
+    const queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    if (!hasF084Messages) {
+      const avatar = boyfriendAvatarPath(selectedFriend);
+      let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+      node.lines.forEach((body, index) => {
+        const typingAt = cursor + 2000;
+        const deliverAt = typingAt + 3000;
+        const item = makeItem({
+          id: "friend-phase2-F2_084-" + index,
+          title: selectedFriend,
+          sender: selectedFriend,
+          avatar,
+          body: body.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+          time: current.time || displayTime,
+          outgoing: false,
+          read: false,
+          meta: { friendPhase2Node: "F2_084" },
+        });
+        queued.push({ item, typingAt, deliverAt });
+        cursor = deliverAt;
+      });
+    }
+
+    const notice = { ...post, meta: { ...post.meta, notificationAppId: "twitter", notificationPostId: post.id } };
+    update({
+      ...current,
+      messages: { ...current.messages, twitter: createdPost ? [...posts, post] : posts },
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-phase2-node": "F2_084",
+        "friend-story-phase2-auto-next-node": "",
+        "friend-story-phase2-x2-posted": true,
+        "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_083"])]),
+        "delivery-queue": JSON.stringify([...queue, ...queued]),
+        "global-notification-queue": JSON.stringify(createdPost ? [...globalQueue, notice] : globalQueue),
+      } },
+    });
+  }, [ready, creator, selectedFriend, selectedBoyfriend, s.messages.kakao, s.messages.twitter, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-auto-next-node"], s.ui?.kakao?.["friend-story-phase2-x2-posted"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["global-notification-queue"]]);
+
+  // Wait for an actual angry response in the selected boyfriend's own Kakao thread before F085 may speak.
+  useEffect(() => {
+    if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-phase2-node"] !== "F2_080C_WAIT" || ui["friend-story-phase2-bf-waiting-for-reaction"] !== true) return;
+    if (String(ui["friend-story-phase2-bf-informed-member"] || "") !== selectedBoyfriend) return;
+
+    const informedAt = Number(ui["friend-story-phase2-bf-informed-real-at"] || 0);
+    if (!informedAt) return;
+    let preexistingBoyfriendQueueIds: string[] = [];
+    try { preexistingBoyfriendQueueIds = JSON.parse(String(ui["friend-story-phase2-bf-preexisting-queued-ids"] || "[]")); } catch { preexistingBoyfriendQueueIds = []; }
+    const boyfriendReaction = (current.messages.kakao || []).find(item =>
+      item.title === selectedBoyfriend
+      && item.outgoing !== true
+      && Number(item.sentAt || 0) >= informedAt
+      && !preexistingBoyfriendQueueIds.includes(item.id)
+      && Boolean(item.meta?.boyfriendStage2Node || item.meta?.boyfriendStage3Node || item.meta?.boyfriendAdmirerNode || item.meta?.romanceNode)
+      && isExplicitBoyfriendAngerResponse(item.body),
+    );
+    if (!boyfriendReaction) return;
+
+    let queue: Array<{ item?: Item; typingAt?: number; deliverAt?: number }> = [];
+    let completed: string[] = [];
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    try { completed = JSON.parse(String(ui["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+    const f085 = getFriendPhase2Node("F2_085");
+    const f086 = getFriendPhase2Node("F2_086");
+    if (!f085 || !f086) return;
+
+    const alreadyStarted = (current.messages.kakao || []).some(item => item.meta?.friendPhase2Node === "F2_085" || item.meta?.friendPhase2Node === "F2_086")
+      || queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_085" || entry.item?.meta?.friendPhase2Node === "F2_086");
+    if (alreadyStarted) {
+      update({
+        ...current,
+        ui: { ...current.ui, kakao: {
+          ...ui,
+          "friend-story-phase2-node": "F2_086",
+          "friend-story-phase2-bf-waiting-for-reaction": false,
+          "friend-story-phase2-bf-reaction-ready": true,
+          "friend-story-phase2-bf-reaction-message-id": boyfriendReaction.id,
+          "friend-story-phase2-bf-preexisting-queued-ids": "[]",
+          "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_080C_WAIT", "F2_085"])]),
+        } },
+      });
+      return;
+    }
+
+    const avatar = boyfriendAvatarPath(selectedFriend);
+    const queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+    let lineCursor = 0;
+    const addIncoming = (lines: string[], nodeId: string, prefix: string) => {
+      lines.forEach((body, index) => {
+        const typingAt = cursor + 2000;
+        const deliverAt = typingAt + 3000;
+        const item = makeItem({
+          id: prefix + "-" + index,
+          title: selectedFriend,
+          sender: selectedFriend,
+          avatar,
+          body: body.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend),
+          time: current.time || displayTime,
+          outgoing: false,
+          read: false,
+          meta: { friendPhase2Node: nodeId },
+        });
+        queued.push({ item, typingAt, deliverAt });
+        cursor = deliverAt;
+      });
+    };
+    f085.scriptedPlayerLines?.forEach((scriptedLine, index) => {
+      const splitIndex = Math.max(lineCursor, Math.min(f085.lines.length, scriptedLine.afterLineIndex));
+      addIncoming(f085.lines.slice(lineCursor, splitIndex), "F2_085", "friend-phase2-F2_085-before-" + index);
+      const scriptedAt = cursor + 5000;
+      const item = makeItem({
+        id: "friend-phase2-F2_085-scripted-player-" + index,
+        title: selectedFriend,
+        sender: "我",
+        body: scriptedLine.text,
+        time: current.time || displayTime,
+        outgoing: true,
+        read: true,
+        meta: { friendPhase2Node: "F2_085", friendPhase2ScriptedPlayer: String(index), boyfriendReactionMessageId: boyfriendReaction.id },
+      });
+      queued.push({ item, typingAt: scriptedAt, deliverAt: scriptedAt });
+      cursor = scriptedAt;
+      lineCursor = splitIndex;
+    });
+    addIncoming(f085.lines.slice(lineCursor), "F2_085", "friend-phase2-F2_085-after");
+    addIncoming(f086.lines, "F2_086", "friend-phase2-F2_086");
+
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-phase2-node": "F2_086",
+        "friend-story-phase2-bf-waiting-for-reaction": false,
+        "friend-story-phase2-bf-reaction-ready": true,
+        "friend-story-phase2-bf-reaction-message-id": boyfriendReaction.id,
+        "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_080C_WAIT", "F2_085"])]),
+        "delivery-queue": JSON.stringify([...queue, ...queued]),
+      } },
+    });
+  }, [ready, creator, selectedBoyfriend, selectedFriend, s.messages.kakao, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-bf-waiting-for-reaction"], s.ui?.kakao?.["friend-story-phase2-bf-informed-real-at"], s.ui?.kakao?.["friend-story-phase2-bf-informed-member"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"]]);
+
+  // Migrate saves created before the F081 -> F082 scripted exchange was restored.
+  useEffect(() => {
+    if (!ready || creator || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-phase2-node"] !== "F2_081") return;
+
+    let history: string[] = [];
+    let queue: Array<{ item?: Item; typingAt?: number; deliverAt?: number }> = [];
+    let completed: string[] = [];
+    try { history = JSON.parse(String(ui["friend-story-phase2-history"] || "[]")); } catch { history = []; }
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    try { completed = JSON.parse(String(ui["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+
+    const savedOutcome = String(ui["friend-story-phase2-outcome"] || "");
+    const legacyChoice = history.find(entry => entry.startsWith("F2_081:"));
+    const migratedOutcome = savedOutcome === "H13" || savedOutcome === "H14"
+      ? savedOutcome
+      : legacyChoice === "F2_081:A" ? "H13" : legacyChoice === "F2_081:B" ? "H14" : "";
+    if (migratedOutcome) {
+      update({
+        ...current,
+        ui: { ...current.ui, kakao: {
+          ...ui,
+          "friend-story-phase2-node": migratedOutcome,
+          "friend-story-phase2-outcome": migratedOutcome,
+          "friend-story-phase2-outcome-name": getFriendPhase2OutcomeLabel(migratedOutcome),
+          "friend-story-phase2-ended": true,
+          "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_081"])]),
+        } },
+      });
+      return;
+    }
+
+    const pendingF081 = queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_081");
+    if (pendingF081) return;
+    const messages = current.messages.kakao || [];
+    const hasF081Messages = messages.some(item => item.meta?.friendPhase2Node === "F2_081");
+    const hasF082Messages = messages.some(item => item.meta?.friendPhase2Node === "F2_082")
+      || queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_082");
+    if (hasF082Messages) {
+      update({
+        ...current,
+        ui: { ...current.ui, kakao: {
+          ...ui,
+          "friend-story-phase2-node": "F2_082",
+          "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_081"])]),
+        } },
+      });
+      return;
+    }
+
+    const f081 = getFriendPhase2Node("F2_081");
+    const f082 = getFriendPhase2Node("F2_082");
+    const scriptedLine = f081?.scriptedPlayerLines?.[0];
+    if (!scriptedLine || !f082) return;
+    const avatar = boyfriendAvatarPath(selectedFriend);
+    let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+    const migratedQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    const addIncoming = (lines: string[], nodeId: string, prefix: string) => {
+      lines.forEach((body, index) => {
+        const typingAt = cursor + 2000;
+        const deliverAt = typingAt + 3000;
+        const item = makeItem({
+          id: prefix + "-" + index,
+          title: selectedFriend,
+          sender: selectedFriend,
+          avatar,
+          body: body.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+          time: current.time || displayTime,
+          outgoing: false,
+          read: false,
+          meta: { friendPhase2Node: nodeId },
+        });
+        migratedQueue.push({ item, typingAt, deliverAt });
+        cursor = deliverAt;
+      });
+    };
+
+    if (!hasF081Messages) {
+      const splitIndex = Math.max(0, Math.min(f081.lines.length, scriptedLine.afterLineIndex));
+      addIncoming(f081.lines.slice(0, splitIndex), "F2_081", "friend-phase2-migration-F2_081-before");
+    }
+    const scriptedId = "friend-phase2-F2_081-scripted-player";
+    const scriptedAlreadyExists = messages.some(item => item.id === scriptedId)
+      || queue.some(entry => entry.item?.id === scriptedId);
+    if (!scriptedAlreadyExists) {
+      const scriptedAt = cursor + 5000;
+      const scripted = makeItem({
+        id: scriptedId,
+        title: selectedFriend,
+        sender: "我",
+        body: scriptedLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+        time: current.time || displayTime,
+        outgoing: true,
+        read: true,
+        meta: { friendPhase2Node: "F2_081", friendPhase2ScriptedPlayer: "true" },
+      });
+      migratedQueue.push({ item: scripted, typingAt: scriptedAt, deliverAt: scriptedAt });
+      cursor = scriptedAt;
+    }
+    if (!hasF081Messages) addIncoming(f081.lines.slice(f081.scriptedPlayerLines?.[0]?.afterLineIndex ?? f081.lines.length), "F2_081", "friend-phase2-migration-F2_081-after");
+    addIncoming(f082.lines, "F2_082", "friend-phase2-migration-F2_082");
+
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-phase2-node": "F2_082",
+        "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_081"])]),
+        "delivery-queue": JSON.stringify([...queue, ...migratedQueue]),
+      } },
+    });
+  }, [ready, creator, selectedFriend, selectedBoyfriend, s.messages.kakao, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-history"], s.ui?.kakao?.["friend-story-phase2-outcome"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"]]);
+
   useEffect(() => {
     if (!ready || creator || !friendStoryTriggered || !selectedFriend) return;
     const current = runtimeRef.current;
@@ -1224,11 +1602,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
 
   useEffect(() => {
     if (!ready || creator) return;
-    const deliveredNodes = new Set((s.messages.kakao || [])
-      .map(item => String(item.meta?.boyfriendStage2Node || ""))
-      .filter(Boolean));
     const current = runtimeRef.current;
     const ui = current.ui?.kakao || {};
+    let pendingStoryDeliveries: Array<{ item?: Item }> = [];
+    try { pendingStoryDeliveries = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { pendingStoryDeliveries = []; }
+    const deliveredNodes = getCompletedKakaoStoryNodeIds(
+      current.messages.kakao || [],
+      pendingStoryDeliveries.map(entry => entry.item).filter((item): item is Item => Boolean(item)),
+      "boyfriendStage2Node",
+    );
     const posts = [...(current.messages.twitter || [])];
     let queue: Item[] = [];
     let events: Array<{eventId:string;triggeredByNode:string;postId:string;deliveredAt:number;notificationDelivered:boolean}> = [];
@@ -1240,9 +1622,23 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       { ...STAGE2_X003, triggeredByNodes: ["K117"] },
     ];
     const added: typeof events = [];
+    let x002ScheduleChanged = false;
+    let x002DueRealAt = Number(ui["x-event-X002-due-real-at"] || 0);
+    let x002DueGameAt = Number(ui["x-event-X002-due-game-at"] || 0);
+    const gameNow = Number(current.gameClock?.currentGameTimestamp || Date.now());
+    const gameTimezone = current.gameClock?.timezone || "Asia/Seoul";
     for (const event of definitions) {
       if (!event.triggeredByNodes.some(node => deliveredNodes.has(node))) continue;
       if (events.some(saved => saved.eventId === event.eventId) || posts.some(post => post.id === event.postId)) continue;
+      if (event.eventId === "X002") {
+        if (!Number.isFinite(x002DueRealAt) || x002DueRealAt <= 0 || !Number.isFinite(x002DueGameAt) || x002DueGameAt <= 0) {
+          x002DueRealAt = Date.now() + 60_000;
+          x002DueGameAt = nextGameDayAt(gameNow, "10:00", gameTimezone);
+          x002ScheduleChanged = true;
+          continue;
+        }
+        if (Date.now() < x002DueRealAt || gameNow < x002DueGameAt || ui["x-event-X002-ready"] !== true) continue;
+      }
       const postBody = event.eventId === "X001" ? event.body.replace("{{boyfriend}}", selectedBoyfriend) : event.body;
       const post = makeItem({
         id: event.postId, title: event.title, sender: event.account, body: postBody,
@@ -1262,9 +1658,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         postId: event.postId, deliveredAt: Date.now(), notificationDelivered: false,
       });
     }
-    if (!added.length) return;
-    const publishesX002 = added.some(event => event.eventId === "X002");
     const kakaoMessages = [...(current.messages.kakao || [])];
+    const x002AlreadyPublished = events.some(event => event.eventId === "X002")
+      || posts.some(post => post.id === STAGE2_X002.postId);
+    const publishesX002 = added.some(event => event.eventId === "X002") || x002AlreadyPublished;
+    const k113AlreadyDelivered = kakaoMessages.some(item => item.id === "boyfriend-stage2-K113-0");
+    const shouldUnlockK113 = publishesX002
+      && STAGE2_X002.triggeredByNodes.some(node => deliveredNodes.has(node))
+      && !k113AlreadyDelivered;
+    if (!added.length && !shouldUnlockK113 && !x002ScheduleChanged) return;
     let deliveryQueue: Array<{item:Item;typingAt:number;deliverAt:number}> = [];
     try { deliveryQueue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { deliveryQueue = []; }
     let boyfriendNotice: string[] = [];
@@ -1273,8 +1675,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       ...Object.fromEntries(added.map(event => ["x-event-" + event.eventId + "-created", true])),
       "story-x-events": JSON.stringify([...events, ...added]),
       "global-notification-queue": JSON.stringify(queue),
+      ...(x002ScheduleChanged ? {
+        "x-event-X002-due-real-at": String(x002DueRealAt),
+        "x-event-X002-due-game-at": String(x002DueGameAt),
+        "x-event-X002-ready": false,
+      } : {}),
     };
-    if (publishesX002 && !kakaoMessages.some(item => item.id === "boyfriend-stage2-K113-0")) {
+    if (shouldUnlockK113) {
       const node = getBoyfriendStage2Node("K113");
       if (node) {
         const now = Date.now();
@@ -1307,7 +1714,48 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       notifications: app === "kakao" ? current.notifications : [...current.notifications, ...boyfriendNotice],
       ui: { ...current.ui, kakao: nextUi }
     });
-  }, [ready, creator, s.messages.kakao, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"]]);
+  }, [ready, creator, s.messages.kakao, s.gameClock?.currentGameTimestamp, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["x-event-X002-due-real-at"], s.ui?.kakao?.["x-event-X002-due-game-at"], s.ui?.kakao?.["x-event-X002-ready"]]);
+
+  useEffect(() => {
+    if (!ready || creator) return;
+    const ui = runtimeRef.current.ui?.kakao || {};
+    const dueRealAt = Number(ui["x-event-X002-due-real-at"] || 0);
+    const dueGameAt = Number(ui["x-event-X002-due-game-at"] || 0);
+    if (!Number.isFinite(dueRealAt) || dueRealAt <= 0 || !Number.isFinite(dueGameAt) || dueGameAt <= 0 || ui["x-event-X002-ready"] === true) return;
+    const current = runtimeRef.current;
+    const alreadyPublished = (current.messages.twitter || []).some(post => post.id === STAGE2_X002.postId);
+    if (alreadyPublished) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["x-event-X002-ready"] === true || (latest.messages.twitter || []).some(post => post.id === STAGE2_X002.postId)) return;
+      if (Date.now() < Number(latestUi["x-event-X002-due-real-at"] || 0)) return;
+      const clock = latest.gameClock;
+      if (!clock) return;
+      const target = Number(latestUi["x-event-X002-due-game-at"] || dueGameAt);
+      const now = Number(clock.currentGameTimestamp || Date.now());
+      const nextTimestamp = Math.max(now, target);
+      const timezone = clock.timezone || "Asia/Seoul";
+      const oldDate = formatGameDate(now, timezone);
+      const newDate = formatGameDate(nextTimestamp, timezone);
+      const dayDifference = Math.max(0, Math.round(
+        (Date.parse(newDate + "T00:00:00Z") - Date.parse(oldDate + "T00:00:00Z")) / 86_400_000,
+      ));
+      update({
+        ...latest,
+        gameClock: {
+          ...clock,
+          currentGameTimestamp: nextTimestamp,
+          lastRealTimestamp: Date.now(),
+          currentStoryDay: Math.max(1, Number(clock.currentStoryDay || 1) + dayDifference),
+        },
+        date: newDate,
+        time: formatGameTime(nextTimestamp, timezone),
+        ui: { ...latest.ui, kakao: { ...latestUi, "x-event-X002-ready": true } },
+      });
+    }, Math.max(0, dueRealAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, s.gameClock?.currentGameTimestamp, s.ui?.kakao?.["x-event-X002-due-real-at"], s.ui?.kakao?.["x-event-X002-due-game-at"], s.ui?.kakao?.["x-event-X002-ready"], s.messages.twitter]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend) return;
@@ -1358,7 +1806,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${selectedBoyfriend}：${first.body}`],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-started": true, "boyfriend-stage2-node": "K046", "boyfriend-stage2-history": "[]", "boyfriend-stage2-trigger-at": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-started": true, [getBoyfriendStageNodeKey("stage2")]: "K046", [getBoyfriendStageHistoryKey("stage2")]: "[]", "boyfriend-stage2-trigger-at": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -1389,16 +1837,16 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (bState === "team-conversation-available") opening.push("我知道团队里有人愿意重新沟通，也有人仍然有顾虑。我不会把任何一方的态度说成所有人的共识。");
       else if (bState === "respect-no-contact") opening.push("我知道团队里仍然有尚未解决的冲突，我会自己面对，不会把你的私人谈话拿去解释。");
       else if (bState === "relationship-stable" || bState === "past-story-unlocked") opening.push("团队里的一些旧问题也让我重新思考，不能要求每个人都做出和我一样的选择。");
-      const first = makeItem({ id: "boyfriend-stage3-K140-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K140", kakaoStageTiming: "stage-boundary" } });
+      const first = makeItem({ id: "boyfriend-stage3-K140-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage3Node: "K140", kakaoStageTiming: "stage-boundary" } });
       const start = Date.now();
       const queued = opening.slice(1).map((body, index) => {
-        const item = makeItem({ id: "boyfriend-stage3-K140-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K140", kakaoStageTiming: "same-stage" } });
+        const item = makeItem({ id: "boyfriend-stage3-K140-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage3Node: "K140", kakaoStageTiming: "same-stage" } });
         const typingAt = start + index * 5000 + 2000;
         return { item, typingAt, deliverAt: typingAt + 3000 };
       });
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, "KakaoTalk: " + selectedBoyfriend + "：" + first.body],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", "boyfriend-stage2-history": "[]", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, [getBoyfriendStageNodeKey("stage3")]: "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", [getBoyfriendStageHistoryKey("stage3")]: "[]", [getBoyfriendStageResultKey("stage3")]: "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -1546,7 +1994,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const current = runtimeRef.current;
     const ui = current.ui?.kakao || {};
     const aOutcome = String(ui["secret-admirer-stage2-outcome"] || "");
-    const bfOutcome = String(ui["boyfriend-stage2-result"] || "");
+    const bfOutcome = String(ui["boyfriend-stage3-result"] || "");
     const dueAt = Number(ui["boyfriend-admirer-discovery-due-at"] || 0);
     if (!/^R1[1-8]$/.test(aOutcome) || !/^M(?:0[7-9]|1[0-2])$/.test(bfOutcome) || !dueAt || ui["boyfriend-admirer-discovery-started"] === true) return;
     const gameNow = Number(current.gameClock?.currentGameTimestamp || Date.now());
@@ -1556,7 +2004,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const latest = runtimeRef.current;
       const latestUi = latest.ui?.kakao || {};
       if (latestUi["boyfriend-admirer-discovery-started"] === true) return;
-      if (!/^R1[1-8]$/.test(String(latestUi["secret-admirer-stage2-outcome"] || "")) || !/^M(?:0[7-9]|1[0-2])$/.test(String(latestUi["boyfriend-stage2-result"] || ""))) return;
+      if (!/^R1[1-8]$/.test(String(latestUi["secret-admirer-stage2-outcome"] || "")) || !/^M(?:0[7-9]|1[0-2])$/.test(String(latestUi["boyfriend-stage3-result"] || ""))) return;
       let queue: Array<{item?: Item; deliverAt?: number}> = [];
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
       // Do not abandon the M170 follow-up when another queued chat message is
@@ -1595,7 +2043,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       update({...latest,messages:{...latest.messages,kakao:[...(latest.messages.kakao||[]),first]},notifications:app==="kakao"?latest.notifications:[...latest.notifications,"KakaoTalk: "+selectedBoyfriend+"："+first.body],ui:{...latest.ui,kakao:{...latestUi,"boyfriend-admirer-discovery-started":true,"boyfriend-admirer-discovery-node":"M170","boyfriend-admirer-discovery-history":"[]","boyfriend-admirer-discovery-result":"","boyfriend-admirer-discovery-member-id":member.id,"delivery-queue":JSON.stringify([...queue,...queued])}}});
     },Math.max(0,(dueAt-gameNow)/scale));
     return ()=>window.clearTimeout(timer);
-  },[ready,creator,app,selectedBoyfriend,s.gameClock?.currentGameTimestamp,s.gameClock?.timeScale,s.ui?.kakao?.["secret-admirer-stage2-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["boyfriend-admirer-discovery-due-at"],s.ui?.kakao?.["boyfriend-admirer-discovery-started"],s.ui?.kakao?.["delivery-queue"]]);
+  },[ready,creator,app,selectedBoyfriend,s.gameClock?.currentGameTimestamp,s.gameClock?.timeScale,s.ui?.kakao?.["secret-admirer-stage2-outcome"],s.ui?.kakao?.["boyfriend-stage3-result"],s.ui?.kakao?.["boyfriend-admirer-discovery-due-at"],s.ui?.kakao?.["boyfriend-admirer-discovery-started"],s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
@@ -1655,7 +2103,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const ui = latest.ui?.kakao || {};
       if (ui["friend-story-phase2-x-posted"] === true) return;
       const posts = [...(latest.messages.twitter || [])];
-      if (posts.some(post => post.id === "friend-phase2-X001")) return;
+      const existingPost = posts.find(post => post.id === "friend-phase2-X001");
+      const createdPost = !existingPost;
       const comments = [
         "@bluehour_8m：如果是真的，希望先把完整对话放出来，不要继续断章取义。",
         "@orbitallyz_4q：不喜欢这段恋情也不代表可以公开别人的私人聊天。",
@@ -1666,7 +2115,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "@silverorbit_9k：我很生气，但不支持去骚扰任何当事人。",
         "@moonfilm_5x：希望 Wake One 能说明如何保护当事人的隐私。",
       ];
-      const post = makeItem({
+      const post = existingPost || makeItem({
         id: "friend-phase2-X001",
         title: "独家后续：私人对话或有更多内容",
         sender: "@inside_line_27",
@@ -1692,25 +2141,26 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const firstLine = node.lines[0];
       const first = makeItem({ id: "friend-phase2-F2_075-0", title: friend, sender: friend, avatar, body: firstLine, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
       const now = Date.now();
-      const queued = node.lines.slice(1).map((body, index) => {
-        const item = makeItem({ id: "friend-phase2-F2_075-" + (index + 1), title: friend, sender: friend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
-        const typingAt = now + index * 5000 + 2000;
-        return { item, typingAt, deliverAt: typingAt + 3000 };
-      });
       let delivery: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
       let globalQueue: Item[] = [];
       try { delivery = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { delivery = []; }
       try { globalQueue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+      const queued = node.lines.slice(1).map((body, index) => {
+        const item = makeItem({ id: "friend-phase2-F2_075-" + (index + 1), title: friend, sender: friend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
+        const typingAt = now + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      }).filter(entry => !existing.some(item => item.id === entry.item.id) && !delivery.some(entry2 => entry2.item.id === entry.item.id));
+      const hasFirst = existing.some(item => item.id === first.id);
       const notice = { ...post, meta: { ...post.meta, notificationAppId: "twitter", notificationPostId: post.id } };
       update({
         ...latest,
-        messages: { ...latest.messages, twitter: [...posts, post], kakao: [...existing, first] },
+        messages: { ...latest.messages, twitter: createdPost ? [...posts, post] : posts, kakao: hasFirst ? existing : [...existing, first] },
         ui: { ...latest.ui, kakao: {
           ...ui,
           "friend-story-phase2-x-posted": true,
           "friend-story-phase2-node": "F2_075",
           "delivery-queue": JSON.stringify([...delivery, ...queued]),
-          "global-notification-queue": JSON.stringify([...globalQueue, notice]),
+          "global-notification-queue": JSON.stringify(createdPost ? [...globalQueue, notice] : globalQueue),
         } },
       });
     }, Math.max(0, (dueAt - gameNow) / timeScale));
@@ -2247,22 +2697,43 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     };
                     if (choiceId?.startsWith("boyfriend-stage2:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
-                      const activeNodeId = String(currentUi["boyfriend-stage2-node"] || "");
+                      const isStage3Node = currentUi["boyfriend-stage3-started"] === true && /^K1[4-6]\d$/.test(nodeId);
+                      const activeNodeKey = getBoyfriendStageNodeKey(isStage3Node ? "stage3" : "stage2");
+                      const activeNodeId = String(currentUi[activeNodeKey] || "");
                       if (character !== selectedBoyfriend || nodeId !== activeNodeId) return;
                       const choice = getBoyfriendStage2Choice(nodeId, choiceKey);
                       if (!choice) return;
+                      const historyKeyName = getBoyfriendStageHistoryKey(isStage3Node ? "stage3" : "stage2");
+                      const resultKeyName = getBoyfriendStageResultKey(isStage3Node ? "stage3" : "stage2");
                       let history: string[] = [];
-                      try { history = JSON.parse(String(currentUi["boyfriend-stage2-history"] || "[]")); } catch { history = []; }
+                      try { history = JSON.parse(String(currentUi[historyKeyName] || "[]")); } catch { history = []; }
                       const historyKey = nodeId + ":" + choiceKey;
                       if (history.includes(historyKey)) return;
                       const nextNode = getBoyfriendStage2Node(choice.next);
                       if (!nextNode) return;
-                      const outgoing = makeItem({ id: "boyfriend-stage2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
-                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), boyfriendStage2Node: nodeId, boyfriendStage2Choice: choiceKey };
-                      const queued = queueLines(nextNode.lines, "boyfriend-stage2-" + nodeId + "-" + choiceKey, currentQueue, true).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, boyfriendStage2Node: nextNode.id } } }));
-                      const isPreviousStageOutcome = /^E(0[9]|1[0-8])$/.test(String(nextNode.result || ""));
+                      const outgoing = makeItem({ id: (isStage3Node ? "boyfriend-stage3-player-" : "boyfriend-stage2-player-") + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
+                      outgoing.meta = {
+                        ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000),
+                        [isStage3Node ? "boyfriendStage3Node" : "boyfriendStage2Node"]: nodeId,
+                        [isStage3Node ? "boyfriendStage3Choice" : "boyfriendStage2Choice"]: choiceKey,
+                      };
+                      const queued = queueLines(nextNode.lines, (isStage3Node ? "boyfriend-stage3-" : "boyfriend-stage2-") + nodeId + "-" + choiceKey, currentQueue, true).map(entry => ({
+                        ...entry,
+                        item: { ...entry.item, meta: { ...entry.item.meta, [isStage3Node ? "boyfriendStage3Node" : "boyfriendStage2Node"]: nextNode.id } },
+                      }));
+                      const isPreviousStageOutcome = !isStage3Node && /^E(0[9]|1[0-8])$/.test(String(nextNode.result || ""));
                       const stage3TriggerAt = isPreviousStageOutcome ? String(nextKakaoStageStartAt(stamp, [...currentQueue.map(entry => entry.deliverAt), ...queued.map(entry => entry.deliverAt)])) : String(currentUi["boyfriend-stage3-trigger-at"] || "");
-                      const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "boyfriend-admirer-discovery-due-at": /^M(?:0[7-9]|1[0-2])$/.test(String(nextNode.result || "")) ? String(storyStamp + 60_000) : String(currentUi["boyfriend-admirer-discovery-due-at"] || ""), "boyfriend-stage3-trigger-at": stage3TriggerAt, "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
+                      const stageResult = nextNode.result || String(currentUi[resultKeyName] || "");
+                      const isAdmirerDiscoveryResult = isStage3Node && /^M(?:0[7-9]|1[0-2])$/.test(String(nextNode.result || ""));
+                      const nextUi = {
+                        ...currentUi,
+                        [activeNodeKey]: nextNode.id,
+                        [historyKeyName]: JSON.stringify([...history, historyKey]),
+                        [resultKeyName]: stageResult,
+                        "boyfriend-admirer-discovery-due-at": isAdmirerDiscoveryResult ? String(storyStamp + 60_000) : String(currentUi["boyfriend-admirer-discovery-due-at"] || ""),
+                        "boyfriend-stage3-trigger-at": stage3TriggerAt,
+                        "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                      };
                       update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
                       return;
                     }
@@ -2373,7 +2844,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const isStage2 = nodeId.startsWith("A0") && Number(nodeId.slice(1)) >= 70;
                       const activeNodeId = String(currentUi[isStage2 ? "secret-admirer-stage2-node" : "secret-admirer-story-node"] || "");
-                      if (nodeId !== activeNodeId) return;
+                      const admirerMemberId = String(currentUi["secret-admirer-member-id"] || "");
+                      const activeAdmirer = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === admirerMemberId);
+                      if (!activeAdmirer || character !== activeAdmirer.name || nodeId !== activeNodeId) return;
                       if (!isStage2 && (currentUi["secret-admirer-boundary"] === "distance" || currentUi["secret-admirer-boundary"] === "rejected")) return;
                       if (isStage2 && (currentUi["secret-admirer-stage2-boundary"] === "distance" || currentUi["secret-admirer-stage2-boundary"] === "trust-damaged")) return;
                       const storyChoice = isStage2 ? getSecretAdmirerStage2Choice(nodeId, choiceKey) : getSecretAdmirerChoice(nodeId, choiceKey);
@@ -2452,6 +2925,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       return;
                     }
                     if (choiceId?.startsWith("friend-link:")) {
+                      if (character !== selectedBoyfriend) return;
                       const [, linkType, linkKey] = choiceId.split(":");
                       const nodeId = String(currentUi["romance-node"] || "");
                       const usedKey = "friend-link-used-" + nodeId + "-" + linkType;
@@ -2549,7 +3023,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     if (choiceId?.startsWith("friend-phase2:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["friend-story-phase2-node"] || "");
-                      if (nodeId !== activeNodeId) return;
+                      // Only the selected friend's own chat can advance this storyline.
+                      if (character !== selectedFriend || nodeId !== activeNodeId) return;
                       const node = getFriendPhase2Node(nodeId);
                       const choice = node?.choices.find(entry => entry.key === choiceKey);
                       if (!node || !choice) return;
@@ -2572,34 +3047,108 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (nodeId === "F2_076" && choiceKey === "A") trust += 1;
                       if (nodeId === "F2_076" && choiceKey === "B") trust -= 1;
                       if (nodeId === "F2_075" && choiceKey === "C") concealment += 1;
+                      // Keep the player's stance meaningful after replacing the old one-button placeholders.
+                      const responseEffects: Record<string, number> = {
+                        "F2_070A:C": 1, "F2_070B:A": 1, "F2_070B:B": -1, "F2_070C:A": 1, "F2_070C:C": -1,
+                        "F2_071A:A": 1, "F2_071A:C": -1, "F2_071B:A": -1, "F2_071B:B": 1, "F2_071B:C": -1,
+                        "F2_071C:B": 1, "F2_071C:C": -1,
+                        "F2_072A:A": -1, "F2_072A:B": 1, "F2_072A:C": 1,
+                        "F2_072B:B": -1, "F2_072B:C": 1, "F2_072C:A": 1, "F2_072C:C": 1,
+                        "F2_073A:A": 1, "F2_073A:B": 1, "F2_073B:A": -1, "F2_073B:B": -1,
+                        "F2_073C:A": -1, "F2_073C:C": 1,
+                        "F2_075A:A": 1, "F2_075A:C": 1, "F2_075B:A": -1, "F2_075B:C": 1,
+                        "F2_075C:A": -1, "F2_075C:B": 1, "F2_075C:C": 1,
+                        "F2_076A:A": 1, "F2_076A:C": -1, "F2_076B:B": -1, "F2_076B:C": 1,
+                        "F2_076C:A": 1, "F2_076C:B": -1, "F2_076C:C": 1,
+                        "F2_077:A": 1, "F2_077:B": 1, "F2_077:C": 1,
+                        "F2_078A:A": 1, "F2_078A:C": 1, "F2_078B:B": 1, "F2_078B:C": 1,
+                        "F2_078C:A": 1, "F2_078C:B": 1, "F2_079:A": 1, "F2_079:C": 1,
+                        "F2_083:B": 1, "F2_083:C": 1, "F2_085:A": 1, "F2_085:C": 1,
+                      };
+                      trust += responseEffects[historyKey] || 0;
                       const hasFriendEvidence = currentUi["friend-story-phase2-evidence-compared"] === true || currentUi["friend-story-phase2-source-identified"] === true;
                       const resolvedNext = resolveFriendPhase2Next(nodeId, choiceKey, choice.next, trust, suspicion, concealment, hasFriendEvidence);
                       nextNode = getFriendPhase2Node(resolvedNext);
                       if (!nextNode) return;
                       const outgoing = makeItem({ id: "friend-phase2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendPhase2Node: nodeId, friendPhase2Choice: choiceKey };
+                      let activeNextNode = nextNode;
+                      let pendingAutoNextNodeId = "";
                       const renderedLines = nextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
-                      const queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = nextNode.id === "F2_074" ? [] : queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
-                        ...entry,
-                        item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
-                      }));
+                      let queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+                      if (nextNode.scriptedPlayerLines?.length && nextNode.autoNext) {
+                        let lineCursor = 0;
+                        for (let scriptedIndex = 0; scriptedIndex < nextNode.scriptedPlayerLines.length; scriptedIndex++) {
+                          const scriptedLine = nextNode.scriptedPlayerLines[scriptedIndex];
+                          const splitIndex = Math.max(lineCursor, Math.min(renderedLines.length, scriptedLine.afterLineIndex));
+                          const beforeQueue = queueLines(
+                            renderedLines.slice(lineCursor, splitIndex),
+                            "friend-phase2-" + nodeId + "-" + choiceKey + "-before-" + scriptedIndex,
+                            [...currentQueue, ...queued],
+                            true,
+                          ).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } } }));
+                          queued.push(...beforeQueue);
+                          const lastBeforeAt = Math.max(stamp, ...[...currentQueue, ...queued].filter(entry => entry.item?.title === character).map(entry => entry.deliverAt));
+                          const scriptedPlayer = makeItem({
+                            id: "friend-phase2-" + nextNode.id + "-scripted-player-" + scriptedIndex,
+                            title: character, sender: "我",
+                            body: scriptedLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+                            time, outgoing: true, read: true,
+                          });
+                          scriptedPlayer.meta = { ...scriptedPlayer.meta, friendPhase2Node: nextNode.id, friendPhase2ScriptedPlayer: String(scriptedIndex) };
+                          const scriptedPlayerAt = lastBeforeAt + 5000;
+                          queued.push({ item: scriptedPlayer, typingAt: scriptedPlayerAt, deliverAt: scriptedPlayerAt });
+                          lineCursor = splitIndex;
+                        }
+                        const afterQueue = queueLines(
+                          renderedLines.slice(lineCursor),
+                          "friend-phase2-" + nodeId + "-" + choiceKey + "-after",
+                          [...currentQueue, ...queued],
+                          true,
+                        ).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } } }));
+                        queued.push(...afterQueue);
+                        const autoNextNode = getFriendPhase2Node(nextNode.autoNext);
+                        if (!autoNextNode) return;
+                        if (autoNextNode.id === "F2_084") {
+                          pendingAutoNextNodeId = autoNextNode.id;
+                          activeNextNode = nextNode;
+                        } else {
+                          const autoNextLines = autoNextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
+                          const autoNextQueue = queueLines(autoNextLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-auto-" + autoNextNode.id, [...currentQueue, ...queued], true).map(entry => ({
+                            ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: autoNextNode.id } },
+                          }));
+                          queued.push(...autoNextQueue);
+                          activeNextNode = autoNextNode;
+                        }
+                      } else {
+                        const replyLines = (choice.replyLines || []).map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
+                        const replyQueue = replyLines.length ? queueLines(replyLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-reply", currentQueue, true).map(entry => ({
+                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nodeId } },
+                        })) : [];
+                        const resultQueue = nextNode.id === "F2_074" ? [] : queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey, [...currentQueue, ...replyQueue], true).map(entry => ({
+                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
+                        }));
+                        queued = [...replyQueue, ...resultQueue];
+                      }
                       const addScreenshotToQueue = (id: string, variant: string, body: string, offset: number) => {
-                        const item = makeItem({ id, title: character, sender: character, avatar, body, time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: nextNode!.id, friendPhase2Screenshot: variant } });
+                        const item = makeItem({ id, title: character, sender: character, avatar, body, time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: activeNextNode.id, friendPhase2Screenshot: variant } });
                         const baseAt = queued.length ? queued[queued.length - 1].deliverAt : stamp;
                         const typingAt = baseAt + 2000 + offset;
                         queued.push({ item, typingAt, deliverAt: typingAt + 3000 });
                       };
-                      if (nextNode.id === "F2_071") addScreenshotToQueue("friend-phase2-screenshot-initial", "cropped", "聊天记录截图", 0);
-                      if (nextNode.id === "F2_078A") {
+                      if (activeNextNode.id === "F2_071") addScreenshotToQueue("friend-phase2-screenshot-initial", "cropped", "聊天记录截图", 0);
+                      if (activeNextNode.id === "F2_078A") {
                         addScreenshotToQueue("friend-phase2-screenshot-original", "original", "原始聊天截图", 0);
                         addScreenshotToQueue("friend-phase2-screenshot-circulated", "cropped", "网上流传的截图", 5000);
                       }
                       const nextHistory = [...history, historyKey];
-                      const nextCompleted = [...new Set([...completed, nodeId])];
-                      const outcome = nextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
+                      const nextCompleted = [...new Set([...completed, nodeId, ...(activeNextNode.id !== nextNode.id ? [nextNode.id] : [])])];
+                      const outcome = activeNextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
                       const nextUi: Record<string, UiValue> = {
                         ...currentUi,
-                        "friend-story-phase2-node": nextNode.id,
+                        "friend-story-phase2-node": activeNextNode.id,
+                        "friend-story-phase2-auto-next-node": pendingAutoNextNodeId,
+                        "friend-story-phase2-friend-took-responsibility": currentUi["friend-story-phase2-friend-took-responsibility"] === true || nextNode.effect === "self-blame",
                         "friend-story-phase2-history": JSON.stringify(nextHistory),
                         "friend-story-phase2-completed-nodes": JSON.stringify(nextCompleted),
                         "friend-story-phase2-trust": trust,
@@ -2607,137 +3156,40 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-phase2-concealment": concealment,
                         "friend-story-phase2-outcome": outcome,
                         "friend-story-phase2-outcome-name": getFriendPhase2OutcomeLabel(outcome),
-                        "friend-story-phase2-followup-due-at": nextNode.result && !nodeId.startsWith("F2_090_") && currentUi["friend-story-phase2-followup-sent"] !== true
+                        "friend-story-phase2-followup-due-at": activeNextNode.result && !nodeId.startsWith("F2_090_") && currentUi["friend-story-phase2-followup-sent"] !== true
                           ? String(storyStamp + (outcome === "H18" || outcome === "H20" ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000))
                           : String(currentUi["friend-story-phase2-followup-due-at"] || ""),
                         "friend-story-phase2-followup-completed": nodeId.startsWith("F2_090_") ? true : currentUi["friend-story-phase2-followup-completed"] === true,
-                        "friend-story-phase2-x-due-at": nextNode.id === "F2_074" ? String(storyStamp + 30 * 60 * 1000) : String(currentUi["friend-story-phase2-x-due-at"] || ""),
-                        "friend-story-phase2-evidence-compared": nextNode.effect === "evidence-compared" || currentUi["friend-story-phase2-evidence-compared"] === true,
-                        "friend-story-phase2-source-identified": nextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
-                        "friend-story-phase2-investigation-paused": nextNode.effect === "investigation-paused" || currentUi["friend-story-phase2-investigation-paused"] === true,
+                        "friend-story-phase2-x-due-at": activeNextNode.id === "F2_074" ? String(storyStamp + 30 * 60 * 1000) : String(currentUi["friend-story-phase2-x-due-at"] || ""),
+                        "friend-story-phase2-evidence-compared": activeNextNode.effect === "evidence-compared" || currentUi["friend-story-phase2-evidence-compared"] === true,
+                        "friend-story-phase2-source-identified": activeNextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
+                        "friend-story-phase2-investigation-paused": activeNextNode.effect === "investigation-paused" || currentUi["friend-story-phase2-investigation-paused"] === true,
                         "friend-story-phase2-bf-informed": nodeId === "F2_080" && choiceKey === "C" ? true : currentUi["friend-story-phase2-bf-informed"] === true,
-                        "friend-story-phase2-truth": outcome === "H20" ? "D" : currentUi["friend-story-phase2-evidence-compared"] === true || nextNode.effect === "evidence-compared" ? "B" : currentUi["friend-story-phase2-source-identified"] === true || nextNode.effect === "source-identified" ? "A" : currentUi["friend-story-phase2-investigation-paused"] === true || nextNode.effect === "investigation-paused" ? "C" : String(currentUi["friend-story-phase2-truth"] || "C"),
+                        "friend-story-phase2-bf-waiting-for-reaction": nodeId === "F2_080" && choiceKey === "C" ? true : currentUi["friend-story-phase2-bf-waiting-for-reaction"] === true,
+                        "friend-story-phase2-truth": outcome === "H20" ? "D" : currentUi["friend-story-phase2-evidence-compared"] === true || activeNextNode.effect === "evidence-compared" ? "B" : currentUi["friend-story-phase2-source-identified"] === true || activeNextNode.effect === "source-identified" ? "A" : currentUi["friend-story-phase2-investigation-paused"] === true || activeNextNode.effect === "investigation-paused" ? "C" : String(currentUi["friend-story-phase2-truth"] || "C"),
                         "friend-story-phase2-ended": Boolean(outcome),
                         "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
                       };
                       let nextMessages = [...existing, outgoing];
                       if (nodeId === "F2_080" && choiceKey === "C" && selectedBoyfriend) {
                         const boyfriendText = "我想告诉你一件事：我的知心好友曾经为了帮我，向韩知恩求助并分享过一小部分私人聊天截图。现在网上流传的版本还有被加工的痕迹，我想和你一起确认事实。";
-                        const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, outgoing: true, read: true });
+                        const informedAtReal = Date.now();
+                        const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, sentAt: informedAtReal, outgoing: true, read: true });
                         informed.meta = { ...informed.meta, friendPhase2Sync: "true" };
                         const alreadyInformed = (currentMessages.kakao || []).some(item => item.id === informed.id);
-                        if (!alreadyInformed) {
-                          nextMessages = [...nextMessages, informed];
-                          const boyfriendLines = [
-                            "我确实很生气，但不是因为你还愿意和她做朋友。",
-                            "我生气的是，她没有经过你的同意就把私人对话交给别人。你可以自己决定这段友情，我不会替你做决定。",
-                          ];
-                          let boyfriendCursor = Math.max(stamp, ...currentQueue.filter(entry => entry.item.title === selectedBoyfriend).map(entry => entry.deliverAt));
-                          boyfriendLines.forEach((body, index) => {
-                            const item = makeItem({
-                              id: "friend-phase2-boyfriend-reply-" + stamp + "-" + index,
-                              title: selectedBoyfriend,
-                              sender: selectedBoyfriend,
-                              avatar: boyfriendAvatarPath(selectedBoyfriend),
-                              body,
-                              time,
-                              outgoing: false,
-                              read: false,
-                              meta: { friendPhase2Sync: "true" },
-                            });
-                            const typingAt = boyfriendCursor + 2000;
-                            const deliverAt = boyfriendCursor + 5000;
-                            boyfriendCursor = deliverAt;
-                            queued.push({ item, typingAt, deliverAt });
-                          });
-                        }
+                        if (!alreadyInformed) nextMessages = [...nextMessages, informed];
+                        // Record that the player informed the selected boyfriend, but do not
+                        // fabricate his reaction here. His reply must come from his own active
+                        // story state and its existing progression, not from the friend's arc.
+                        nextUi["friend-story-phase2-bf-informed-at"] = String(storyStamp);
+                        nextUi["friend-story-phase2-bf-informed-real-at"] = String(informedAtReal);
+                        nextUi["friend-story-phase2-bf-informed-member"] = selectedBoyfriend;
+                        nextUi["friend-story-phase2-bf-preexisting-queued-ids"] = JSON.stringify(currentQueue
+                          .filter(entry => entry.item?.title === selectedBoyfriend && Boolean(entry.item.meta?.boyfriendStage2Node || entry.item.meta?.boyfriendStage3Node || entry.item.meta?.boyfriendAdmirerNode || entry.item.meta?.romanceNode))
+                          .map(entry => entry.item!.id));
                       }
-                      let nextTwitter = [...(current.messages.twitter || [])];
-                      let globalQueue: Item[] = [];
-                      try { globalQueue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
-                      if (nextNode.id === "F2_084" && !nextTwitter.some(post => post.id === "friend-phase2-X002")) {
-                        const secondPost = makeItem({
-                          id: "friend-phase2-X002", title: "友人承认曾向第三方提供私人对话资料",
-                          sender: "@timeline_watch_09",
-                          body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。相关截图仍有部分来源与传播过程未明。",
-                          time, kind: "post", folder: "主页", likes: 9200,
-                          comments: [
-                            "@bluehour_8m：承认提供资料不等于承认公开爆料，先把事实分清楚。",
-                            "@orbitallyz_4q：请不要去攻击任何一方的私人账号。",
-                            "@nightletter_2p：现在最重要的是停止继续传播截图。",
-                            "@teamfirst_7v：希望 Wake One 能处理隐私保护问题。",
-                            "@softpetal_3n：没有完整证据前不要替任何人定罪。",
-                            "@duskarchive_6r：朋友做错了也不代表可以网暴她。",
-                            "@silverorbit_9k：请把焦点放在资料如何外流。",
-                            "@moonfilm_5x：当事人有权利要求停止散播私人对话。",
-                          ],
-                          meta: { handle: "timeline_watch_09", verified: "false", reposts: "1360", views: "31.6万", storyEventId: "FRIEND_PHASE2_X002" },
-                        });
-                        nextTwitter = [...nextTwitter, secondPost];
-                        globalQueue = [...globalQueue, { ...secondPost, meta: { ...secondPost.meta, notificationAppId: "twitter", notificationPostId: secondPost.id } }];
-                      }
-                      if (nodeId === "F2_080" && choiceKey === "C") {
-                        nextUi["friend-story-phase2-boyfriend-notice-at"] = String(stamp);
-                      }
-                      nextUi["delivery-queue"] = JSON.stringify([...currentQueue, ...queued]);
-                      update({
-                        ...current,
-                        messages: { ...currentMessages, kakao: nextMessages, twitter: nextTwitter },
-                        ui: { ...current.ui, kakao: { ...nextUi, "global-notification-queue": JSON.stringify(globalQueue) } },
-                      });
-                      return;
-                    }
-                    if (choiceId?.startsWith("friend:")) {
-                      const [, friendNodeId, friendChoiceKey] = choiceId.split(":");
-                      const activeNodeId = String(currentUi["friend-story-node"] || "");
-                      if (friendNodeId !== activeNodeId) return;
-                      const friendChoice = getFriendStoryChoice(friendNodeId, friendChoiceKey);
-                      if (!friendChoice) return;
-                      let history: string[] = [];
-                      let completed: string[] = [];
-                      try { history = JSON.parse(String(currentUi["friend-story-history"] || "[]")); } catch { history = []; }
-                      try { completed = JSON.parse(String(currentUi["friend-story-completed-nodes"] || "[]")); } catch { completed = []; }
-                      const historyKey = friendNodeId + ":" + friendChoiceKey;
-                      if (history.includes(historyKey)) return;
-                      const nextNode = getFriendStoryNode(friendChoice.next);
-                      if (!nextNode) return;
-                      const outgoing = makeItem({ id: "kakao-friend-player-" + friendNodeId + "-" + friendChoiceKey + "-" + stamp, title: character, sender: "我", body: friendChoice.text, time, outgoing: true, read: true });
-                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendStoryNode: friendNodeId, friendStoryChoice: friendChoiceKey };
-                      const queued = queueLines(nextNode.lines, "kakao-friend-" + friendNodeId + "-" + friendChoiceKey);
-                      const outcome = nextNode.result || String(currentUi["friend-story-outcome"] || "");
-                      const friendState = {
-                        trust: Number(currentUi["friend-story-trust"] || 0) + (["F036","F046","F051","H01"].includes(nextNode.id) ? 1 : 0),
-                        conflict: nextNode.id === "H04" || nextNode.id === "H10" || nextNode.id === "H06" ? true : currentUi["friend-story-conflict"] === true,
-                        teamConcern: ["F006","F014","F019","F020","F037","F040","F042","H02","H05"].includes(nextNode.id) || currentUi["friend-story-team-concern"] === true,
-                        secretLevel: ["F009","F026","F027","F028","F031","F056","F057","F058","F060","F069"].includes(nextNode.id) ? Math.max(1, Number(currentUi["friend-story-secret-level"] || 0)) : Number(currentUi["friend-story-secret-level"] || 0),
-                      };
-                      const nextUi = {
-                        ...currentUi,
-                        "friend-story-node": nextNode.id,
-                        "friend-story-history": JSON.stringify([...history, historyKey]),
-                        "friend-story-completed-nodes": JSON.stringify([...new Set([...completed, friendNodeId])]),
-                        "friend-story-last-choice": historyKey,
-                        "friend-story-outcome": outcome,
-                        "friend-story-phase2-not-before-real-at": /^H(?:0[1-9]|1[0-2])$/.test(outcome)
-                          ? String(currentUi["friend-story-phase2-not-before-real-at"] || nextKakaoStageStartAt(
-                              stamp,
-                              [...currentQueue.map((entry) => entry.deliverAt), ...queued.map((entry) => entry.deliverAt)],
-                            ))
-                          : String(currentUi["friend-story-phase2-not-before-real-at"] || ""),
-                        "friend-story-care-due-at": nextNode.id === "H09" ? String(stamp + 5 * 60 * 1000) : String(currentUi["friend-story-care-due-at"] || ""),
-                        "friend-story-reconnect-due-at": nextNode.id === "H04" ? String(stamp + 24 * 60 * 60 * 1000) : String(currentUi["friend-story-reconnect-due-at"] || ""),
-                        "friend-story-trust": friendState.trust,
-                        "friend-story-conflict": friendState.conflict,
-                        "friend-story-team-concern": friendState.teamConcern,
-                        "friend-story-secret-level": friendState.secretLevel,
-                        "friend-story-knows-warning": ["F009","F026","F027","F031"].includes(nextNode.id) || currentUi["friend-story-knows-warning"] === true,
-                        "friend-story-knows-sacrifice": ["F028","F060","H11"].includes(nextNode.id) || currentUi["friend-story-knows-sacrifice"] === true,
-                        "friend-story-promised-secrecy": nextNode.id === "H10" ? true : currentUi["friend-story-promised-secrecy"] === true,
-                        "friend-story-knows-player-intent": ["H07","H08","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-knows-player-intent"] || ""),
-                        "friend-story-handoff": ["H07","H09","H11","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-handoff"] || ""),
-                        "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
-                      };
-                      update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
+
+                      update({ ...current, messages: { ...currentMessages, kakao: nextMessages }, ui: { ...current.ui, kakao: nextUi } });
                       return;
                     }
                     if (choiceId === "__migrate__") {
@@ -2768,6 +3220,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const nodeId = String(currentUi["romance-node"] || "");
                     const storyChoice = choiceId ? getKakaoStoryChoice(nodeId, choiceId) : undefined;
                     if (storyChoice) {
+                      if (character !== selectedBoyfriend) return;
                       let history: string[] = [];
                       try { history = JSON.parse(String(currentUi["romance-history"] || "[]")); } catch { history = []; }
                       const historyKey = nodeId + ":" + choiceId;
