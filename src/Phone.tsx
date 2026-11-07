@@ -1467,7 +1467,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, "KakaoTalk: " + selectedBoyfriend + "：" + first.body],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", "boyfriend-stage2-history": "[]", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", "boyfriend-stage3-history": "[]", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -1615,7 +1615,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const current = runtimeRef.current;
     const ui = current.ui?.kakao || {};
     const aOutcome = String(ui["secret-admirer-stage2-outcome"] || "");
-    const bfOutcome = String(ui["boyfriend-stage2-result"] || "");
+    const bfOutcome = String(ui["boyfriend-stage3-result"] || "");
     const dueAt = Number(ui["boyfriend-admirer-discovery-due-at"] || 0);
     if (!/^R1[1-8]$/.test(aOutcome) || !/^M(?:0[7-9]|1[0-2])$/.test(bfOutcome) || !dueAt || ui["boyfriend-admirer-discovery-started"] === true) return;
     const gameNow = Number(current.gameClock?.currentGameTimestamp || Date.now());
@@ -1625,7 +1625,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const latest = runtimeRef.current;
       const latestUi = latest.ui?.kakao || {};
       if (latestUi["boyfriend-admirer-discovery-started"] === true) return;
-      if (!/^R1[1-8]$/.test(String(latestUi["secret-admirer-stage2-outcome"] || "")) || !/^M(?:0[7-9]|1[0-2])$/.test(String(latestUi["boyfriend-stage2-result"] || ""))) return;
+      if (!/^R1[1-8]$/.test(String(latestUi["secret-admirer-stage2-outcome"] || "")) || !/^M(?:0[7-9]|1[0-2])$/.test(String(latestUi["boyfriend-stage3-result"] || ""))) return;
       let queue: Array<{item?: Item; deliverAt?: number}> = [];
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
       // Do not abandon the M170 follow-up when another queued chat message is
@@ -1664,7 +1664,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       update({...latest,messages:{...latest.messages,kakao:[...(latest.messages.kakao||[]),first]},notifications:app==="kakao"?latest.notifications:[...latest.notifications,"KakaoTalk: "+selectedBoyfriend+"："+first.body],ui:{...latest.ui,kakao:{...latestUi,"boyfriend-admirer-discovery-started":true,"boyfriend-admirer-discovery-node":"M170","boyfriend-admirer-discovery-history":"[]","boyfriend-admirer-discovery-result":"","boyfriend-admirer-discovery-member-id":member.id,"delivery-queue":JSON.stringify([...queue,...queued])}}});
     },Math.max(0,(dueAt-gameNow)/scale));
     return ()=>window.clearTimeout(timer);
-  },[ready,creator,app,selectedBoyfriend,s.gameClock?.currentGameTimestamp,s.gameClock?.timeScale,s.ui?.kakao?.["secret-admirer-stage2-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["boyfriend-admirer-discovery-due-at"],s.ui?.kakao?.["boyfriend-admirer-discovery-started"],s.ui?.kakao?.["delivery-queue"]]);
+  },[ready,creator,app,selectedBoyfriend,s.gameClock?.currentGameTimestamp,s.gameClock?.timeScale,s.ui?.kakao?.["secret-admirer-stage2-outcome"],s.ui?.kakao?.["boyfriend-stage3-result"],s.ui?.kakao?.["boyfriend-admirer-discovery-due-at"],s.ui?.kakao?.["boyfriend-admirer-discovery-started"],s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
@@ -2318,22 +2318,42 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     };
                     if (choiceId?.startsWith("boyfriend-stage2:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
+                      const isStage3Node = currentUi["boyfriend-stage3-started"] === true && /^K1[4-6]\\d$/.test(nodeId);
                       const activeNodeId = String(currentUi["boyfriend-stage2-node"] || "");
                       if (character !== selectedBoyfriend || nodeId !== activeNodeId) return;
                       const choice = getBoyfriendStage2Choice(nodeId, choiceKey);
                       if (!choice) return;
+                      const historyKeyName = isStage3Node ? "boyfriend-stage3-history" : "boyfriend-stage2-history";
+                      const resultKeyName = isStage3Node ? "boyfriend-stage3-result" : "boyfriend-stage2-result";
                       let history: string[] = [];
-                      try { history = JSON.parse(String(currentUi["boyfriend-stage2-history"] || "[]")); } catch { history = []; }
+                      try { history = JSON.parse(String(currentUi[historyKeyName] || "[]")); } catch { history = []; }
                       const historyKey = nodeId + ":" + choiceKey;
                       if (history.includes(historyKey)) return;
                       const nextNode = getBoyfriendStage2Node(choice.next);
                       if (!nextNode) return;
-                      const outgoing = makeItem({ id: "boyfriend-stage2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
-                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), boyfriendStage2Node: nodeId, boyfriendStage2Choice: choiceKey };
-                      const queued = queueLines(nextNode.lines, "boyfriend-stage2-" + nodeId + "-" + choiceKey, currentQueue, true).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, boyfriendStage2Node: nextNode.id } } }));
-                      const isPreviousStageOutcome = /^E(0[9]|1[0-8])$/.test(String(nextNode.result || ""));
+                      const outgoing = makeItem({ id: (isStage3Node ? "boyfriend-stage3-player-" : "boyfriend-stage2-player-") + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
+                      outgoing.meta = {
+                        ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000),
+                        [isStage3Node ? "boyfriendStage3Node" : "boyfriendStage2Node"]: nodeId,
+                        [isStage3Node ? "boyfriendStage3Choice" : "boyfriendStage2Choice"]: choiceKey,
+                      };
+                      const queued = queueLines(nextNode.lines, (isStage3Node ? "boyfriend-stage3-" : "boyfriend-stage2-") + nodeId + "-" + choiceKey, currentQueue, true).map(entry => ({
+                        ...entry,
+                        item: { ...entry.item, meta: { ...entry.item.meta, [isStage3Node ? "boyfriendStage3Node" : "boyfriendStage2Node"]: nextNode.id } },
+                      }));
+                      const isPreviousStageOutcome = !isStage3Node && /^E(0[9]|1[0-8])$/.test(String(nextNode.result || ""));
                       const stage3TriggerAt = isPreviousStageOutcome ? String(nextKakaoStageStartAt(stamp, [...currentQueue.map(entry => entry.deliverAt), ...queued.map(entry => entry.deliverAt)])) : String(currentUi["boyfriend-stage3-trigger-at"] || "");
-                      const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "boyfriend-admirer-discovery-due-at": /^M(?:0[7-9]|1[0-2])$/.test(String(nextNode.result || "")) ? String(storyStamp + 60_000) : String(currentUi["boyfriend-admirer-discovery-due-at"] || ""), "boyfriend-stage3-trigger-at": stage3TriggerAt, "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
+                      const stageResult = nextNode.result || String(currentUi[resultKeyName] || "");
+                      const isAdmirerDiscoveryResult = isStage3Node && /^M(?:0[7-9]|1[0-2])$/.test(String(nextNode.result || ""));
+                      const nextUi = {
+                        ...currentUi,
+                        "boyfriend-stage2-node": nextNode.id,
+                        [historyKeyName]: JSON.stringify([...history, historyKey]),
+                        [resultKeyName]: stageResult,
+                        "boyfriend-admirer-discovery-due-at": isAdmirerDiscoveryResult ? String(storyStamp + 60_000) : String(currentUi["boyfriend-admirer-discovery-due-at"] || ""),
+                        "boyfriend-stage3-trigger-at": stage3TriggerAt,
+                        "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
+                      };
                       update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
                       return;
                     }
