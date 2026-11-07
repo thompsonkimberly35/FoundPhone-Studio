@@ -24,6 +24,24 @@ describe("KakaoTalk confidant friend story phase two", () => {
     }
   });
 
+  it("preserves the original F087 estrangement and unfinished-apology responses", () => {
+    const f087 = getFriendPhase2Node("F2_087");
+    const h18 = getFriendPhase2Node("H18");
+    const h19 = getFriendPhase2Node("H19");
+    expect(f087?.choices.map(choice => [choice.key, choice.next])).toEqual([
+      ["A", "H18"], ["B", "H20"], ["C", "H19"],
+    ]);
+    expect(h18?.lines).toEqual([
+      "好。",
+      "我不会再打扰你。",
+      "希望你以后能平安，也希望你身边有人好好照顾你。",
+    ]);
+    expect(h19?.lines).toEqual([
+      "……真的吗？",
+      "那我还有机会把事情说清楚吗？",
+    ]);
+  });
+
   it("plays the original F081 scripted exchange before showing F082 choices", () => {
     const f081 = getFriendPhase2Node("F2_081");
     const f082 = getFriendPhase2Node("F2_082");
