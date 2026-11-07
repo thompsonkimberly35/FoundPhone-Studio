@@ -2347,7 +2347,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (["F091:B", "F097:B", "F097:C", "F105:B", "F115:B", "F116:B"].includes(historyKey)) trust -= 1;
                       const knowsAConfession = knowsA || (nodeId === "F093" && choiceKey === "A") || (nodeId === "F099" && choiceKey === "A") || (nodeId === "F103" && choiceKey === "A") || (nodeId === "F104" && choiceKey === "A") || (nodeId === "F109" && choiceKey === "A");
                       const outcome = nextNode.result || String(currentUi["friend-third-arc-outcome"] || "");
-                      const boundaryRespected = currentUi["friend-third-arc-boundary-respected"] === true || ["F098:B", "F107:B", "F110:A", "F114:B", "F116:C"].includes(historyKey) || ["H22", "H24"].includes(outcome);
+                      if (["H23", "H24"].includes(outcome)) trust = Math.min(trust, trustBefore - 1);
+                      if (["H25", "H26"].includes(outcome)) trust = Math.max(trust, trustBefore + 1);
+                      const boundaryRespected = currentUi["friend-third-arc-boundary-respected"] === true || ["F098:B", "F107:B", "F110:A", "F114:B", "F116:C"].includes(historyKey) || ["H22", "H24", "H25"].includes(outcome);
                       const nextUi = {
                         ...currentUi,
                         "friend-third-arc-node": nextNode.id,
