@@ -1,9 +1,10 @@
+import { BOYFRIEND_STAGE3, BOYFRIEND_STAGE3_RESULTS, getBoyfriendStage3Node } from "./kakaoBoyfriendStage3";
 import { STAGE2_A } from "./kakaoBoyfriendStage2A";
 import { STAGE2_MIDDLE } from "./kakaoBoyfriendStage2Middle";
 export type BoyfriendStage2Choice={key:string;text:string;next:string};
 export type BoyfriendStage2Node={id:string;lines:string[];choices:BoyfriendStage2Choice[];result?:string};
 const n=(id:string,lines:string[],choices:[string,string,string][]=[]):BoyfriendStage2Node=>({id,lines,choices:choices.map(([key,text,next])=>({key,text,next})),...(id.startsWith("E")?{result:id}:{})});
-export const BOYFRIEND_STAGE2:Record<string,BoyfriendStage2Node>={...STAGE2_A,...STAGE2_MIDDLE,
+export const BOYFRIEND_STAGE2:Record<string,BoyfriendStage2Node>={...STAGE2_A,...STAGE2_MIDDLE,...BOYFRIEND_STAGE3 as Record<string,BoyfriendStage2Node>,
 K113:n("K113",["声明出来了。","我刚刚确认过。","他们有把私人资料跟恶意攻击的部分写进去。","但现在留言区又吵起来了。"],[["A","至少公司有正式表态。","K114"],["B","我看到有人说声明根本没有回答问题。","K115"],["C","你现在还好吗？","K116"]]),
 K114:n("K114",["嗯。","至少这次不是完全沉默。","可是我刚刚收到经纪人的讯息。","原本这周的公开活动，主办方决定先暂缓公告细节。"],[["A","是因为我们的事情吗？","K117"],["B","其他成员知道了吗？","K118"],["C","你是不是又在怪自己？","K119"]]),
 K115:n("K115",["我也看到了。","有人说公司在逃避问题。","也有人说我们不需要向任何人交代私人感情。","我以前很少看到 ALLYZ 吵成这样。"],[["A","你不可能让所有人都满意。","K119"],["B","我不想再看那些留言了。","K120"],["C","公司接下来打算怎么做？","K117"]]),
@@ -32,7 +33,7 @@ K137:n("K137",["我知道。","你喜欢我，不代表你每天都必须很开�
 K138:n("K138",["我不能保证每一天都做得很好。","我可能还是会犯错。","但我不想再用「我很忙」或「我也是为你好」当成不沟通的理由。"],[["A","那我愿意再试一次。","E17"],["B","我需要看你怎么做。","E16"],["C","我现在没有答案。","E14"]]),
 K139:n("K139",["我也怕。","我们一起练习那么久。","我不想因为一次争执，就让大家以后都不敢跟我说真话。","所以这次，我想先把话说清楚。"],[["A","那就去做吧。","E15"],["B","希望你们能重新理解彼此。","E15"],["C","我会等你告诉我结果。","E16"]]),
 };
-export const BOYFRIEND_STAGE2_RESULTS:Record<string,BoyfriendStage2Node>={
+export const BOYFRIEND_STAGE2_RESULTS:Record<string,BoyfriendStage2Node>={...BOYFRIEND_STAGE3_RESULTS as Record<string,BoyfriendStage2Node>,
 E09:n("E09",["今天先到这里吧。","我不想在我们都很累的时候，继续说出会后悔的话。","明天再谈。"]),
 E10:n("E10",["我会等你整理好自己的想法。","不会一直传讯息逼你回答。","只是希望你知道，我还是很在乎你。"]),
 E11:n("E11",["好好休息。","今天已经发生太多事情了。","我明天再联络你。"]),
