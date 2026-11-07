@@ -76,7 +76,7 @@ import { enqueueIncomingKakaoNotifications, getCompletedKakaoStoryNodeIds } from
 import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
-import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
+import { getFriendStoryNode } from "./kakaoFriendStory";
 import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, isExplicitBoyfriendAngerResponse, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { getFriendPhase3Node, getFriendPhase3Choice, getFriendPhase3Opening } from "./kakaoFriendStoryPhase3";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
