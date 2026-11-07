@@ -26,6 +26,7 @@ function expectAllNodesReachable(
     const node = nodes[id];
     pending.push(...node.choices.map(choice => choice.next));
     if (node.pauseTo) pending.push(node.pauseTo);
+    if (node.autoNext) pending.push(node.autoNext);
     pending.push(...(eventEdges[id] || []));
   }
   expect(Object.keys(nodes).filter(id => !visited.has(id)), name + " unreachable nodes").toEqual([]);
