@@ -45,6 +45,7 @@ describe("KakaoTalk confidant friend story phase three", () => {
     expect(getFriendPhase3Choice("F108", "B", { aOutcome: "R12" })).toBeUndefined();
     expect(getFriendPhase3Choice("F108", "A", { aOutcome: "R12" })?.text).toContain("拒绝");
     expect(getFriendPhase3Choice("F108", "A", { aOutcome: "R13" })?.text).toContain("保持距离");
-    expect(getFriendPhase3Choice("F108", "A", { aOutcome: "R18" })?.text).toContain("没有完全想清楚");
+    expect(getFriendPhase3Choice("F108", "A", { aOutcome: "R18" })).toBeUndefined();
+    expect(getFriendPhase3Choice("F108", "B", { aOutcome: "R18" })?.text).toContain("没有完全想清楚");
   });
 });
