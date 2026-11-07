@@ -71,7 +71,7 @@ import { dispatch, choose, visible, advance } from "./engine";
 import { db } from "./persistence";
 import { createInstagramBacklash } from "./instagramBacklash";
 import { makeThreadsBacklash, type InstagramReplyEvidence, hasThreadsX002 } from "./threadsBacklash";
-import { enqueueIncomingKakaoNotifications } from "./kakaoNotifications";
+import { enqueueIncomingKakaoNotifications, getCompletedKakaoStoryNodeIds } from "./kakaoNotifications";
 import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
@@ -1224,11 +1224,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
 
   useEffect(() => {
     if (!ready || creator) return;
-    const deliveredNodes = new Set((s.messages.kakao || [])
-      .map(item => String(item.meta?.boyfriendStage2Node || ""))
-      .filter(Boolean));
     const current = runtimeRef.current;
     const ui = current.ui?.kakao || {};
+    let pendingStoryDeliveries: Array<{ item?: Item }> = [];
+    try { pendingStoryDeliveries = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { pendingStoryDeliveries = []; }
+    const deliveredNodes = getCompletedKakaoStoryNodeIds(
+      current.messages.kakao || [],
+      pendingStoryDeliveries.map(entry => entry.item).filter((item): item is Item => Boolean(item)),
+      "boyfriendStage2Node",
+    );
     const posts = [...(current.messages.twitter || [])];
     let queue: Item[] = [];
     let events: Array<{eventId:string;triggeredByNode:string;postId:string;deliveredAt:number;notificationDelivered:boolean}> = [];
@@ -1313,7 +1317,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       notifications: app === "kakao" ? current.notifications : [...current.notifications, ...boyfriendNotice],
       ui: { ...current.ui, kakao: nextUi }
     });
-  }, [ready, creator, s.messages.kakao, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"]]);
+  }, [ready, creator, s.messages.kakao, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend) return;
