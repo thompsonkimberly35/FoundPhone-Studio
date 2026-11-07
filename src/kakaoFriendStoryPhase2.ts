@@ -205,6 +205,8 @@ export function validateFriendPhase2Story(): string[] {
     if (reached.has(id) || !known.has(id)) continue;
     reached.add(id);
     for (const choice of FRIEND_PHASE2_STORY[id].choices) pending.push(choice.next);
+    // F2_074 is an event-only node: the scheduled X post automatically opens F2_075.
+    if (id === "F2_074") pending.push("F2_075");
     if (id === "F2_080") pending.push("F2_087");
     if (id === "F2_081") pending.push("H14");
   }
