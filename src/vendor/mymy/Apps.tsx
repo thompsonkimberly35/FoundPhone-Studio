@@ -108,7 +108,7 @@ export function MymyKakao(p: SkinProps) {
   const hasBacklashCheckin = messages.some((item) => item.id === "boyfriend-backlash-checkin");
   const romanceNodeId = String(p.ui?.["romance-node"] || "");
   const romanceNode = getKakaoStoryNode(romanceNodeId);
-  const boyfriendStage2NodeId = String(p.ui?.["boyfriend-stage2-node"] || "");
+  const boyfriendStage2NodeId = String(p.ui?.["boyfriend-stage3-started"] === true ? p.ui?.["boyfriend-stage3-node"] || p.ui?.["boyfriend-stage2-node"] || "" : p.ui?.["boyfriend-stage2-node"] || "");
   const boyfriendStage2Node = getBoyfriendStage2Node(boyfriendStage2NodeId);
   const friendStoryNodeId = String(p.ui?.["friend-story-node"] || "");
   const friendStoryNode = getFriendStoryNode(friendStoryNodeId);
