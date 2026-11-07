@@ -1662,7 +1662,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const knowsConflict = latestUi["boyfriend-admirer-confrontation-completed"] === true;
       const secretSource = String(latestUi["friend-secret-source"] || "observed-only");
       const context = { aOutcome: latestAOutcome, boyfriendOutcome: latestBoyfriendOutcome, friendOutcome: latestFriendOutcome, trust, knowsBoyfriendConflict: knowsConflict, secretSource };
-      const opening = getFriendPhase3Opening(context).map(line => line.replace(/\\{\\{ADMIRER_NAME\\}\\}/g, latestAdmirer.name));
+      const opening = getFriendPhase3Opening(context).map(line => line.replace(/\{\{ADMIRER_NAME\}\}/g, latestAdmirer.name));
       const firstNode = getFriendPhase3Node("F088", context);
       if (!firstNode) return;
       const lines = [...opening, ...firstNode.lines];
@@ -1673,7 +1673,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
       };
       const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
-      const personalize = (line: string) => line.replace(/\\{\\{ADMIRER_NAME\\}\\}/g, latestAdmirer.name);
+      const personalize = (line: string) => line.replace(/\{\{ADMIRER_NAME\}\}/g, latestAdmirer.name);
       const first = makeItem({ id: "friend-phase3-F088-0", title: selectedFriend, sender: selectedFriend, avatar, body: personalize(lines[0]), time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase3Node: "F088", kakaoStageTiming: "stage-boundary" } });
       const now = Date.now();
       const pending = lines.slice(1).map((body, index) => {
@@ -1702,7 +1702,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "friend-third-arc-boyfriend-id": memberIdForName(selectedBoyfriend || ""),
           "friend-third-arc-friend-id": memberIdForName(selectedFriend),
           "friend-third-arc-knows-a-confession": latestUi["friend-knows-a-confession"] === true,
+          "friend-knows-a-confession": latestUi["friend-knows-a-confession"] === true,
           "friend-third-arc-knows-boyfriend-conflict": knowsConflict,
+                        "friend-knows-boyfriend-conflict": knowsConflict,
           "friend-third-arc-trust-level": trust,
           "friend-third-arc-boundary-respected": ["H13", "H14", "H15", "H16", "H17", "H19"].includes(latestFriendOutcome),
           "friend-third-arc-contact-paused": false,
@@ -2327,7 +2329,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (!nextNode) return;
                       const admirerId = String(currentUi["friend-third-arc-a-member-id"] || currentUi["secret-admirer-member-id"] || "");
                       const admirer = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === admirerId);
-                      const personalize = (line: string) => line.replace(/\\{\\{ADMIRER_NAME\\}\\}/g, admirer?.name || "那位成员");
+                      const personalize = (line: string) => line.replace(/\{\{ADMIRER_NAME\}\}/g, admirer?.name || "那位成员");
                       const outgoing = makeItem({ id: "friend-phase3-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: personalize(choice.text), time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendPhase3Node: nodeId, friendPhase3Choice: choiceKey };
                       const renderedLines = nextNode.lines.map(personalize);
@@ -2348,6 +2350,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-third-arc-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
                         "friend-third-arc-outcome": outcome,
                         "friend-third-arc-knows-a-confession": knowsAConfession,
+                        "friend-knows-a-confession": knowsAConfession,
                         "friend-third-arc-knows-boyfriend-conflict": knowsConflict,
                         "friend-third-arc-trust-level": trust,
                         "friend-third-arc-boundary-respected": boundaryRespected,
