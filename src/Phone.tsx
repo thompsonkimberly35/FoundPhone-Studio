@@ -2379,7 +2379,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const isStage2 = nodeId.startsWith("A0") && Number(nodeId.slice(1)) >= 70;
                       const activeNodeId = String(currentUi[isStage2 ? "secret-admirer-stage2-node" : "secret-admirer-story-node"] || "");
-                      if (nodeId !== activeNodeId) return;
+                      const admirerMemberId = String(currentUi["secret-admirer-member-id"] || "");
+                      const activeAdmirer = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === admirerMemberId);
+                      if (!activeAdmirer || character !== activeAdmirer.name || nodeId !== activeNodeId) return;
                       if (!isStage2 && (currentUi["secret-admirer-boundary"] === "distance" || currentUi["secret-admirer-boundary"] === "rejected")) return;
                       if (isStage2 && (currentUi["secret-admirer-stage2-boundary"] === "distance" || currentUi["secret-admirer-stage2-boundary"] === "trust-damaged")) return;
                       const storyChoice = isStage2 ? getSecretAdmirerStage2Choice(nodeId, choiceKey) : getSecretAdmirerChoice(nodeId, choiceKey);
@@ -2458,6 +2460,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       return;
                     }
                     if (choiceId?.startsWith("friend-link:")) {
+                      if (character !== selectedBoyfriend) return;
                       const [, linkType, linkKey] = choiceId.split(":");
                       const nodeId = String(currentUi["romance-node"] || "");
                       const usedKey = "friend-link-used-" + nodeId + "-" + linkType;
@@ -2716,7 +2719,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     if (choiceId?.startsWith("friend:")) {
                       const [, friendNodeId, friendChoiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["friend-story-node"] || "");
-                      if (friendNodeId !== activeNodeId) return;
+                      if (character !== selectedFriend || friendNodeId !== activeNodeId) return;
                       const friendChoice = getFriendStoryChoice(friendNodeId, friendChoiceKey);
                       if (!friendChoice) return;
                       let history: string[] = [];
@@ -2794,6 +2797,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     const nodeId = String(currentUi["romance-node"] || "");
                     const storyChoice = choiceId ? getKakaoStoryChoice(nodeId, choiceId) : undefined;
                     if (storyChoice) {
+                      if (character !== selectedBoyfriend) return;
                       let history: string[] = [];
                       try { history = JSON.parse(String(currentUi["romance-history"] || "[]")); } catch { history = []; }
                       const historyKey = nodeId + ":" + choiceId;
