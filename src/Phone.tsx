@@ -77,7 +77,7 @@ import { ensureJapanLotteryMail } from "./mail";
 import { MailApp } from "./MailApp";
 import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
-import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
+import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, isExplicitBoyfriendAngerResponse, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { getFriendPhase3Node, getFriendPhase3Choice, getFriendPhase3Opening } from "./kakaoFriendStoryPhase3";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { SECRET_ADMIRER_STAGE2_OPENINGS, getSecretAdmirerStage2Choice, getSecretAdmirerStage2Node } from "./kakaoSecretAdmirerStage2";
@@ -1225,6 +1225,108 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       } },
     });
   }, [ready, creator, selectedFriend, selectedBoyfriend, s.messages.kakao, s.messages.twitter, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-auto-next-node"], s.ui?.kakao?.["friend-story-phase2-x2-posted"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["global-notification-queue"]]);
+
+  // Wait for an actual angry response in the selected boyfriend's own Kakao thread before F085 may speak.
+  useEffect(() => {
+    if (!ready || creator || !selectedBoyfriend || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-phase2-node"] !== "F2_080C_WAIT" || ui["friend-story-phase2-bf-waiting-for-reaction"] !== true) return;
+    if (String(ui["friend-story-phase2-bf-informed-member"] || "") !== selectedBoyfriend) return;
+
+    const informedAt = Number(ui["friend-story-phase2-bf-informed-real-at"] || 0);
+    if (!informedAt) return;
+    const boyfriendReaction = (current.messages.kakao || []).find(item =>
+      item.title === selectedBoyfriend
+      && item.outgoing !== true
+      && Number(item.sentAt || 0) >= informedAt
+      && Boolean(item.meta?.boyfriendStage2Node || item.meta?.boyfriendStage3Node || item.meta?.boyfriendAdmirerNode || item.meta?.romanceNode)
+      && isExplicitBoyfriendAngerResponse(item.body),
+    );
+    if (!boyfriendReaction) return;
+
+    let queue: Array<{ item?: Item; typingAt?: number; deliverAt?: number }> = [];
+    let completed: string[] = [];
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    try { completed = JSON.parse(String(ui["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+    const f085 = getFriendPhase2Node("F2_085");
+    const f086 = getFriendPhase2Node("F2_086");
+    if (!f085 || !f086) return;
+
+    const alreadyStarted = (current.messages.kakao || []).some(item => item.meta?.friendPhase2Node === "F2_085" || item.meta?.friendPhase2Node === "F2_086")
+      || queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_085" || entry.item?.meta?.friendPhase2Node === "F2_086");
+    if (alreadyStarted) {
+      update({
+        ...current,
+        ui: { ...current.ui, kakao: {
+          ...ui,
+          "friend-story-phase2-node": "F2_086",
+          "friend-story-phase2-bf-waiting-for-reaction": false,
+          "friend-story-phase2-bf-reaction-ready": true,
+          "friend-story-phase2-bf-reaction-message-id": boyfriendReaction.id,
+          "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_080C_WAIT", "F2_085"])]),
+        } },
+      });
+      return;
+    }
+
+    const avatar = boyfriendAvatarPath(selectedFriend);
+    const queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+    let lineCursor = 0;
+    const addIncoming = (lines: string[], nodeId: string, prefix: string) => {
+      lines.forEach((body, index) => {
+        const typingAt = cursor + 2000;
+        const deliverAt = typingAt + 3000;
+        const item = makeItem({
+          id: prefix + "-" + index,
+          title: selectedFriend,
+          sender: selectedFriend,
+          avatar,
+          body: body.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend),
+          time: current.time || displayTime,
+          outgoing: false,
+          read: false,
+          meta: { friendPhase2Node: nodeId },
+        });
+        queued.push({ item, typingAt, deliverAt });
+        cursor = deliverAt;
+      });
+    };
+    f085.scriptedPlayerLines?.forEach((scriptedLine, index) => {
+      const splitIndex = Math.max(lineCursor, Math.min(f085.lines.length, scriptedLine.afterLineIndex));
+      addIncoming(f085.lines.slice(lineCursor, splitIndex), "F2_085", "friend-phase2-F2_085-before-" + index);
+      const scriptedAt = cursor + 5000;
+      const item = makeItem({
+        id: "friend-phase2-F2_085-scripted-player-" + index,
+        title: selectedFriend,
+        sender: "我",
+        body: scriptedLine.text,
+        time: current.time || displayTime,
+        outgoing: true,
+        read: true,
+        meta: { friendPhase2Node: "F2_085", friendPhase2ScriptedPlayer: String(index), boyfriendReactionMessageId: boyfriendReaction.id },
+      });
+      queued.push({ item, typingAt: scriptedAt, deliverAt: scriptedAt });
+      cursor = scriptedAt;
+      lineCursor = splitIndex;
+    });
+    addIncoming(f085.lines.slice(lineCursor), "F2_085", "friend-phase2-F2_085-after");
+    addIncoming(f086.lines, "F2_086", "friend-phase2-F2_086");
+
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-phase2-node": "F2_086",
+        "friend-story-phase2-bf-waiting-for-reaction": false,
+        "friend-story-phase2-bf-reaction-ready": true,
+        "friend-story-phase2-bf-reaction-message-id": boyfriendReaction.id,
+        "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_080C_WAIT", "F2_085"])]),
+        "delivery-queue": JSON.stringify([...queue, ...queued]),
+      } },
+    });
+  }, [ready, creator, selectedBoyfriend, selectedFriend, s.messages.kakao, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-bf-waiting-for-reaction"], s.ui?.kakao?.["friend-story-phase2-bf-informed-real-at"], s.ui?.kakao?.["friend-story-phase2-bf-informed-member"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"]]);
 
   // Migrate saves created before the F081 -> F082 scripted exchange was restored.
   useEffect(() => {
