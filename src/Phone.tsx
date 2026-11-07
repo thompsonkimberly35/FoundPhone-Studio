@@ -1019,7 +1019,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const hasFriendReply = threadMessages.some(item => !item.outgoing && item.body === "你先别紧张，他已经在和公司开会了");
     if (!hasOpening || !hasPlayerReply || !hasFriendReply) return;
     const dueAt = Number(ui["ig-backlash-checkin-due-at"] || 0);
-    if (!dueAt || Date.now() < dueAt) return;
+    if (!dueAt) return;
+    const remaining = Math.max(0, dueAt - Date.now());
+    const timer = window.setTimeout(() => {
+    const latest = runtimeRef.current;
+    const latestUi = latest.ui?.kakao || {};
+    if (latestUi["friend-story-node"] || latestUi["friend-story-triggered"] === true) return;
     const node = getFriendStoryNode("F002C");
     if (!node) return;
     const files: Record<string, string> = {
@@ -1049,9 +1054,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       return { item, typingAt, deliverAt: typingAt + 3000 };
     });
     update({
-      ...current,
-      ui: { ...current.ui, kakao: {
-        ...ui,
+      ...latest,
+      ui: { ...latest.ui, kakao: {
+        ...latestUi,
         "friend-story-triggered": true,
         "friend-story-started": true,
         "friend-story-node": "F002C",
@@ -1060,6 +1065,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "delivery-queue": JSON.stringify([...queue, ...pending]),
       } },
     });
+    }, remaining);
+    return () => window.clearTimeout(timer);
   }, [ready, creator, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, s.messages.kakao, s.ui?.kakao?.["ig-backlash-checkin-due-at"], s.ui?.kakao?.["friend-story-node"], s.ui?.kakao?.["friend-story-triggered"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
