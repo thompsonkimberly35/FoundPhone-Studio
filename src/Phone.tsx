@@ -906,6 +906,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   useEffect(() => {
     if (!ready || !backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedFriend || friendStoryTriggered) return;
     if (!/^MEND0[1-8]$/.test(String(s.ui?.kakao?.["boyfriend-admirer-discovery-result"] || ""))) return;
+    let discoveryQueue: Array<{item?: Item; deliverAt?: number}> = [];
+    try { discoveryQueue = JSON.parse(String(s.ui?.kakao?.["delivery-queue"] || "[]")); } catch { discoveryQueue = []; }
+    if (discoveryQueue.some(entry => entry.item?.title === selectedBoyfriend && Number(entry.deliverAt || 0) > Date.now())) return;
     if (!friendStoryDueAt) {
       const current = runtimeRef.current;
       const existingDue = Number(current.ui?.kakao?.["ig-backlash-checkin-due-at"] || 0);
@@ -948,7 +951,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
-  }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt, s.ui?.kakao?.["boyfriend-admirer-discovery-result"]]);
+  }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt, s.ui?.kakao?.["boyfriend-admirer-discovery-result"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator || !friendStoryTriggered || !selectedFriend) return;
