@@ -1070,6 +1070,91 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     return () => window.clearTimeout(timer);
   }, [ready, creator, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, s.messages.kakao, s.ui?.kakao?.["ig-backlash-checkin-due-at"], s.ui?.kakao?.["friend-story-node"], s.ui?.kakao?.["friend-story-triggered"], s.ui?.kakao?.["delivery-queue"]]);
 
+  // The F083 conversation must finish before its X disclosure is published and F084 begins.
+  useEffect(() => {
+    if (!ready || creator || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-phase2-node"] !== "F2_083" || ui["friend-story-phase2-auto-next-node"] !== "F2_084") return;
+
+    let queue: Array<{ item?: Item; typingAt?: number; deliverAt?: number }> = [];
+    let completed: string[] = [];
+    let globalQueue: Item[] = [];
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    try { completed = JSON.parse(String(ui["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+    try { globalQueue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+
+    if (queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_083")) return;
+    if (!(current.messages.kakao || []).some(item => item.meta?.friendPhase2Node === "F2_083")) return;
+    const node = getFriendPhase2Node("F2_084");
+    if (!node) return;
+
+    const posts = [...(current.messages.twitter || [])];
+    const existingPost = posts.find(post => post.id === "friend-phase2-X002");
+    const createdPost = !existingPost;
+    const post = existingPost || makeItem({
+      id: "friend-phase2-X002",
+      title: "友人承认曾向第三方提供私人对话资料",
+      sender: "@timeline_watch_09",
+      body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。",
+      time: current.time || displayTime,
+      kind: "post",
+      folder: "主页",
+      likes: 9200,
+      comments: [
+        "@bluehour_8m：承认提供资料不等于承认公开爆料，先把事实分清楚。",
+        "@orbitallyz_4q：请不要去攻击任何一方的私人账号。",
+        "@nightletter_2p：现在最重要的是停止继续传播截图。",
+        "@teamfirst_7v：希望 Wake One 能处理隐私保护问题。",
+        "@softpetal_3n：没有完整证据前不要替任何人定罪。",
+        "@duskarchive_6r：朋友做错了也不代表可以网暴她。",
+        "@silverorbit_9k：请把焦点放在资料如何外流。",
+        "@moonfilm_5x：当事人有权利要求停止散播私人对话。",
+      ],
+      meta: { handle: "timeline_watch_09", verified: "false", reposts: "1360", views: "31.6万", storyEventId: "FRIEND_PHASE2_X002" },
+    });
+
+    const hasF084Messages = (current.messages.kakao || []).some(item => item.meta?.friendPhase2Node === "F2_084")
+      || queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_084");
+    const queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    if (!hasF084Messages) {
+      const avatar = boyfriendAvatarPath(selectedFriend);
+      let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+      node.lines.forEach((body, index) => {
+        const typingAt = cursor + 2000;
+        const deliverAt = typingAt + 3000;
+        const item = makeItem({
+          id: "friend-phase2-F2_084-" + index,
+          title: selectedFriend,
+          sender: selectedFriend,
+          avatar,
+          body: body.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+          time: current.time || displayTime,
+          outgoing: false,
+          read: false,
+          meta: { friendPhase2Node: "F2_084" },
+        });
+        queued.push({ item, typingAt, deliverAt });
+        cursor = deliverAt;
+      });
+    }
+
+    const notice = { ...post, meta: { ...post.meta, notificationAppId: "twitter", notificationPostId: post.id } };
+    update({
+      ...current,
+      messages: { ...current.messages, twitter: createdPost ? [...posts, post] : posts },
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-phase2-node": "F2_084",
+        "friend-story-phase2-auto-next-node": "",
+        "friend-story-phase2-x2-posted": true,
+        "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_083"])]),
+        "delivery-queue": JSON.stringify([...queue, ...queued]),
+        "global-notification-queue": JSON.stringify(createdPost ? [...globalQueue, notice] : globalQueue),
+      } },
+    });
+  }, [ready, creator, selectedFriend, selectedBoyfriend, s.messages.kakao, s.messages.twitter, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-auto-next-node"], s.ui?.kakao?.["friend-story-phase2-x2-posted"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["global-notification-queue"]]);
+
   // Migrate saves created before the F081 -> F082 scripted exchange was restored.
   useEffect(() => {
     if (!ready || creator || !selectedFriend) return;
@@ -2881,7 +2966,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const nextUi: Record<string, UiValue> = {
                         ...currentUi,
                         "friend-story-phase2-node": activeNextNode.id,
-                        "friend-story-phase2-auto-next-node": pendingAutoNextNodeId || String(currentUi["friend-story-phase2-auto-next-node"] || ""),
+                        "friend-story-phase2-auto-next-node": pendingAutoNextNodeId,
                         "friend-story-phase2-friend-took-responsibility": currentUi["friend-story-phase2-friend-took-responsibility"] === true || nextNode.effect === "self-blame",
                         "friend-story-phase2-history": JSON.stringify(nextHistory),
                         "friend-story-phase2-completed-nodes": JSON.stringify(nextCompleted),
@@ -2916,9 +3001,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         nextUi["friend-story-phase2-bf-informed-at"] = String(storyStamp);
                         nextUi["friend-story-phase2-bf-informed-member"] = selectedBoyfriend;
                       }
-                      let nextTwitter = [...(current.messages.twitter || [])];
-                      let globalQueue: Item[] = [];
-                      try { globalQueue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
 
                       const nextUi = {
                         ...currentUi,
