@@ -56,6 +56,15 @@ export const STAGE2_X003={
  likes:186300,reposts:42100,
  comments:[
  "@daylight_8rm：所以不是取消，只是延后公告对吧？",
+ commentDetails:[
+  {handle:"@daylight_8rm",displayName:"Daylight",text:"所以不是取消，只是延后公告对吧？",likes:4210,time:"10:12"},
+  {handle:"@allyzheart_4n",displayName:"ALLYZ心愿",text:"其他成员真的很无辜，希望活动不要取消。",likes:6820,time:"10:13"},
+  {handle:"@mellow_9pt",displayName:"Mellow",text:"主办方考虑现场安全也可以理解。",likes:3890,time:"10:14"},
+  {handle:"@cobalt_6s",displayName:"钴蓝色",text:"又是因为恋爱新闻影响活动吗？真的很失望。",likes:2540,time:"10:15"},
+  {handle:"@clearstar_2vx",displayName:"Clear Star",text:"不要把所有事情都推到一个人身上，官方也没有说原因。",likes:5370,time:"10:16"},
+  {handle:"@orbitfilm_7h",displayName:"Orbit Film",text:"拜托让大家好好完成活动吧。",likes:6140,time:"10:17"}
+ ],
+
  "@allyzheart_4n：其他成员真的很无辜，希望活动不要取消。",
  "@mellow_9pt：主办方考虑现场安全也可以理解。",
  "@cobalt_6s：又是因为恋爱新闻影响活动吗？真的很失望。",
@@ -73,6 +82,17 @@ export const STAGE2_X001={
  likes:48200,reposts:12600,
  comments:[
  "@starry_4nq：看到这篇真的哭了……妳陪他走了那么久。",
+ commentDetails:[
+  {handle:"@starry_4nq",displayName:"星夜留影",text:"看到这篇真的哭了……妳陪他走了那么久。",likes:12840,time:"23:19"},
+  {handle:"@allyzmoon_83",displayName:"月亮收集者",text:"喜欢一个人是自由的，离开也是。谢谢妳以前拍的照片。",likes:9360,time:"23:20"},
+  {handle:"@vivid_7pk",displayName:"Vivid蓝",text:"我理解站姐，但我不认为他谈恋爱就代表以前对粉丝的真心都是假的。",likes:7120,time:"23:21"},
+  {handle:"@dawnfilm_x2",displayName:"Dawn Film",text:"我也是因为这个站才开始认识他的，真的好难过。",likes:5840,time:"23:22"},
+  {handle:"@cloud_9rz",displayName:"云层之外",text:"不是不能谈恋爱，是这件事让很多人觉得自己被瞒着。",likes:4690,time:"23:23"},
+  {handle:"@peachorbit_5m",displayName:"桃子轨道",text:"拜托不要再去骚扰那个女生了，她不是你们可以随便攻击的人。",likes:10200,time:"23:24"},
+  {handle:"@silverday_q8",displayName:"银色晴天",text:"我不脱粉。我喜欢的是他的舞台，也希望他能幸福。",likes:8930,time:"23:25"},
+  {handle:"@hush_3vt",displayName:"安静星球",text:"站姐做了自己的选择，其他 ALLYZ 也有权利继续支持。",likes:3760,time:"23:26"}
+ ],
+
  "@allyzmoon_83：喜欢一个人是自由的，离开也是。谢谢妳以前拍的照片。",
  "@vivid_7pk：我理解站姐，但我不认为他谈恋爱就代表以前对粉丝的真心都是假的。",
  "@dawnfilm_x2：我也是因为这个站才开始认识他的，真的好难过。",
@@ -91,6 +111,17 @@ export const STAGE2_X002={
  likes:236800,reposts:78400,
  comments:[
  "@allyzforever_8x：终于有声明了，拜托真的保护成员跟被公开资料的人。",
+ commentDetails:[
+  {handle:"@allyzforever_8x",displayName:"永远的ALLYZ",text:"终于有声明了，拜托真的保护成员跟被公开资料的人。",likes:18420,time:"10:01"},
+  {handle:"@blueorbit_4r",displayName:"蓝色轨道",text:"所以公司到底有没有要说明恋爱的事？大家等这么久不是只想看这些。",likes:12300,time:"10:02"},
+  {handle:"@softstar_92q",displayName:"柔软星星",text:"偶像也是人，为什么谈恋爱就要被公开私人资料？",likes:16700,time:"10:03"},
+  {handle:"@frame_6kp",displayName:"Frame六格",text:"我不支持人肉搜索，但公司也应该正面回应粉丝的疑问。",likes:8420,time:"10:04"},
+  {handle:"@moonlit_3h",displayName:"月光下",text:"拜托不要取消活动，其他成员也努力很久了。",likes:9160,time:"10:05"},
+  {handle:"@allnight_7vc",displayName:"整夜星光",text:"ALLYZ 不是只有一种声音，有人失望，也有人选择继续支持。",likes:13200,time:"10:06"},
+  {handle:"@ribbon_5ty",displayName:"缎带结",text:"如果有人真的威胁到别人的安全，公司就应该采取法律行动。",likes:7250,time:"10:07"},
+  {handle:"@starlane_2w",displayName:"星际航线",text:"我现在只希望他们可以安心站上舞台。",likes:10800,time:"10:08"}
+ ],
+
  "@blueorbit_4r：所以公司到底有没有要说明恋爱的事？大家等这么久不是只想看这些。",
  "@softstar_92q：偶像也是人，为什么谈恋爱就要被公开私人资料？",
  "@frame_6kp：我不支持人肉搜索，但公司也应该正面回应粉丝的疑问。",
