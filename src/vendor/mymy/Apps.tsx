@@ -109,10 +109,6 @@ export function MymyKakao(p: SkinProps) {
   const romanceNode = getKakaoStoryNode(romanceNodeId);
   const boyfriendStage2NodeId = String(p.ui?.["boyfriend-stage2-node"] || "");
   const boyfriendStage2Node = getBoyfriendStage2Node(boyfriendStage2NodeId);
-  const boyfriendAdmirerNodeId = String(p.ui?.["boyfriend-admirer-discovery-node"] || "");
-  const boyfriendAdmirerNode = boyfriendThread && p.ui?.["boyfriend-admirer-discovery-started"] === true ? getBoyfriendAdmirerNode(boyfriendAdmirerNodeId) : undefined;
-  const admirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === String(p.ui?.["boyfriend-admirer-discovery-member-id"] || ""));
-  const boyfriendAdmirerChoices = (boyfriendAdmirerNode?.choices || []).filter(choice => !(boyfriendAdmirerNodeId === "M184" && choice.key === "A" && !["R12","R13","R16"].includes(String(p.ui?.["secret-admirer-stage2-outcome"] || "")) && p.ui?.["boyfriend-admirer-explicit-rejection"] !== true) && !(boyfriendAdmirerNodeId === "M184" && choice.key === "B" && ["R12","R13","R16"].includes(String(p.ui?.["secret-admirer-stage2-outcome"] || "")));
   const friendStoryNodeId = String(p.ui?.["friend-story-node"] || "");
   const friendStoryNode = getFriendStoryNode(friendStoryNodeId);
   const friendPhase2NodeId = String(p.ui?.["friend-story-phase2-node"] || "");
@@ -160,6 +156,11 @@ export function MymyKakao(p: SkinProps) {
     setShowChoices(hasBacklashCheckin);
   }, [p.thread, messages.length, hasBacklashCheckin]);
   const boyfriendThread = Boolean(p.selectedBoyfriend && p.thread === p.selectedBoyfriend);
+  const boyfriendAdmirerNodeId = String(p.ui?.["boyfriend-admirer-discovery-node"] || "");
+  const boyfriendAdmirerNode = boyfriendThread && p.ui?.["boyfriend-admirer-discovery-started"] === true ? getBoyfriendAdmirerNode(boyfriendAdmirerNodeId) : undefined;
+  const admirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === String(p.ui?.["boyfriend-admirer-discovery-member-id"] || ""));
+  const boyfriendAdmirerChoices = (boyfriendAdmirerNode?.choices || []).filter(choice => !(boyfriendAdmirerNodeId === "M184" && choice.key === "A" && !["R12","R13","R16"].includes(String(p.ui?.["secret-admirer-stage2-outcome"] || "")) && p.ui?.["boyfriend-admirer-explicit-rejection"] !== true) && !(boyfriendAdmirerNodeId === "M184" && choice.key === "B" && ["R12","R13","R16"].includes(String(p.ui?.["secret-admirer-stage2-outcome"] || "")));
+
   const friendThread = Boolean(p.selectedFriend && p.thread === p.selectedFriend);
   const boyfriendContext = romanceNode?.lines.join("") || "";
   const friendLinkOptions = boyfriendThread && romanceNode
