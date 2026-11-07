@@ -2011,8 +2011,14 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       try { completed = JSON.parse(String(currentUi[isStage2 ? "secret-admirer-stage2-completed-nodes" : "secret-admirer-completed-nodes"] || "[]")); } catch { completed = []; }
                       const historyKey = nodeId + ":" + choiceKey;
                       if (history.includes(historyKey)) return;
-                      const nextNode = isStage2 ? getSecretAdmirerStage2Node(storyChoice.next) : getSecretAdmirerNode(storyChoice.next);
+                      let nextNode = isStage2 ? getSecretAdmirerStage2Node(storyChoice.next) : getSecretAdmirerNode(storyChoice.next);
                       if (!nextNode) return;
+                      // A previously rejected or asked to keep distance must not confess again.
+                      if (isStage2 && ["R03","R04"].includes(String(currentUi["secret-admirer-story-outcome"] || ""))) {
+                        const priorBoundary = String(currentUi["secret-admirer-story-outcome"]);
+                        const protectedResult = getSecretAdmirerStage2Node(priorBoundary === "R03" ? "R13" : "R12");
+                        if (protectedResult) nextNode = protectedResult;
+                      }
                       const outgoing = makeItem({
                         id: "secret-admirer-player-" + nodeId + "-" + choiceKey + "-" + stamp,
                         title: character,
