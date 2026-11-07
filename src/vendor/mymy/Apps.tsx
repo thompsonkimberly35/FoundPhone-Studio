@@ -452,6 +452,8 @@ export function MymyKakao(p: SkinProps) {
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>我先等一会儿，等有新的消息再告诉你。</div>
               ) : queuePending ? (
                 <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>正在接收消息…</div>
+              ) : friendPhase2Node.effect === "wait-for-boyfriend-reaction" ? (
+                <div style={{ width: "100%", textAlign: "center", color: "#777", padding: 8 }}>等待男友在 KakaoTalk 中作出真实回应后，再继续这段对话。</div>
               ) : friendPhase2Node.choices.length ? (
                 <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
                   {friendPhase2Node.choices.map((choice, index) => (
