@@ -1474,7 +1474,28 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (!/^R1[1-8]$/.test(String(latestUi["secret-admirer-stage2-outcome"] || "")) || !/^M(?:0[7-9]|1[0-2])$/.test(String(latestUi["boyfriend-stage2-result"] || ""))) return;
       let queue: Array<{item?: Item; deliverAt?: number}> = [];
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
-      if (queue.some(entry => Number(entry.deliverAt || 0) > Date.now())) return;
+      // Do not abandon the M170 follow-up when another queued chat message is
+      // still being delivered. The old code returned here without changing the
+      // trigger or depending on delivery-queue, so the effect never ran again.
+      const pendingDeliveries = queue
+        .map(entry => Number(entry.deliverAt || 0))
+        .filter(deliverAt => deliverAt > Date.now());
+      if (pendingDeliveries.length) {
+        const latestPendingAt = Math.max(...pendingDeliveries);
+        const latestGameNow = Number(latest.gameClock?.currentGameTimestamp || Date.now());
+        const latestScale = Number(latest.gameClock?.timeScale ?? 1);
+        if (latestScale > 0) {
+          const deferredDueAt = latestGameNow + (latestPendingAt - Date.now() + 60_000) * latestScale;
+          update({
+            ...latest,
+            ui: {
+              ...latest.ui,
+              kakao: { ...latestUi, "boyfriend-admirer-discovery-due-at": String(deferredDueAt) },
+            },
+          });
+        }
+        return;
+      }
       const memberId = String(latestUi["secret-admirer-member-id"] || "");
       const member = ALD1_SECRET_ADMIRER_MEMBERS.find(entry => entry.id === memberId);
       if (!member || member.name === selectedBoyfriend) return;
@@ -1489,7 +1510,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       update({...latest,messages:{...latest.messages,kakao:[...(latest.messages.kakao||[]),first]},notifications:app==="kakao"?latest.notifications:[...latest.notifications,"KakaoTalk: "+selectedBoyfriend+"："+first.body],ui:{...latest.ui,kakao:{...latestUi,"boyfriend-admirer-discovery-started":true,"boyfriend-admirer-discovery-node":"M170","boyfriend-admirer-discovery-history":"[]","boyfriend-admirer-discovery-result":"","boyfriend-admirer-discovery-member-id":member.id,"delivery-queue":JSON.stringify([...queue,...queued])}}});
     },Math.max(0,(dueAt-gameNow)/scale));
     return ()=>window.clearTimeout(timer);
-  },[ready,creator,app,selectedBoyfriend,s.gameClock?.currentGameTimestamp,s.gameClock?.timeScale,s.ui?.kakao?.["secret-admirer-stage2-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["boyfriend-admirer-discovery-due-at"],s.ui?.kakao?.["boyfriend-admirer-discovery-started"]]);
+  },[ready,creator,app,selectedBoyfriend,s.gameClock?.currentGameTimestamp,s.gameClock?.timeScale,s.ui?.kakao?.["secret-admirer-stage2-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["boyfriend-admirer-discovery-due-at"],s.ui?.kakao?.["boyfriend-admirer-discovery-started"],s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
