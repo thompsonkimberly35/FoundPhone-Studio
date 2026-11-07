@@ -127,7 +127,8 @@ export function MymyKakao(p: SkinProps) {
   const friendPhase3Node = friendThread ? getFriendPhase3Node(friendPhase3NodeId, friendPhase3Context) : undefined;
   const friendPhase3Choices = friendPhase3Node?.choices
     .map(choice => getFriendPhase3Choice(friendPhase3Node.id, choice.key, friendPhase3Context))
-    .filter((choice): choice is NonNullable<typeof choice> => Boolean(choice)) || [];
+    .filter((choice): choice is NonNullable<typeof choice> => Boolean(choice))
+    .map(choice => ({ ...choice, text: choice.text.replace(/\{\{ADMIRER_NAME\}\}/g, secretAdmirerMember?.name || "那位成员") })) || [];
 
   const secretAdmirerMemberId = String(p.ui?.["secret-admirer-member-id"] || "");
   const secretAdmirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find((member) => member.id === secretAdmirerMemberId);
