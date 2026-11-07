@@ -186,7 +186,7 @@ export function validateFriendPhase2Story(): string[] {
   const known = new Set(Object.keys(FRIEND_PHASE2_STORY));
   const terminal = new Set(["H13","H14","H15","H16","H17","H18","H19","H20"]);
   const roots = ["F2_070", ...Array.from({ length: 8 }, (_, i) => "F2_090_H" + (i + 13))];
-  if (known.size !== 45) errors.push("好友第二阶段节点数量应为45");
+  if (known.size !== 54) errors.push("好友第二阶段节点数量应为54，实际为" + known.size);
   for (const node of Object.values(FRIEND_PHASE2_STORY)) {
     if (node.choices.length === 1) errors.push(node.id + ": 不允许只有一个玩家选项");
     if (node.choices.length > 3) errors.push(node.id + ": 玩家选项超过三个");
