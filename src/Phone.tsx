@@ -2655,31 +2655,12 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, outgoing: true, read: true });
                         informed.meta = { ...informed.meta, friendPhase2Sync: "true" };
                         const alreadyInformed = (currentMessages.kakao || []).some(item => item.id === informed.id);
-                        if (!alreadyInformed) {
-                          nextMessages = [...nextMessages, informed];
-                          const boyfriendLines = [
-                            "我确实很生气，但不是因为你还愿意和她做朋友。",
-                            "我生气的是，她没有经过你的同意就把私人对话交给别人。你可以自己决定这段友情，我不会替你做决定。",
-                          ];
-                          let boyfriendCursor = Math.max(stamp, ...currentQueue.filter(entry => entry.item.title === selectedBoyfriend).map(entry => entry.deliverAt));
-                          boyfriendLines.forEach((body, index) => {
-                            const item = makeItem({
-                              id: "friend-phase2-boyfriend-reply-" + stamp + "-" + index,
-                              title: selectedBoyfriend,
-                              sender: selectedBoyfriend,
-                              avatar: boyfriendAvatarPath(selectedBoyfriend),
-                              body,
-                              time,
-                              outgoing: false,
-                              read: false,
-                              meta: { friendPhase2Sync: "true" },
-                            });
-                            const typingAt = boyfriendCursor + 2000;
-                            const deliverAt = boyfriendCursor + 5000;
-                            boyfriendCursor = deliverAt;
-                            queued.push({ item, typingAt, deliverAt });
-                          });
-                        }
+                        if (!alreadyInformed) nextMessages = [...nextMessages, informed];
+                        // Record that the player informed the selected boyfriend, but do not
+                        // fabricate his reaction here. His reply must come from his own active
+                        // story state and its existing progression, not from the friend's arc.
+                        nextUi["friend-story-phase2-bf-informed-at"] = String(storyStamp);
+                        nextUi["friend-story-phase2-bf-informed-member"] = selectedBoyfriend;
                       }
                       let nextTwitter = [...(current.messages.twitter || [])];
                       let globalQueue: Item[] = [];
