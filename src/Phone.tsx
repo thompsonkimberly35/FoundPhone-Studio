@@ -34,7 +34,7 @@ import "./ios/status-bar.css";
 import { WeChatSkin, WhatsAppSkin } from "./AppSkins";
 import { RichText } from "./RichText";
 import { getBoyfriendStage2Node, getBoyfriendStage2Choice, STAGE2_X001, STAGE2_X002, STAGE2_X003 } from "./kakaoBoyfriendStage2";
-import { getBoyfriendStageResultKey, getBoyfriendStageHistoryKey } from "./kakaoBoyfriendProgress";
+import { getBoyfriendStageResultKey, getBoyfriendStageHistoryKey, getBoyfriendStageNodeKey } from "./kakaoBoyfriendProgress";
 import { BOYFRIEND_STAGE3_OPENINGS } from "./kakaoBoyfriendStage3";
 import { getBoyfriendAdmirerChoice, getBoyfriendAdmirerNode, getBoyfriendAdmirerOpening } from "./kakaoBoyfriendAdmirerDiscovery";
 import {
@@ -1543,7 +1543,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${selectedBoyfriend}：${first.body}`],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-started": true, "boyfriend-stage2-node": "K046", [getBoyfriendStageHistoryKey("stage2")]: "[]", "boyfriend-stage2-trigger-at": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-started": true, [getBoyfriendStageNodeKey("stage2")]: "K046", [getBoyfriendStageHistoryKey("stage2")]: "[]", "boyfriend-stage2-trigger-at": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -1583,7 +1583,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, "KakaoTalk: " + selectedBoyfriend + "：" + first.body],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", [getBoyfriendStageHistoryKey("stage3")]: "[]", [getBoyfriendStageResultKey("stage3")]: "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, [getBoyfriendStageNodeKey("stage3")]: "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", [getBoyfriendStageHistoryKey("stage3")]: "[]", [getBoyfriendStageResultKey("stage3")]: "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -2435,7 +2435,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     if (choiceId?.startsWith("boyfriend-stage2:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const isStage3Node = currentUi["boyfriend-stage3-started"] === true && /^K1[4-6]\d$/.test(nodeId);
-                      const activeNodeId = String(currentUi["boyfriend-stage2-node"] || "");
+                      const activeNodeKey = getBoyfriendStageNodeKey(isStage3Node ? "stage3" : "stage2");
+                      const activeNodeId = String(currentUi[activeNodeKey] || "");
                       if (character !== selectedBoyfriend || nodeId !== activeNodeId) return;
                       const choice = getBoyfriendStage2Choice(nodeId, choiceKey);
                       if (!choice) return;
@@ -2463,7 +2464,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const isAdmirerDiscoveryResult = isStage3Node && /^M(?:0[7-9]|1[0-2])$/.test(String(nextNode.result || ""));
                       const nextUi = {
                         ...currentUi,
-                        "boyfriend-stage2-node": nextNode.id,
+                        [activeNodeKey]: nextNode.id,
                         [historyKeyName]: JSON.stringify([...history, historyKey]),
                         [resultKeyName]: stageResult,
                         "boyfriend-admirer-discovery-due-at": isAdmirerDiscoveryResult ? String(storyStamp + 60_000) : String(currentUi["boyfriend-admirer-discovery-due-at"] || ""),
