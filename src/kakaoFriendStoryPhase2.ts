@@ -88,7 +88,7 @@ export const FRIEND_PHASE2_STORY: Record<string, FriendPhase2Node> = {
       "我把所有对话都整理好了。",
       "包括我当时传出去的截图。",
       "还有韩知恩回复我的内容。",
-      "我没有删除任何东西。",
+      "我没有删任何东西。",
       "嗯。",
       "我想过了。",
       "我不是你的保护人。",
