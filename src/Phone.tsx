@@ -1105,8 +1105,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
     };
     if (!hasF083Messages) {
-      const first = node.scriptedPlayerLines[0];
-      addIncoming(node.lines.slice(0, first.afterLineIndex), "friend-phase2-migration-F2_083-before-0");
+      const first = node.scriptedPlayerLines?.[0];
+      if (first) addIncoming(node.lines.slice(0, first.afterLineIndex), "friend-phase2-migration-F2_083-before-0");
     }
 
     node.scriptedPlayerLines?.forEach((scriptedLine, index) => {
