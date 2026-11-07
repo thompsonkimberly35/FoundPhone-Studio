@@ -950,6 +950,14 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [backlashNotificationsComplete, igQueue.length, igBanner, selectedBoyfriend, checkinSent, checkinDueAt]);
   useEffect(() => {
     if (!ready || !backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedFriend || friendStoryTriggered) return;
+    // The opening friend exchange is sent at phone start. Its continuation
+    // must wait until Instagram backlash banners finish plus the shared 60s delay.
+    const thread = (runtimeRef.current.messages.kakao || []).filter(item => item.title === selectedFriend);
+    const hasOpeningExchange =
+      thread.some(item => item.id === "selection-friend-first-message" || item.body === "你们还好吗？") &&
+      thread.some(item => item.outgoing && item.body === "不好，我好害怕") &&
+      thread.some(item => !item.outgoing && item.body === "你先别紧张，他已经在和公司开会了");
+    if (hasOpeningExchange) return;
     // The confidant-friend storyline is an independent route. It must not wait
     // for the much later secret-admirer/boyfriend discovery MEND outcome.
     if (!friendStoryDueAt) {
@@ -1000,7 +1008,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   // confidant storyline. Older saves only stored the static reply, which left
   // replyAlreadySent=true with no friend-story-node and therefore no choices.
   useEffect(() => {
-    if (!ready || creator || !selectedFriend) return;
+    if (!ready || creator || !backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedFriend) return;
     const current = runtimeRef.current;
     const ui = current.ui?.kakao || {};
     if (ui["friend-story-node"] || ui["friend-story-triggered"] === true) return;
@@ -1010,6 +1018,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const hasPlayerReply = threadMessages.some(item => item.outgoing && item.body === "不好，我好害怕");
     const hasFriendReply = threadMessages.some(item => !item.outgoing && item.body === "你先别紧张，他已经在和公司开会了");
     if (!hasOpening || !hasPlayerReply || !hasFriendReply) return;
+    const dueAt = Number(ui["ig-backlash-checkin-due-at"] || 0);
+    if (!dueAt || Date.now() < dueAt) return;
     const node = getFriendStoryNode("F002C");
     if (!node) return;
     const files: Record<string, string> = {
@@ -1050,7 +1060,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "delivery-queue": JSON.stringify([...queue, ...pending]),
       } },
     });
-  }, [ready, creator, selectedFriend, s.messages.kakao, s.ui?.kakao?.["friend-story-node"], s.ui?.kakao?.["friend-story-triggered"], s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, creator, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, s.messages.kakao, s.ui?.kakao?.["ig-backlash-checkin-due-at"], s.ui?.kakao?.["friend-story-node"], s.ui?.kakao?.["friend-story-triggered"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
     if (!ready || creator || !friendStoryTriggered || !selectedFriend) return;
