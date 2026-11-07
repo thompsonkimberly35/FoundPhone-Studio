@@ -1244,9 +1244,23 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       { ...STAGE2_X003, triggeredByNodes: ["K117"] },
     ];
     const added: typeof events = [];
+    let x002ScheduleChanged = false;
+    let x002DueRealAt = Number(ui["x-event-X002-due-real-at"] || 0);
+    let x002DueGameAt = Number(ui["x-event-X002-due-game-at"] || 0);
+    const gameNow = Number(current.gameClock?.currentGameTimestamp || Date.now());
+    const gameTimezone = current.gameClock?.timezone || "Asia/Seoul";
     for (const event of definitions) {
       if (!event.triggeredByNodes.some(node => deliveredNodes.has(node))) continue;
       if (events.some(saved => saved.eventId === event.eventId) || posts.some(post => post.id === event.postId)) continue;
+      if (event.eventId === "X002") {
+        if (!Number.isFinite(x002DueRealAt) || x002DueRealAt <= 0 || !Number.isFinite(x002DueGameAt) || x002DueGameAt <= 0) {
+          x002DueRealAt = Date.now() + 60_000;
+          x002DueGameAt = nextGameDayAt(gameNow, "10:00", gameTimezone);
+          x002ScheduleChanged = true;
+          continue;
+        }
+        if (Date.now() < x002DueRealAt || gameNow < x002DueGameAt || ui["x-event-X002-ready"] !== true) continue;
+      }
       const postBody = event.eventId === "X001" ? event.body.replace("{{boyfriend}}", selectedBoyfriend) : event.body;
       const post = makeItem({
         id: event.postId, title: event.title, sender: event.account, body: postBody,
@@ -1274,7 +1288,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const shouldUnlockK113 = publishesX002
       && STAGE2_X002.triggeredByNodes.some(node => deliveredNodes.has(node))
       && !k113AlreadyDelivered;
-    if (!added.length && !shouldUnlockK113) return;
+    if (!added.length && !shouldUnlockK113 && !x002ScheduleChanged) return;
     let deliveryQueue: Array<{item:Item;typingAt:number;deliverAt:number}> = [];
     try { deliveryQueue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { deliveryQueue = []; }
     let boyfriendNotice: string[] = [];
@@ -1283,6 +1297,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       ...Object.fromEntries(added.map(event => ["x-event-" + event.eventId + "-created", true])),
       "story-x-events": JSON.stringify([...events, ...added]),
       "global-notification-queue": JSON.stringify(queue),
+      ...(x002ScheduleChanged ? {
+        "x-event-X002-due-real-at": String(x002DueRealAt),
+        "x-event-X002-due-game-at": String(x002DueGameAt),
+      } : {}),
     };
     if (shouldUnlockK113) {
       const node = getBoyfriendStage2Node("K113");
@@ -1317,7 +1335,48 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       notifications: app === "kakao" ? current.notifications : [...current.notifications, ...boyfriendNotice],
       ui: { ...current.ui, kakao: nextUi }
     });
-  }, [ready, creator, s.messages.kakao, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"], s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, creator, s.messages.kakao, s.gameClock?.currentGameTimestamp, s.ui?.kakao?.["story-x-events"], s.ui?.kakao?.["global-notification-queue"], s.ui?.kakao?.["delivery-queue"], s.ui?.kakao?.["x-event-X002-due-real-at"], s.ui?.kakao?.["x-event-X002-due-game-at"], s.ui?.kakao?.["x-event-X002-ready"]]);
+
+  useEffect(() => {
+    if (!ready || creator) return;
+    const ui = runtimeRef.current.ui?.kakao || {};
+    const dueRealAt = Number(ui["x-event-X002-due-real-at"] || 0);
+    const dueGameAt = Number(ui["x-event-X002-due-game-at"] || 0);
+    if (!Number.isFinite(dueRealAt) || dueRealAt <= 0 || !Number.isFinite(dueGameAt) || dueGameAt <= 0 || ui["x-event-X002-ready"] === true) return;
+    const current = runtimeRef.current;
+    const alreadyPublished = (current.messages.twitter || []).some(post => post.id === STAGE2_X002.postId);
+    if (alreadyPublished) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["x-event-X002-ready"] === true || (latest.messages.twitter || []).some(post => post.id === STAGE2_X002.postId)) return;
+      if (Date.now() < Number(latestUi["x-event-X002-due-real-at"] || 0)) return;
+      const clock = latest.gameClock;
+      if (!clock) return;
+      const target = Number(latestUi["x-event-X002-due-game-at"] || dueGameAt);
+      const now = Number(clock.currentGameTimestamp || Date.now());
+      const nextTimestamp = Math.max(now, target);
+      const timezone = clock.timezone || "Asia/Seoul";
+      const oldDate = formatGameDate(now, timezone);
+      const newDate = formatGameDate(nextTimestamp, timezone);
+      const dayDifference = Math.max(0, Math.round(
+        (Date.parse(newDate + "T00:00:00Z") - Date.parse(oldDate + "T00:00:00Z")) / 86_400_000,
+      ));
+      update({
+        ...latest,
+        gameClock: {
+          ...clock,
+          currentGameTimestamp: nextTimestamp,
+          lastRealTimestamp: Date.now(),
+          currentStoryDay: Math.max(1, Number(clock.currentStoryDay || 1) + dayDifference),
+        },
+        date: newDate,
+        time: formatGameTime(nextTimestamp, timezone),
+        ui: { ...latest.ui, kakao: { ...latestUi, "x-event-X002-ready": true } },
+      });
+    }, Math.max(0, dueRealAt - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, s.gameClock?.currentGameTimestamp, s.ui?.kakao?.["x-event-X002-due-real-at"], s.ui?.kakao?.["x-event-X002-due-game-at"], s.ui?.kakao?.["x-event-X002-ready"], s.messages.twitter]);
 
   useEffect(() => {
     if (!ready || creator || !selectedBoyfriend) return;
