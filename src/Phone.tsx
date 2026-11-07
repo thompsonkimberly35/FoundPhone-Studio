@@ -1236,10 +1236,13 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
 
     const informedAt = Number(ui["friend-story-phase2-bf-informed-real-at"] || 0);
     if (!informedAt) return;
+    let preexistingBoyfriendQueueIds: string[] = [];
+    try { preexistingBoyfriendQueueIds = JSON.parse(String(ui["friend-story-phase2-bf-preexisting-queued-ids"] || "[]")); } catch { preexistingBoyfriendQueueIds = []; }
     const boyfriendReaction = (current.messages.kakao || []).find(item =>
       item.title === selectedBoyfriend
       && item.outgoing !== true
       && Number(item.sentAt || 0) >= informedAt
+      && !preexistingBoyfriendQueueIds.includes(item.id)
       && Boolean(item.meta?.boyfriendStage2Node || item.meta?.boyfriendStage3Node || item.meta?.boyfriendAdmirerNode || item.meta?.romanceNode)
       && isExplicitBoyfriendAngerResponse(item.body),
     );
@@ -1264,6 +1267,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "friend-story-phase2-bf-waiting-for-reaction": false,
           "friend-story-phase2-bf-reaction-ready": true,
           "friend-story-phase2-bf-reaction-message-id": boyfriendReaction.id,
+          "friend-story-phase2-bf-preexisting-queued-ids": "[]",
           "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_080C_WAIT", "F2_085"])]),
         } },
       });
@@ -3180,6 +3184,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         nextUi["friend-story-phase2-bf-informed-at"] = String(storyStamp);
                         nextUi["friend-story-phase2-bf-informed-real-at"] = String(informedAtReal);
                         nextUi["friend-story-phase2-bf-informed-member"] = selectedBoyfriend;
+                        nextUi["friend-story-phase2-bf-preexisting-queued-ids"] = JSON.stringify(currentQueue
+                          .filter(entry => entry.item?.title === selectedBoyfriend && Boolean(entry.item.meta?.boyfriendStage2Node || entry.item.meta?.boyfriendStage3Node || entry.item.meta?.boyfriendAdmirerNode || entry.item.meta?.romanceNode))
+                          .map(entry => entry.item!.id));
                       }
 
                       const nextUi = {
