@@ -29,10 +29,7 @@ describe("KakaoTalk confidant friend story phase two", () => {
     const f082 = getFriendPhase2Node("F2_082");
     expect(f081?.choices).toHaveLength(0);
     expect(f081?.autoNext).toBe("F2_082");
-    expect(f081?.scriptedPlayerLine).toEqual({
-      afterLineIndex: 4,
-      text: "你这次终于没有自己决定了。",
-    });
+    expect(f081?.scriptedPlayerLines).toEqual([{ afterLineIndex: 4, text: "你这次终于没有自己决定了。" }]);
     expect(f081?.lines).toEqual([
       "我把所有对话都整理好了。",
       "包括我当时传出去的截图。",
