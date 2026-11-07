@@ -9,7 +9,7 @@ import { SECRET_ADMIRER_STAGE2, SECRET_ADMIRER_STAGE2_RESULTS, validateSecretAdm
 import { BOYFRIEND_ADMIRER_DISCOVERY, BOYFRIEND_ADMIRER_RESULTS, validateBoyfriendAdmirerDiscovery } from "./kakaoBoyfriendAdmirerDiscovery";
 import { TEAM_CONFLICT_STORY, validateTeamConflictStory } from "./kakaoTeamConflictStory";
 
-type StoryNode = { id: string; choices: Array<{ key: string; text: string; next: string }> };
+type StoryNode = { id: string; choices: Array<{ key: string; text: string; next: string }>; pauseTo?: string; autoNext?: string };
 
 function expectAllNodesReachable(
   name: string,
@@ -43,6 +43,9 @@ function expectClosedStoryGraph(name: string, nodes: Record<string, StoryNode>) 
     for (const choice of node.choices) {
       expect(known.has(choice.next), name + " dangling route " + id + ":" + choice.key + " -> " + choice.next).toBe(true);
     }
+    if (node.autoNext) {
+      expect(known.has(node.autoNext), name + " dangling auto route " + id + " -> " + node.autoNext).toBe(true);
+    }
   }
 }
 
@@ -70,7 +73,7 @@ describe("KakaoTalk authored story graph integrity", () => {
   it("removes the invented single-choice filler from the confidant second arc", () => {
     expect(validateFriendPhase2Story()).toEqual([]);
     expectClosedStoryGraph("friend arc 2", FRIEND_PHASE2_STORY);
-    expectAllNodesReachable("friend arc 2", FRIEND_PHASE2_STORY, ["F2_070"], Object.fromEntries(["H13","H14","H15","H16","H17","H18","H19","H20"].map(id => [id, ["F2_090_" + id]])));
+    expectAllNodesReachable("friend arc 2", FRIEND_PHASE2_STORY, ["F2_070"], { F2_074: ["F2_075"], ...Object.fromEntries(["H13","H14","H15","H16","H17","H18","H19","H20"].map(id => [id, ["F2_090_" + id]])) });
   });
 
   it("validates the confidant third arc", () => {
