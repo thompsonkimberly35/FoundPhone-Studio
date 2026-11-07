@@ -77,6 +77,14 @@ export function getFriendPhase3Node(id: string, context: FriendPhase3Context = {
       "我不想把自己没看见的事情说成事实。",
     ];
   }
+  if (id === "F100" && !context.knowsBoyfriendConflict) {
+    lines = [
+      "我没有听到他们谈话的内容。",
+      "我只注意到练习结束后，他们没有一起离开。",
+      "{{ADMIRER_NAME}} 先走了，你男朋友留在练习室一会儿。",
+      "我不能确定他们有没有谈过，更不知道他们说了什么。",
+    ];
+  }
   if (id === "F106" && context.secretSource !== "A-direct") {
     lines = [
       "我先说清楚。",
@@ -133,7 +141,7 @@ export function getFriendPhase3Opening(context: FriendPhase3Context = {}): strin
     return ["我知道你最近已经很累了。", "我不确定你和他谈得怎么样，也不会假装知道你们私下说过什么。", "只是最近练习时，我感觉大家的气氛有点不一样。"];
   }
   if (["MEND06", "MEND08"].includes(context.boyfriendOutcome || "") && !context.knowsBoyfriendConflict) {
-    return ["我知道他之前说过想找 {{ADMIRER_NAME}} 谈谈。", "但我不知道他们后来有没有真正谈开。", "我不想把还没确认的事情当成事实。"];
+    return ["最近练习时，我感觉他们之间的气氛变了。", "我不知道发生了什么，也没有听到他们私下谈话的内容。", "我不想把猜测当成事实。"];
   }
   return ["上次聊完以后，我一直在想我们说过的话。", "最近练习时有些气氛不太一样，我想先确认你还好吗。"];
 }
