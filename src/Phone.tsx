@@ -1708,6 +1708,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           "friend-third-arc-trust-level": trust,
           "friend-third-arc-boundary-respected": ["H13", "H14", "H15", "H16", "H17", "H19"].includes(latestFriendOutcome),
           "friend-third-arc-contact-paused": false,
+          "friend-third-arc-intervention-paused": false,
           "friend-third-arc-secret-source": secretSource,
           "friend-third-arc-trigger-event-id": eventId,
           "friend-third-arc-started-at": String(Number(latest.gameClock?.currentGameTimestamp || Date.now())),
@@ -2341,8 +2342,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (["F102:A", "F107:A", "F114:B", "F116:C", "F117:B"].includes(historyKey)) trust += 1;
                       if (["F091:B", "F097:B", "F097:C", "F105:B", "F115:B", "F116:B"].includes(historyKey)) trust -= 1;
                       const knowsAConfession = knowsA || (nodeId === "F093" && choiceKey === "A") || (nodeId === "F099" && choiceKey === "A") || (nodeId === "F103" && choiceKey === "A");
-                      const boundaryRespected = currentUi["friend-third-arc-boundary-respected"] === true || ["F098:B", "F107:B", "F110:A", "F114:B", "F116:C"].includes(historyKey);
                       const outcome = nextNode.result || String(currentUi["friend-third-arc-outcome"] || "");
+                      const boundaryRespected = currentUi["friend-third-arc-boundary-respected"] === true || ["F098:B", "F107:B", "F110:A", "F114:B", "F116:C"].includes(historyKey) || ["H22", "H24"].includes(outcome);
                       const nextUi = {
                         ...currentUi,
                         "friend-third-arc-node": nextNode.id,
@@ -2354,7 +2355,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-third-arc-knows-boyfriend-conflict": knowsConflict,
                         "friend-third-arc-trust-level": trust,
                         "friend-third-arc-boundary-respected": boundaryRespected,
-                        "friend-third-arc-contact-paused": ["H21", "H22", "H24"].includes(outcome),
+                        "friend-third-arc-contact-paused": ["H21", "H24"].includes(outcome),
+                        "friend-third-arc-intervention-paused": outcome === "H22" || currentUi["friend-third-arc-intervention-paused"] === true,
                         "friend-third-arc-last-choice": historyKey,
                         "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
                       };
