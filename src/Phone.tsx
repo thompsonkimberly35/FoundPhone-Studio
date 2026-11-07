@@ -819,7 +819,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const latestExisting = latest.messages.kakao ?? [];
       const newMessages = dueNow
         .filter((entry) => !latestExisting.some((item) => item.id === entry.item.id))
-        .map((entry) => ({ ...entry.item, read: entry.item.outgoing ? true : false }));
+        .map((entry) => ({ ...entry.item, sentAt: entry.item.sentAt || Date.now(), read: entry.item.outgoing ? true : false }));
       const latestTyping = JSON.stringify(Object.fromEntries(activeNow.map((entry) => [entry.item.title, entry.deliverAt])));
       const backlashStarts = newMessages.some((item) =>
         item.body === "你的身份好像已经被扒出来了"
