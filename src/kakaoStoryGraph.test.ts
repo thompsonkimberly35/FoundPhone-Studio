@@ -73,7 +73,7 @@ describe("KakaoTalk authored story graph integrity", () => {
   it("removes the invented single-choice filler from the confidant second arc", () => {
     expect(validateFriendPhase2Story()).toEqual([]);
     expectClosedStoryGraph("friend arc 2", FRIEND_PHASE2_STORY);
-    expectAllNodesReachable("friend arc 2", FRIEND_PHASE2_STORY, ["F2_070"], { F2_074: ["F2_075"], ...Object.fromEntries(["H13","H14","H15","H16","H17","H18","H19","H20"].map(id => [id, ["F2_090_" + id]])) });
+    expectAllNodesReachable("friend arc 2", FRIEND_PHASE2_STORY, ["F2_070"], { F2_074: ["F2_075"], F2_080C_WAIT: ["F2_085"], ...Object.fromEntries(["H13","H14","H15","H16","H17","H18","H19","H20"].map(id => [id, ["F2_090_" + id]])) });
   });
 
   it("validates the confidant third arc", () => {
