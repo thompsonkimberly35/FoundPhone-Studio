@@ -984,6 +984,62 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     return () => window.clearTimeout(timer);
   }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt, s.ui?.kakao?.["boyfriend-admirer-discovery-result"], s.ui?.kakao?.["delivery-queue"]]);
 
+  // Bridge the original two-message friend check-in into the actual F001-F069
+  // confidant storyline. Older saves only stored the static reply, which left
+  // replyAlreadySent=true with no friend-story-node and therefore no choices.
+  useEffect(() => {
+    if (!ready || creator || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-node"] || ui["friend-story-triggered"] === true) return;
+    const messages = current.messages.kakao || [];
+    const threadMessages = messages.filter(item => item.title === selectedFriend);
+    const hasOpening = threadMessages.some(item => item.id === "selection-friend-first-message" || item.body === "你们还好吗？");
+    const hasPlayerReply = threadMessages.some(item => item.outgoing && item.body === "不好，我好害怕");
+    const hasFriendReply = threadMessages.some(item => !item.outgoing && item.body === "你先别紧张，他已经在和公司开会了");
+    if (!hasOpening || !hasPlayerReply || !hasFriendReply) return;
+    const node = getFriendStoryNode("F002C");
+    if (!node) return;
+    const files: Record<string, string> = {
+      "周安信": "周安信-kakao.png", "张家豪": "張家豪-kakao.png",
+      "李理悟": "李理悟-kakao-v2.jpg", "李相沅": "李相沅-kakao.png",
+      "贺鑫隆": "賀鑫隆-kakao.png", "郑相炫": "鄭相炫-kakao.png",
+      "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
+    };
+    const avatar = files[selectedFriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedFriend] : "";
+    let queue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    const now = Date.now();
+    const cursor = Math.max(now, ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+    const pending = node.lines.map((body, index) => {
+      const item = makeItem({
+        id: "friend-story-F002C-" + index,
+        title: selectedFriend,
+        sender: selectedFriend,
+        avatar,
+        body,
+        time: current.time || displayTime,
+        outgoing: false,
+        read: false,
+        meta: { friendStoryNode: "F002C", kakaoStageTiming: "same-stage" },
+      });
+      const typingAt = cursor + index * 5000 + 2000;
+      return { item, typingAt, deliverAt: typingAt + 3000 };
+    });
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-triggered": true,
+        "friend-story-started": true,
+        "friend-story-node": "F002C",
+        "friend-story-history": "[]",
+        "friend-story-completed-nodes": "[]",
+        "delivery-queue": JSON.stringify([...queue, ...pending]),
+      } },
+    });
+  }, [ready, creator, selectedFriend, s.messages.kakao, s.ui?.kakao?.["friend-story-node"], s.ui?.kakao?.["friend-story-triggered"], s.ui?.kakao?.["delivery-queue"]]);
+
   useEffect(() => {
     if (!ready || creator || !friendStoryTriggered || !selectedFriend) return;
     const current = runtimeRef.current;
