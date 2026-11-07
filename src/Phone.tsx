@@ -77,6 +77,7 @@ import { getKakaoStoryChoice, getKakaoStoryNode } from "./kakaoRomanceStory";
 import { getFriendStoryChoice, getFriendStoryNode } from "./kakaoFriendStory";
 import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNodeId, getFriendPhase2OutcomeLabel, resolveFriendPhase2Next } from "./kakaoFriendStoryPhase2";
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
+import { SECRET_ADMIRER_STAGE2_OPENINGS, getSecretAdmirerStage2Choice, getSecretAdmirerStage2Node } from "./kakaoSecretAdmirerStage2";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode, getTeamConflictBoyfriendFollowupState } from "./kakaoTeamConflictStory";
 import { formatGameTime, migrateRuntimeGameClock, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
@@ -1316,6 +1317,63 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [ready,creator,app,s.ui?.kakao?.["dual-member-story-trigger-at"],s.ui?.kakao?.["secret-admirer-member-id"],s.ui?.kakao?.["team-conflict-member-id"]]);
 
   useEffect(() => {
+    if (!ready || creator) return;
+    const currentUi = runtimeRef.current.ui?.kakao || {};
+    const priorOutcome = String(currentUi["secret-admirer-story-outcome"] || "");
+    const boyfriendOutcome = String(currentUi["boyfriend-stage2-result"] || "");
+    if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome)) return;
+    if (currentUi["secret-admirer-stage2-started"] === true || currentUi["secret-admirer-stage2-trigger-at"]) return;
+    const now = Date.now();
+    let pending: Array<{deliverAt?:number}> = [];
+    try { pending = JSON.parse(String(currentUi["delivery-queue"] || "[]")); } catch { pending = []; }
+    const due = nextKakaoStageStartAt(now, pending.map(entry=>Number(entry.deliverAt||0)).filter(value=>value>now));
+    update({...runtimeRef.current,ui:{...runtimeRef.current.ui,kakao:{...currentUi,"secret-admirer-stage2-trigger-at":String(due)}}});
+  }, [ready,creator,s.ui?.kakao?.["secret-admirer-story-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["secret-admirer-stage2-started"],s.ui?.kakao?.["secret-admirer-stage2-trigger-at"]]);
+
+  useEffect(() => {
+    if (!ready || creator) return;
+    const currentUi = runtimeRef.current.ui?.kakao || {};
+    const due = Number(currentUi["secret-admirer-stage2-trigger-at"] || 0);
+    if (!due || currentUi["secret-admirer-stage2-started"] === true) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["secret-admirer-stage2-started"] === true) return;
+      const priorOutcome = String(latestUi["secret-admirer-story-outcome"] || "");
+      const boyfriendOutcome = String(latestUi["boyfriend-stage2-result"] || "");
+      if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome)) return;
+      let pending: Array<{deliverAt?:number}> = [];
+      try { pending = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { pending = []; }
+      const future = pending.map(entry=>Number(entry.deliverAt||0)).filter(value=>value>Date.now());
+      if(future.length){
+        update({...latest,ui:{...latest.ui,kakao:{...latestUi,"secret-admirer-stage2-trigger-at":String(nextKakaoStageStartAt(Date.now(),future))}}});
+        return;
+      }
+      const memberId=String(latestUi["secret-admirer-member-id"]||"");
+      const member=ALD1_SECRET_ADMIRER_MEMBERS.find(entry=>entry.id===memberId);
+      if(!member) return;
+      const avatar=import.meta.env.BASE_URL+"kakao/"+member.avatarFile;
+      const opening=SECRET_ADMIRER_STAGE2_OPENINGS[priorOutcome] || SECRET_ADMIRER_STAGE2_OPENINGS.R06;
+      const messages=latest.messages.kakao||[];
+      const prefix="secret-admirer-stage2-A070";
+      const already=messages.some(item=>item.id===prefix+"-0");
+      if(already){
+        update({...latest,ui:{...latest.ui,kakao:{...latestUi,"secret-admirer-stage2-started":true,"secret-admirer-stage2-trigger-at":""}}});
+        return;
+      }
+      const stamp=Date.now();
+      const first=makeItem({id:prefix+"-0",title:member.name,sender:member.name,avatar,body:opening[0],time:latest.time||displayTime,outgoing:false,read:false,meta:{secretAdmirerNode:"A070",secretAdmirerStage: "2",storyEventId:"SECRET_ADMIRER_STAGE2_OPENING",kakaoStageTiming:"stage-boundary"}});
+      const follow=opening.slice(1).map((body,index)=>{
+        const item=makeItem({id:prefix+"-"+(index+1),title:member.name,sender:member.name,avatar,body,time:latest.time||displayTime,outgoing:false,read:false,meta:{secretAdmirerNode:"A070",secretAdmirerStage:"2",storyEventId:"SECRET_ADMIRER_STAGE2_OPENING",kakaoStageTiming:"same-stage"}});
+        const typingAt=stamp+2000+index*5000;
+        return {item,typingAt,deliverAt:typingAt+3000};
+      });
+      update({...latest,messages:{...latest.messages,kakao:[...messages,first]},notifications:app==="kakao"?latest.notifications:[...latest.notifications,"KakaoTalk: "+member.name+"："+first.body],ui:{...latest.ui,kakao:{...latestUi,"secret-admirer-stage2-started":true,"secret-admirer-stage2-node":"A070","secret-admirer-stage2-history":"[]","secret-admirer-stage2-completed-nodes":"[]","secret-admirer-stage2-outcome":"","secret-admirer-stage2-trigger-at":"","delivery-queue":JSON.stringify([...pending,...follow])}}});
+    },Math.max(0,due-Date.now()));
+    return ()=>window.clearTimeout(timer);
+  },[ready,creator,app,s.ui?.kakao?.["secret-admirer-stage2-trigger-at"],s.ui?.kakao?.["secret-admirer-stage2-started"],s.ui?.kakao?.["secret-admirer-member-id"]]);
+
+  useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
     const outcome = String(s.ui?.kakao?.["friend-story-outcome"] || "");
     const isCare = outcome === "H09" && s.ui?.kakao?.["friend-story-care-sent"] !== true;
@@ -1940,15 +1998,16 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["secret-admirer-story-node"] || "");
                       if (nodeId !== activeNodeId || currentUi["secret-admirer-boundary"] === "distance" || currentUi["secret-admirer-boundary"] === "rejected") return;
-                      const storyChoice = getSecretAdmirerChoice(nodeId, choiceKey);
+                      const isStage2 = nodeId.startsWith("A0") && Number(nodeId.slice(1)) >= 70;
+                      const storyChoice = isStage2 ? getSecretAdmirerStage2Choice(nodeId, choiceKey) : getSecretAdmirerChoice(nodeId, choiceKey);
                       if (!storyChoice) return;
                       let history: string[] = [];
                       let completed: string[] = [];
-                      try { history = JSON.parse(String(currentUi["secret-admirer-history"] || "[]")); } catch { history = []; }
-                      try { completed = JSON.parse(String(currentUi["secret-admirer-completed-nodes"] || "[]")); } catch { completed = []; }
+                      try { history = JSON.parse(String(currentUi[isStage2 ? "secret-admirer-stage2-history" : "secret-admirer-history"] || "[]")); } catch { history = []; }
+                      try { completed = JSON.parse(String(currentUi[isStage2 ? "secret-admirer-stage2-completed-nodes" : "secret-admirer-completed-nodes"] || "[]")); } catch { completed = []; }
                       const historyKey = nodeId + ":" + choiceKey;
                       if (history.includes(historyKey)) return;
-                      const nextNode = getSecretAdmirerNode(storyChoice.next);
+                      const nextNode = isStage2 ? getSecretAdmirerStage2Node(storyChoice.next) : getSecretAdmirerNode(storyChoice.next);
                       if (!nextNode) return;
                       const outgoing = makeItem({
                         id: "secret-admirer-player-" + nodeId + "-" + choiceKey + "-" + stamp,
@@ -1980,16 +2039,30 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         messages: { ...currentMessages, kakao: [...existing, outgoing] },
                         ui: { ...current.ui, kakao: {
                           ...currentUi,
-                          "secret-admirer-story-node": nextNode.id,
-                          "secret-admirer-history": JSON.stringify([...history, historyKey]),
-                          "secret-admirer-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
-                          "secret-admirer-story-outcome": outcome || String(currentUi["secret-admirer-story-outcome"] || ""),
+                          "secret-admirer-story-node": isStage2 ? String(currentUi["secret-admirer-story-node"] || "A069") : nextNode.id,
+                          ...(isStage2 ? {
+                            "secret-admirer-stage2-node": nextNode.id,
+                            "secret-admirer-stage2-history": JSON.stringify([...history, historyKey]),
+                            "secret-admirer-stage2-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])]),
+                            "secret-admirer-stage2-outcome": outcome || String(currentUi["secret-admirer-stage2-outcome"] || ""),
+                            "secret-admirer-stage2-affection": Number(currentUi["secret-admirer-stage2-affection"] || 0) + (["A093","A094","A097","A098"].includes(nextNode.id) ? 1 : 0),
+                            "secret-admirer-stage2-trust": Math.max(0,Number(currentUi["secret-admirer-stage2-trust"] ?? 3) + (outcome === "R16" ? -2 : outcome === "R14" ? 1 : 0)),
+                            "secret-admirer-stage2-confession-known": currentUi["secret-admirer-confession-known"] === true || ["A094"].includes(nextNode.id),
+                            "secret-admirer-stage2-rejected": outcome === "R12" || outcome === "R13" || outcome === "R16" || currentUi["secret-admirer-stage2-rejected"] === true,
+                            "secret-admirer-stage2-distance": outcome === "R13" || currentUi["secret-admirer-stage2-distance"] === true,
+                            "secret-admirer-stage2-tell-boyfriend": outcome === "R17" || currentUi["secret-admirer-stage2-tell-boyfriend"] === true,
+                            "secret-admirer-stage2-company-limit-known": currentUi["secret-admirer-stage2-company-limit-known"] === true || nextNode.id === "A078" || nextNode.id === "A089" || nextNode.id === "A090",
+                          } : {}),
+                          ...(!isStage2 ? {} : {}),
+                          ...(isStage2 ? {} : {"secret-admirer-history": JSON.stringify([...history, historyKey]),"secret-admirer-completed-nodes": JSON.stringify([...new Set([...completed, nodeId])])}),
+                          "secret-admirer-story-outcome": isStage2 ? String(currentUi["secret-admirer-story-outcome"] || "") : outcome || String(currentUi["secret-admirer-story-outcome"] || ""),
                           "secret-admirer-boundary": boundaryByOutcome[outcome] || String(currentUi["secret-admirer-boundary"] || "open"),
                           "secret-admirer-boundary-until-at": outcome === "R03" ? String(stamp + 7 * 24 * 60 * 60 * 1000) : outcome === "R04" ? String(stamp + 30 * 24 * 60 * 60 * 1000) : String(currentUi["secret-admirer-boundary-until-at"] || ""),
                           "secret-admirer-affection": Number(currentUi["secret-admirer-affection"] || 0) + affectionDelta,
                           "secret-admirer-jealousy": Number(currentUi["secret-admirer-jealousy"] || 0) + jealousyDelta,
                           "secret-admirer-confession-known": confessionKnown,
                           "secret-admirer-player-interest": interestByOutcome[outcome] || String(currentUi["secret-admirer-player-interest"] || "unknown"),
+                          ...(isStage2 ? {"secret-admirer-stage2-boundary": ({R11:"pause",R12:"friends",R13:"distance",R14:"reflection",R15:"talk-to-boyfriend",R16:"trust-damaged",R17:"accountability",R18:"uncertain"} as Record<string,string>)[outcome] || String(currentUi["secret-admirer-stage2-boundary"] || "open")} : {}),
                           "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
                         } },
                       });
