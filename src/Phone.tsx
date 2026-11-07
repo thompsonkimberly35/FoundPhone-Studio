@@ -1183,7 +1183,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     let deliveryQueue: Array<{item:Item;typingAt:number;deliverAt:number}> = [];
     try { deliveryQueue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { deliveryQueue = []; }
     let boyfriendNotice: string[] = [];
-    let nextUi: Record<string, unknown> = {
+    let nextUi = {
       ...ui,
       ...Object.fromEntries(added.map(event => ["x-event-" + event.eventId + "-created", true])),
       "story-x-events": JSON.stringify([...events, ...added]),
