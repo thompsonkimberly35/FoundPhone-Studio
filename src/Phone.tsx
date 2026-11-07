@@ -819,7 +819,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const latestExisting = latest.messages.kakao ?? [];
       const newMessages = dueNow
         .filter((entry) => !latestExisting.some((item) => item.id === entry.item.id))
-        .map((entry) => ({ ...entry.item, read: false }));
+        .map((entry) => ({ ...entry.item, read: entry.item.outgoing ? true : false }));
       const latestTyping = JSON.stringify(Object.fromEntries(activeNow.map((entry) => [entry.item.title, entry.deliverAt])));
       const backlashStarts = newMessages.some((item) =>
         item.body === "你的身份好像已经被扒出来了"
@@ -2741,7 +2741,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         addScreenshotToQueue("friend-phase2-screenshot-circulated", "cropped", "网上流传的截图", 5000);
                       }
                       const nextHistory = [...history, historyKey];
-                      const nextCompleted = [...new Set([...completed, nodeId])];
+                      const nextCompleted = [...new Set([...completed, nodeId, ...(activeNextNode.id !== nextNode.id ? [nextNode.id] : [])])];
                       const outcome = activeNextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
                       const nextUi: Record<string, UiValue> = {
                         ...currentUi,
@@ -2762,7 +2762,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-phase2-source-identified": activeNextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
                         "friend-story-phase2-investigation-paused": activeNextNode.effect === "investigation-paused" || currentUi["friend-story-phase2-investigation-paused"] === true,
                         "friend-story-phase2-bf-informed": nodeId === "F2_080" && choiceKey === "C" ? true : currentUi["friend-story-phase2-bf-informed"] === true,
-                        "friend-story-phase2-truth": outcome === "H20" ? "D" : currentUi["friend-story-phase2-evidence-compared"] === true || nextNode.effect === "evidence-compared" ? "B" : currentUi["friend-story-phase2-source-identified"] === true || nextNode.effect === "source-identified" ? "A" : currentUi["friend-story-phase2-investigation-paused"] === true || nextNode.effect === "investigation-paused" ? "C" : String(currentUi["friend-story-phase2-truth"] || "C"),
+                        "friend-story-phase2-truth": outcome === "H20" ? "D" : currentUi["friend-story-phase2-evidence-compared"] === true || activeNextNode.effect === "evidence-compared" ? "B" : currentUi["friend-story-phase2-source-identified"] === true || activeNextNode.effect === "source-identified" ? "A" : currentUi["friend-story-phase2-investigation-paused"] === true || activeNextNode.effect === "investigation-paused" ? "C" : String(currentUi["friend-story-phase2-truth"] || "C"),
                         "friend-story-phase2-ended": Boolean(outcome),
                         "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
                       };
