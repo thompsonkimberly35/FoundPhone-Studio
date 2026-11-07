@@ -1391,9 +1391,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const currentUi = runtimeRef.current.ui?.kakao || {};
     const priorOutcome = String(currentUi["secret-admirer-story-outcome"] || "");
     const boyfriendOutcome = String(currentUi["boyfriend-stage2-result"] || "");
-    const boyfriendNode = String(currentUi["boyfriend-stage2-node"] || "");
-    const hasHeardCompanyLimit = boyfriendNode === "K142" || /^K1(?:4[5-9]|[5-6][0-9])$/.test(boyfriendNode);
-    if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome) || !hasHeardCompanyLimit) return;
+    // E09-E18 are durable completion results. The node ID is transient and may
+    // move after a valid ending, so it must not block A's next story arc.
+    if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome)) return;
     if (currentUi["secret-admirer-stage2-started"] === true || currentUi["secret-admirer-stage2-trigger-at"]) return;
     const now = Date.now();
     let pending: Array<{deliverAt?:number}> = [];
@@ -1413,9 +1413,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (latestUi["secret-admirer-stage2-started"] === true) return;
       const priorOutcome = String(latestUi["secret-admirer-story-outcome"] || "");
       const boyfriendOutcome = String(latestUi["boyfriend-stage2-result"] || "");
-      const boyfriendNode = String(latestUi["boyfriend-stage2-node"] || "");
-      const hasHeardCompanyLimit = boyfriendNode === "K142" || /^K1(?:4[5-9]|[5-6][0-9])$/.test(boyfriendNode);
-      if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome) || !hasHeardCompanyLimit) return;
+      // Recheck the durable results; do not depend on a transient node ID.
+      if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome)) return;
       let pending: Array<{deliverAt?:number}> = [];
       try { pending = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { pending = []; }
       const future = pending.map(entry=>Number(entry.deliverAt||0)).filter(value=>value>Date.now());
