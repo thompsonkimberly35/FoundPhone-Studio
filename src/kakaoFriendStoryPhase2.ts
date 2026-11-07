@@ -1,7 +1,8 @@
-export type FriendPhase2Choice = { key: string; text: string; next: string };
-export type FriendPhase2Node = { id: string; lines: string[]; choices: FriendPhase2Choice[]; result?: string; effect?: string; autoNext?: string; scriptedPlayerLine?: { afterLineIndex: number; text: string } };
-const n = (id: string, lines: string[], choices: [string, string, string][] = [], result?: string, effect?: string): FriendPhase2Node => ({
-  id, lines, choices: choices.map(([key, text, next]) => ({ key, text, next })),
+export type FriendPhase2Choice = { key: string; text: string; next: string; replyLines?: string[] };
+export type FriendPhase2Node = { id: string; lines: string[]; choices: FriendPhase2Choice[]; result?: string; effect?: string; autoNext?: string; scriptedPlayerLines?: Array<{ afterLineIndex: number; text: string }> };
+type FriendPhase2ChoiceTuple = [string, string, string] | [string, string, string, string[]];
+const n = (id: string, lines: string[], choices: FriendPhase2ChoiceTuple[] = [], result?: string, effect?: string): FriendPhase2Node => ({
+  id, lines, choices: choices.map(([key, text, next, replyLines]) => ({ key, text, next, ...(replyLines?.length ? { replyLines } : {}) })),
   ...(result ? { result } : {}), ...(effect ? { effect } : {}),
 });
 const go = (from: string, next: string): [string, string, string][] => {
@@ -83,6 +84,7 @@ export const FRIEND_PHASE2_STORY: Record<string, FriendPhase2Node> = {
   F2_080: n("F2_080", ["我现在突然很害怕。", "不是怕自己被骂。", "是怕我以为自己在帮你，结果每一步都把你推得更危险。", "如果早知道会这样，我那天就不应该去找任何人。"], [
     ["A", "现在后悔没有用，我们一起面对。", "F2_081"], ["B", "这件事你必须自己负责。", "F2_083"], ["C", "我想先告诉男友。", "F2_085"],
   ]),
+  F2_080C_WAIT: n("F2_080C_WAIT", [], [], undefined, "wait-for-boyfriend-reaction"),
   F2_081: {
     ...n("F2_081", [
       "我把所有对话都整理好了。",
@@ -124,9 +126,18 @@ export const FRIEND_PHASE2_STORY: Record<string, FriendPhase2Node> = {
   F2_084: n("F2_084", ["……我没想到他会把我说的话也发出来。", "现在连我都被骂了。"], [
     ["A", "你为什么又不跟我商量？", "H20"], ["B", "先不要回任何人，我们一起想办法。", "H15"], ["C", "这是你自己的决定。", "H16"],
   ]),
-  F2_085: n("F2_085", ["你跟他说明了吗？", "……他怎么说？", "我猜他会很生气。如果我是他，我可能也会这样。"], go("F2_085", "F2_086")),
-  F2_086: n("F2_086", ["他有没有叫你不要再跟我联络？", "我不想让你变成夹在我们中间的人。"], [
-    ["A", "没有，他尊重我的决定。", "H14"], ["B", "他说暂时不希望你再接触这件事。", "H17"], ["C", "我不想让你们之间的问题变成我的选边站。", "H14"],
+  F2_085: {
+    ...n("F2_085", ["你跟他说了吗？", "……他怎么说？", "我猜也是。", "如果我是他，我可能也会这样。"]),
+    autoNext: "F2_086",
+    scriptedPlayerLines: [
+      { afterLineIndex: 1, text: "说了。" },
+      { afterLineIndex: 2, text: "他很生气。" },
+    ],
+  },
+  F2_086: n("F2_086", ["他有没有叫你不要再跟我联络？"], [
+    ["A", "没有，他尊重我的决定。", "H14", ["那我真的欠他一句道歉。"]],
+    ["B", "他说暂时不希望你再接触这件事。", "H17", ["我知道。", "这次我确实没有立场反驳。", "但我还是希望有一天能亲自跟他说清楚。"]],
+    ["C", "我不想让你们之间的问题变成我的选边站。", "H14", ["对不起。", "我不应该让你变成夹在中间的人。"]],
   ]),
   F2_087: n("F2_087", ["我现在终于知道你怎么想我了。", "不管我说什么，你都觉得我在骗你。", "我承认我做错了，但我也真的很累。"], [
     ["A", "那我们先不要联络了。", "H18"], ["B", "你到现在还觉得自己很委屈？", "H20"], ["C", "我没有说永远不原谅你。", "H19"],
@@ -219,17 +230,25 @@ export function getFriendPhase2OutcomeLabel(outcome: string): string {
   return FRIEND_PHASE2_OUTCOME_LABELS[outcome] || "尚未完成";
 }
 
+export function isExplicitBoyfriendAngerResponse(message: string): boolean {
+  const text = message.replace(/\\s+/g, "");
+  return /我(?:真的|现在|已经)?(?:很|非常)?(?:生气|不高兴|愤怒|火大)/.test(text)
+    || /我(?:真的)?(?:无法|不能)接受/.test(text)
+    || /我对.{0,12}(?:生气|不高兴|愤怒)/.test(text);
+}
+
 export function validateFriendPhase2Story(): string[] {
   const errors: string[] = [];
   const known = new Set(Object.keys(FRIEND_PHASE2_STORY));
   const terminal = new Set(["H13","H14","H15","H16","H17","H18","H19","H20"]);
   const roots = ["F2_070", ...Array.from({ length: 8 }, (_, i) => "F2_090_H" + (i + 13))];
-  if (known.size !== 55) errors.push("好友第二阶段节点数量应为55，实际为" + known.size);
+  if (known.size !== 56) errors.push("好友第二阶段节点数量应为56，实际为" + known.size);
   for (const node of Object.values(FRIEND_PHASE2_STORY)) {
     if (node.choices.length === 1) errors.push(node.id + ": 不允许只有一个玩家选项");
     if (node.choices.length > 3) errors.push(node.id + ": 玩家选项超过三个");
-    if (node.choices.length === 0 && !terminal.has(node.id) && node.effect !== "x-event" && !node.autoNext) errors.push(node.id + ": 非结局节点缺少玩家选项或自动后继节点");
+    if (node.choices.length === 0 && !terminal.has(node.id) && node.effect !== "x-event" && node.effect !== "wait-for-boyfriend-reaction" && !node.autoNext) errors.push(node.id + ": 非结局节点缺少玩家选项或自动后继节点");
     if (node.autoNext && !known.has(node.autoNext)) errors.push(node.id + ": 自动后继指向不存在的节点 " + node.autoNext);
+    if (node.choices.some(choice => (choice.replyLines || []).some(line => !line.trim()))) errors.push(node.id + ": 选项回复包含空白台词");
     const keys = new Set<string>();
     for (const choice of node.choices) {
       if (keys.has(choice.key)) errors.push(node.id + ": 重复选项键 " + choice.key);
@@ -248,6 +267,7 @@ export function validateFriendPhase2Story(): string[] {
     if (id === "F2_074") pending.push("F2_075");
     if (id === "F2_080") pending.push("F2_087");
     if (FRIEND_PHASE2_STORY[id].autoNext) pending.push(FRIEND_PHASE2_STORY[id].autoNext!);
+    if (id === "F2_080C_WAIT") pending.push("F2_085");
   }
   for (const id of known) if (!reached.has(id)) errors.push("不可达节点：" + id);
   return errors;
