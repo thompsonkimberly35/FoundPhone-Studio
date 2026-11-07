@@ -1363,7 +1363,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       }
       const stamp=Date.now();
       const first=makeItem({id:prefix+"-0",title:member.name,sender:member.name,avatar,body:opening[0],time:latest.time||displayTime,outgoing:false,read:false,meta:{secretAdmirerNode:"A070",secretAdmirerStage: "2",storyEventId:"SECRET_ADMIRER_STAGE2_OPENING",kakaoStageTiming:"stage-boundary"}});
-      const follow=opening.slice(1).map((body,index)=>{
+      const stage2Node=getSecretAdmirerStage2Node("A070");
+      const followBodies=[...opening.slice(1),...(stage2Node?.lines.slice(1)||[])];
+      const follow=followBodies.map((body,index)=>{
         const item=makeItem({id:prefix+"-"+(index+1),title:member.name,sender:member.name,avatar,body,time:latest.time||displayTime,outgoing:false,read:false,meta:{secretAdmirerNode:"A070",secretAdmirerStage:"2",storyEventId:"SECRET_ADMIRER_STAGE2_OPENING",kakaoStageTiming:"same-stage"}});
         const typingAt=stamp+2000+index*5000;
         return {item,typingAt,deliverAt:typingAt+3000};
@@ -1996,9 +1998,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     }
                     if (choiceId?.startsWith("admirer:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
-                      const activeNodeId = String(currentUi["secret-admirer-story-node"] || "");
-                      if (nodeId !== activeNodeId || currentUi["secret-admirer-boundary"] === "distance" || currentUi["secret-admirer-boundary"] === "rejected") return;
                       const isStage2 = nodeId.startsWith("A0") && Number(nodeId.slice(1)) >= 70;
+                      const activeNodeId = String(currentUi[isStage2 ? "secret-admirer-stage2-node" : "secret-admirer-story-node"] || "");
+                      if (nodeId !== activeNodeId) return;
+                      if (!isStage2 && (currentUi["secret-admirer-boundary"] === "distance" || currentUi["secret-admirer-boundary"] === "rejected")) return;
+                      if (isStage2 && (currentUi["secret-admirer-stage2-boundary"] === "distance" || currentUi["secret-admirer-stage2-boundary"] === "trust-damaged")) return;
                       const storyChoice = isStage2 ? getSecretAdmirerStage2Choice(nodeId, choiceKey) : getSecretAdmirerChoice(nodeId, choiceKey);
                       if (!storyChoice) return;
                       let history: string[] = [];
