@@ -12,7 +12,7 @@ import {
 
 describe("KakaoTalk confidant friend story phase two", () => {
   it("keeps phase two independent from the original F001-F069 and H01-H12 identifiers", () => {
-    expect(getFriendPhase2NodeCount()).toBe(54);
+    expect(getFriendPhase2NodeCount()).toBe(55);
     expect(getFriendPhase2Node("F2_070")).toBeDefined();
     for (let i = 1; i <= 12; i++) {
       expect(FRIEND_PHASE2_STORY["H" + String(i).padStart(2, "0")]).toBeUndefined();
@@ -22,6 +22,35 @@ describe("KakaoTalk confidant friend story phase two", () => {
       expect(getFriendPhase2Node(id)?.result).toBe(id);
       expect(getFriendPhase2Node(id)?.choices).toHaveLength(0);
     }
+  });
+
+  it("plays the original F081 scripted exchange before showing F082 choices", () => {
+    const f081 = getFriendPhase2Node("F2_081");
+    const f082 = getFriendPhase2Node("F2_082");
+    expect(f081?.choices).toHaveLength(0);
+    expect(f081?.autoNext).toBe("F2_082");
+    expect(f081?.scriptedPlayerLine).toEqual({
+      afterLineIndex: 4,
+      text: "你这次终于没有自己决定了。",
+    });
+    expect(f081?.lines).toEqual([
+      "我把所有对话都整理好了。",
+      "包括我当时传出去的截图。",
+      "还有韩知恩回复我的内容。",
+      "我没有删除任何东西。",
+      "嗯。",
+      "我想过了。",
+      "我不是你的保护人。",
+      "我是你的朋友。",
+      "这两件事我以前好像一直搞混了。",
+    ]);
+    expect(f082?.lines).toEqual([
+      "如果有一天你不再和 {{BOYFRIEND_NAME}} 在一起……",
+      "我希望你还是可以找我。",
+      "但如果你们一直在一起，我也希望你幸福。",
+      "我不应该因为担心你，就一直替你决定什么才是对的。",
+    ]);
+    expect(f082?.choices.map(choice => [choice.key, choice.next])).toEqual([["A", "H13"], ["B", "H14"]]);
   });
 
   it("has no dangling choice targets", () => {
@@ -49,6 +78,10 @@ describe("KakaoTalk confidant friend story phase two", () => {
           }
         }
       }
+      if (node?.autoNext && !visited.has(node.autoNext)) {
+        visited.add(node.autoNext);
+        pending.push(node.autoNext);
+      }
       // F2_074 is an event-only pause; the scheduled X post opens F2_075.
       if (node?.id === "F2_074" && !visited.has("F2_075")) {
         visited.add("F2_075");
@@ -64,9 +97,8 @@ describe("KakaoTalk confidant friend story phase two", () => {
     expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", 0, 1, 0)).toBe("F2_087");
     expect(resolveFriendPhase2Next("F2_080", "B", "F2_083", 2, 0, 0)).toBe("F2_083");
     expect(resolveFriendPhase2Next("F2_080", "A", "F2_081", -2, 2, 2)).toBe("F2_081");
-    expect(resolveFriendPhase2Next("F2_081", "A", "H13", 2, 0, 0, true)).toBe("H13");
-    expect(resolveFriendPhase2Next("F2_081", "A", "H13", 2, 0, 0, false)).toBe("H14");
-    expect(resolveFriendPhase2Next("F2_081", "A", "H13", 0, 0, 0, true)).toBe("H14");
+    expect(resolveFriendPhase2Next("F2_082", "A", "H13", 0, 0, 0, false)).toBe("H13");
+    expect(resolveFriendPhase2Next("F2_082", "B", "H14", -2, 2, 2, false)).toBe("H14");
     expect(resolveFriendPhase2Next("F2_084", "B", "H15", -1, 0, 0)).toBe("H14");
     // The second-lie ending is available only after the earlier warning was disclosed.
     expect(resolveFriendPhase2Next("F2_084", "A", "H20", 2, 0, 0)).toBe("H19");
