@@ -134,7 +134,20 @@ export function getFriendPhase3Choice(nodeId: string, key: string, context: Frie
 export function getFriendPhase3Opening(context: FriendPhase3Context = {}): string[] {
   const trust = Number(context.trust || 0);
   const outcome = context.friendOutcome || "";
-  if (outcome === "H14" || outcome === "H19" || outcome === "H20" || trust <= -1) {
+  // Carry the exact Phase 2 friendship outcome into the next arc. These openings
+  // must not flatten eight materially different endings into one generic greeting.
+  const outcomeOpenings: Record<string, string[]> = {
+    H13: ["上次你愿意重新相信我，我一直记得。", "我知道信任不是说回来就能回来，所以我没有把你的原谅当成理所当然。", "最近练习时发生了一些事，我想先问问你愿不愿意听。"],
+    H14: ["我知道我们之间还有一些事情没有真正解决。", "我不是想假装之前的矛盾没有发生。", "只是今天有件事让我觉得，应该先确认你还好吗。"],
+    H15: ["上次我们说好一起面对，不再有人擅自替你做决定。", "我把这句话记下来了。", "最近又发生了一些事，我想先和你商量。"],
+    H16: ["我知道你让我自己承担该承担的责任。", "这段时间我没有再替你向别人作决定，也没有要求你替我解释。", "今天有件事，我想先把事实告诉你。"],
+    H17: ["上次你说不想在我和他之间选边，我一直记得。", "我不会再让你承担我们之间的压力。", "只是最近有件事，我想先确认你的想法。"],
+    H18: ["我知道你现在不想原谅我。", "如果你还没有准备好听我说话，我会尊重你的决定。", "我不会因为主动联系你，就当作我们已经和好。"],
+    H19: ["我知道那句道歉还没有得到你的回应。", "我不会催你，也不会把你愿意听我说话当成已经原谅。", "今天有件事，我想先问你愿不愿意知道。"],
+    H20: ["我知道第二次隐瞒让你更难相信我。", "这次我不会再替自己找理由，也不会要求你立刻原谅。", "如果你愿意，我想把后来查到的事实完整告诉你。"],
+  };
+  if (outcomeOpenings[outcome]) return outcomeOpenings[outcome];
+  if (trust <= -1) {
     return ["我知道我们之间还有一些事情没有真正解决。", "我不是想假装之前的矛盾没有发生。", "只是今天有件事让我觉得，应该先确认你还好吗。"];
   }
   if (["MEND01", "MEND02", "MEND07"].includes(context.boyfriendOutcome || "")) {
