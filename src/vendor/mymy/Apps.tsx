@@ -181,7 +181,9 @@ export function MymyKakao(p: SkinProps) {
     .map(choice => ({ ...choice, text: choice.text.replace(/\{\{ADMIRER_NAME\}\}/g, secretAdmirerMember?.name || "那位成员") })) || [];
 
   const boyfriendContext = romanceNode?.lines.join("") || "";
-  const friendLinkOptions = boyfriendThread && romanceNode
+  // These cross-story prompts belong only to the first boyfriend arc. Once a
+  // follow-up node exists, the stale first-arc node must not add choices to it.
+  const friendLinkOptions = boyfriendThread && romanceNode && !boyfriendStage2Node && romanceNode.choices.length > 0
     ? p.ui?.["friend-story-handoff"] === "H07" && /公司|经纪人|活动/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-handoff"]
       ? (messages.some(item => /公司.{0,8}警告|警告.{0,8}公司/.test(item.body))
           ? [
