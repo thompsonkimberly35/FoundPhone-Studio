@@ -34,6 +34,7 @@ import "./ios/status-bar.css";
 import { WeChatSkin, WhatsAppSkin } from "./AppSkins";
 import { RichText } from "./RichText";
 import { getBoyfriendStage2Node, getBoyfriendStage2Choice, STAGE2_X001, STAGE2_X002, STAGE2_X003 } from "./kakaoBoyfriendStage2";
+import { BOYFRIEND_STAGE3_OPENINGS } from "./kakaoBoyfriendStage3";
 import {
   useEffect,
   useState,
@@ -1208,6 +1209,46 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [ready, creator, selectedBoyfriend, app, s.ui?.kakao?.["romance-result"], s.ui?.kakao?.["romance-node"], s.ui?.kakao?.["boyfriend-stage2-started"], s.ui?.kakao?.["boyfriend-stage2-trigger-at"], s.ui?.kakao?.["delivery-queue"]]);
 
   useEffect(() => {
+    if (!ready || creator || !selectedBoyfriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    const previousResult = String(ui["boyfriend-stage2-result"] || "");
+    const due = Number(ui["boyfriend-stage3-trigger-at"] || 0);
+    if (!/^E(0[9]|1[0-8])$/.test(previousResult) || !due || ui["boyfriend-stage3-started"] === true) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["boyfriend-stage3-started"] === true) return;
+      let queue: Array<{item?: Item; typingAt?: number; deliverAt?: number}> = [];
+      try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
+      const pending = queue.map(entry => Number(entry.deliverAt || 0)).filter(value => value > Date.now());
+      if (pending.length) {
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-trigger-at": String(nextKakaoStageStartAt(Date.now(), pending)) } } });
+        return;
+      }
+      const existing = latest.messages.kakao ?? [];
+      if (existing.some(item => item.id === "boyfriend-stage3-K140-0")) return;
+      const opening = [...(BOYFRIEND_STAGE3_OPENINGS[previousResult] || ["今天公司安排了内部会议，我想把结果告诉你。"]), "有一件事，我本来打算等全部确定以后再告诉你。", "但我不想再让你最后一个知道。"];
+      const bState = String(latestUi["team-conflict-boyfriend-followup-state"] || "");
+      if (bState === "team-conversation-available") opening.push("我知道团队里有人愿意重新沟通，也有人仍然有顾虑。我不会把任何一方的态度说成所有人的共识。");
+      else if (bState === "respect-no-contact") opening.push("我知道团队里仍然有尚未解决的冲突，我会自己面对，不会把你的私人谈话拿去解释。");
+      else if (bState === "relationship-stable" || bState === "past-story-unlocked") opening.push("团队里的一些旧问题也让我重新思考，不能要求每个人都做出和我一样的选择。");
+      const first = makeItem({ id: "boyfriend-stage3-K140-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K140", kakaoStageTiming: "stage-boundary" } });
+      const start = Date.now();
+      const queued = opening.slice(1).map((body, index) => {
+        const item = makeItem({ id: "boyfriend-stage3-K140-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K140", kakaoStageTiming: "same-stage" } });
+        const typingAt = start + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      });
+      update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
+        notifications: app === "kakao" ? latest.notifications : [...latest.notifications, "KakaoTalk: " + selectedBoyfriend + "：" + first.body],
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", "boyfriend-stage2-history": "[]", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+      });
+    }, Math.max(0, due - Date.now()));
+    return () => window.clearTimeout(timer);
+  }, [ready, creator, selectedBoyfriend, app, s.ui?.kakao?.["boyfriend-stage2-result"], s.ui?.kakao?.["boyfriend-stage3-trigger-at"], s.ui?.kakao?.["boyfriend-stage3-started"], s.ui?.kakao?.["delivery-queue"]]);
+
+  useEffect(() => {
     if (!ready || creator) return;
     const currentUi = runtimeRef.current.ui?.kakao || {};
     const admirerId = String(currentUi["secret-admirer-member-id"] || "");
@@ -1811,7 +1852,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const outgoing = makeItem({ id: "boyfriend-stage2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), boyfriendStage2Node: nodeId, boyfriendStage2Choice: choiceKey };
                       const queued = queueLines(nextNode.lines, "boyfriend-stage2-" + nodeId + "-" + choiceKey, currentQueue, true).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, boyfriendStage2Node: nextNode.id } } }));
-                      const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
+                      const isPreviousStageOutcome = /^E(0[9]|1[0-8])$/.test(String(nextNode.result || ""));
+                      const stage3TriggerAt = isPreviousStageOutcome ? String(nextKakaoStageStartAt(stamp, [...currentQueue.map(entry => entry.deliverAt), ...queued.map(entry => entry.deliverAt)])) : String(currentUi["boyfriend-stage3-trigger-at"] || "");
+                      const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "boyfriend-stage3-trigger-at": stage3TriggerAt, "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
                       update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
                       return;
                     }
