@@ -48,6 +48,11 @@ describe("KakaoTalk confidant friend story phase two", () => {
           }
         }
       }
+      // F2_074 is an event-only pause; the scheduled X post opens F2_075.
+      if (node?.id === "F2_074" && !visited.has("F2_075")) {
+        visited.add("F2_075");
+        pending.push("F2_075");
+      }
     }
     for (let i = 13; i <= 20; i++) expect(visited.has("H" + i)).toBe(true);
   });
@@ -75,9 +80,10 @@ describe("KakaoTalk confidant friend story phase two", () => {
     expect(getFriendPhase2OutcomeClass("H08")).toBe("ordinary");
   });
 
-  it("holds the X leak node until its scheduled event is delivered", () => {
-    expect(getFriendPhase2Node("F2_074")?.choices).toHaveLength(1);
+  it("holds the X leak node as an event-only pause until its scheduled event is delivered", () => {
+    expect(getFriendPhase2Node("F2_074")?.choices).toHaveLength(0);
     expect(getFriendPhase2Node("F2_074")?.lines).toHaveLength(0);
+    expect(getFriendPhase2Node("F2_075")).toBeDefined();
   });
 
   it("uses the prior ending as a unique prelude before the F2_070 question", () => {
