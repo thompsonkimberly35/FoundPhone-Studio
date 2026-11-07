@@ -161,7 +161,11 @@ export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defau
   if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) return "F2_087";
   if (nodeId === "F2_081" && choiceKey === "A" && (trust <= 0 || !hasEvidence)) return "H14";
   if (nodeId === "F2_081" && choiceKey === "B") return "H14";
+  if (nodeId === "F2_084" && choiceKey === "A" && concealment < 1) return "H19";
   if (nodeId === "F2_084" && choiceKey === "B" && trust < 0) return "H14";
+  // H20 is the second-concealment ending. It must never reveal a second lie
+  // unless the earlier F2_075C disclosure clue was actually discovered.
+  if (nodeId === "F2_087" && choiceKey === "B" && concealment < 1) return "H19";
   return defaultNext;
 }
 
