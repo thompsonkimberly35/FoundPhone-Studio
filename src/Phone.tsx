@@ -1109,7 +1109,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       addIncoming(node.lines.slice(0, first.afterLineIndex), "friend-phase2-migration-F2_083-before-0");
     }
 
-    node.scriptedPlayerLines.forEach((scriptedLine, index) => {
+    node.scriptedPlayerLines?.forEach((scriptedLine, index) => {
       const id = "friend-phase2-F2_083-scripted-player-" + index;
       const alreadyExists = messages.some(item => item.id === id) || queue.some(entry => entry.item?.id === id);
       if (alreadyExists) return;
@@ -1433,7 +1433,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       migratedQueue.push({ item: scripted, typingAt: scriptedAt, deliverAt: scriptedAt });
       cursor = scriptedAt;
     }
-    if (!hasF081Messages) addIncoming(f081.lines.slice(f081.scriptedPlayerLine.afterLineIndex), "F2_081", "friend-phase2-migration-F2_081-after");
+    if (!hasF081Messages) addIncoming(f081.lines.slice(f081.scriptedPlayerLines?.[0]?.afterLineIndex ?? f081.lines.length), "F2_081", "friend-phase2-migration-F2_081-after");
     addIncoming(f082.lines, "F2_082", "friend-phase2-migration-F2_082");
 
     update({
@@ -3189,33 +3189,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                           .map(entry => entry.item!.id));
                       }
 
-                      const nextUi = {
-                        ...currentUi,
-                        "friend-story-node": nextNode.id,
-                        "friend-story-history": JSON.stringify([...history, historyKey]),
-                        "friend-story-completed-nodes": JSON.stringify([...new Set([...completed, friendNodeId])]),
-                        "friend-story-last-choice": historyKey,
-                        "friend-story-outcome": outcome,
-                        "friend-story-phase2-not-before-real-at": /^H(?:0[1-9]|1[0-2])$/.test(outcome)
-                          ? String(currentUi["friend-story-phase2-not-before-real-at"] || nextKakaoStageStartAt(
-                              stamp,
-                              [...currentQueue.map((entry) => entry.deliverAt), ...queued.map((entry) => entry.deliverAt)],
-                            ))
-                          : String(currentUi["friend-story-phase2-not-before-real-at"] || ""),
-                        "friend-story-care-due-at": nextNode.id === "H09" ? String(stamp + 5 * 60 * 1000) : String(currentUi["friend-story-care-due-at"] || ""),
-                        "friend-story-reconnect-due-at": nextNode.id === "H04" ? String(stamp + 24 * 60 * 60 * 1000) : String(currentUi["friend-story-reconnect-due-at"] || ""),
-                        "friend-story-trust": friendState.trust,
-                        "friend-story-conflict": friendState.conflict,
-                        "friend-story-team-concern": friendState.teamConcern,
-                        "friend-story-secret-level": friendState.secretLevel,
-                        "friend-story-knows-warning": ["F009","F026","F027","F031"].includes(nextNode.id) || currentUi["friend-story-knows-warning"] === true,
-                        "friend-story-knows-sacrifice": ["F028","F060","H11"].includes(nextNode.id) || currentUi["friend-story-knows-sacrifice"] === true,
-                        "friend-story-promised-secrecy": nextNode.id === "H10" ? true : currentUi["friend-story-promised-secrecy"] === true,
-                        "friend-story-knows-player-intent": ["H07","H08","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-knows-player-intent"] || ""),
-                        "friend-story-handoff": ["H07","H09","H11","H12"].includes(nextNode.id) ? nextNode.id : String(currentUi["friend-story-handoff"] || ""),
-                        "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
-                      };
-                      update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
+                      update({ ...current, messages: { ...currentMessages, kakao: nextMessages }, ui: { ...current.ui, kakao: nextUi } });
                       return;
                     }
                     if (choiceId === "__migrate__") {
