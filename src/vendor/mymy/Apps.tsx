@@ -114,21 +114,6 @@ export function MymyKakao(p: SkinProps) {
   const friendStoryNode = getFriendStoryNode(friendStoryNodeId);
   const friendPhase2NodeId = String(p.ui?.["friend-story-phase2-node"] || "");
   const friendPhase2Node = getFriendPhase2Node(friendPhase2NodeId);
-  const friendPhase3NodeId = String(p.ui?.["friend-third-arc-node"] || "");
-  const friendPhase3Context = {
-    aOutcome: String(p.ui?.["friend-third-arc-a-outcome"] || p.ui?.["secret-admirer-stage2-outcome"] || ""),
-    boyfriendOutcome: String(p.ui?.["friend-third-arc-boyfriend-outcome"] || p.ui?.["boyfriend-admirer-discovery-result"] || ""),
-    friendOutcome: String(p.ui?.["friend-third-arc-friend-outcome"] || p.ui?.["friend-story-phase2-outcome"] || ""),
-    trust: Number(p.ui?.["friend-third-arc-trust-level"] ?? p.ui?.["friend-story-phase2-trust"] ?? 0),
-    knowsAConfession: p.ui?.["friend-third-arc-knows-a-confession"] === true,
-    knowsBoyfriendConflict: p.ui?.["friend-third-arc-knows-boyfriend-conflict"] === true,
-    secretSource: String(p.ui?.["friend-third-arc-secret-source"] || "observed-only"),
-  };
-  const friendPhase3Node = friendThread ? getFriendPhase3Node(friendPhase3NodeId, friendPhase3Context) : undefined;
-  const friendPhase3Choices = friendPhase3Node?.choices
-    .map(choice => getFriendPhase3Choice(friendPhase3Node.id, choice.key, friendPhase3Context))
-    .filter((choice): choice is NonNullable<typeof choice> => Boolean(choice))
-    .map(choice => ({ ...choice, text: choice.text.replace(/\{\{ADMIRER_NAME\}\}/g, secretAdmirerMember?.name || "那位成员") })) || [];
 
   const secretAdmirerMemberId = String(p.ui?.["secret-admirer-member-id"] || "");
   const secretAdmirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find((member) => member.id === secretAdmirerMemberId);
@@ -179,6 +164,22 @@ export function MymyKakao(p: SkinProps) {
   const boyfriendAdmirerChoices = (boyfriendAdmirerNode?.choices || []).filter(choice => !(boyfriendAdmirerNodeId === "M184" && choice.key === "A" && String(p.ui?.["secret-admirer-stage2-outcome"] || "") !== "R12" && p.ui?.["boyfriend-admirer-explicit-rejection"] !== true) && !(boyfriendAdmirerNodeId === "M184" && choice.key === "B" && String(p.ui?.["secret-admirer-stage2-outcome"] || "") === "R12"));
 
   const friendThread = Boolean(p.selectedFriend && p.thread === p.selectedFriend);
+  const friendPhase3NodeId = String(p.ui?.["friend-third-arc-node"] || "");
+  const friendPhase3Context = {
+    aOutcome: String(p.ui?.["friend-third-arc-a-outcome"] || p.ui?.["secret-admirer-stage2-outcome"] || ""),
+    boyfriendOutcome: String(p.ui?.["friend-third-arc-boyfriend-outcome"] || p.ui?.["boyfriend-admirer-discovery-result"] || ""),
+    friendOutcome: String(p.ui?.["friend-third-arc-friend-outcome"] || p.ui?.["friend-story-phase2-outcome"] || ""),
+    trust: Number(p.ui?.["friend-third-arc-trust-level"] ?? p.ui?.["friend-story-phase2-trust"] ?? 0),
+    knowsAConfession: p.ui?.["friend-third-arc-knows-a-confession"] === true,
+    knowsBoyfriendConflict: p.ui?.["friend-third-arc-knows-boyfriend-conflict"] === true,
+    secretSource: String(p.ui?.["friend-third-arc-secret-source"] || "observed-only"),
+  };
+  const friendPhase3Node = friendThread ? getFriendPhase3Node(friendPhase3NodeId, friendPhase3Context) : undefined;
+  const friendPhase3Choices = friendPhase3Node?.choices
+    .map(choice => getFriendPhase3Choice(friendPhase3Node.id, choice.key, friendPhase3Context))
+    .filter((choice): choice is NonNullable<typeof choice> => Boolean(choice))
+    .map(choice => ({ ...choice, text: choice.text.replace(/\{\{ADMIRER_NAME\}\}/g, secretAdmirerMember?.name || "那位成员") })) || [];
+
   const boyfriendContext = romanceNode?.lines.join("") || "";
   const friendLinkOptions = boyfriendThread && romanceNode
     ? p.ui?.["friend-story-handoff"] === "H07" && /公司|经纪人|活动/.test(boyfriendContext) && !p.ui?.["friend-link-used-" + romanceNode.id + "-handoff"]
