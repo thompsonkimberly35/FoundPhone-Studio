@@ -12,7 +12,7 @@ import {
 
 describe("KakaoTalk confidant friend story phase two", () => {
   it("keeps phase two independent from the original F001-F069 and H01-H12 identifiers", () => {
-    expect(getFriendPhase2NodeCount()).toBe(55);
+    expect(getFriendPhase2NodeCount()).toBe(56);
     expect(getFriendPhase2Node("F2_070")).toBeDefined();
     for (let i = 1; i <= 12; i++) {
       expect(FRIEND_PHASE2_STORY["H" + String(i).padStart(2, "0")]).toBeUndefined();
@@ -22,6 +22,35 @@ describe("KakaoTalk confidant friend story phase two", () => {
       expect(getFriendPhase2Node(id)?.result).toBe(id);
       expect(getFriendPhase2Node(id)?.choices).toHaveLength(0);
     }
+  });
+
+  it("waits for a real boyfriend anger response before opening F085", () => {
+    const f080 = getFriendPhase2Node("F2_080");
+    const wait = getFriendPhase2Node("F2_080C_WAIT");
+    const f085 = getFriendPhase2Node("F2_085");
+    const f086 = getFriendPhase2Node("F2_086");
+    expect(f080?.choices.find(choice => choice.key === "C")?.next).toBe("F2_080C_WAIT");
+    expect(wait?.effect).toBe("wait-for-boyfriend-reaction");
+    expect(f085?.autoNext).toBe("F2_086");
+    expect(f085?.scriptedPlayerLines).toEqual([
+      { afterLineIndex: 1, text: "说了。" },
+      { afterLineIndex: 2, text: "他很生气。" },
+    ]);
+    expect(f085?.lines).toEqual(["你跟他说了吗？", "……他怎么说？", "我猜也是。", "如果我是他，我可能也会这样。"]);
+    expect(f086?.lines).toEqual(["他有没有叫你不要再跟我联络？"]);
+    expect(f086?.choices.map(choice => [choice.key, choice.next, choice.replyLines])).toEqual([
+      ["A", "H14", ["那我真的欠他一句道歉。"]],
+      ["B", "H17", ["我知道。", "这次我确实没有立场反驳。", "但我还是希望有一天能亲自跟他说清楚。"]],
+      ["C", "H14", ["对不起。", "我不应该让你变成夹在中间的人。"]],
+    ]);
+  });
+
+  it("only recognizes explicit anger statements, not references to the player's anger", () => {
+    expect(isExplicitBoyfriendAngerResponse("我真的很生气。")).toBe(true);
+    expect(isExplicitBoyfriendAngerResponse("我无法接受她这样做。")).toBe(true);
+    expect(isExplicitBoyfriendAngerResponse("我知道你会生气。")).toBe(false);
+    expect(isExplicitBoyfriendAngerResponse("有人不太高兴。")).toBe(false);
+    expect(isExplicitBoyfriendAngerResponse("那就让他生气吧。")).toBe(false);
   });
 
   it("preserves the original F087 estrangement and unfinished-apology responses", () => {
@@ -94,6 +123,7 @@ describe("KakaoTalk confidant friend story phase two", () => {
           }
         }
       }
+      if (node?.id === "F2_080C_WAIT" && !visited.has("F2_085")) { visited.add("F2_085"); pending.push("F2_085"); }
       if (node?.autoNext && !visited.has(node.autoNext)) {
         visited.add(node.autoNext);
         pending.push(node.autoNext);
