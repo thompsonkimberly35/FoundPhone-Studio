@@ -81,7 +81,7 @@ import { getFriendPhase3Node, getFriendPhase3Choice, getFriendPhase3Opening } fr
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { SECRET_ADMIRER_STAGE2_OPENINGS, getSecretAdmirerStage2Choice, getSecretAdmirerStage2Node } from "./kakaoSecretAdmirerStage2";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode, getTeamConflictBoyfriendFollowupState } from "./kakaoTeamConflictStory";
-import { formatGameDate, formatGameDateTime, formatGameTime, migrateRuntimeGameClock, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages, zonedDateTimeToTimestamp } from "./gameClock";
+import { formatGameDate, formatGameDateTime, formatGameTime, migrateRuntimeGameClock, nextGameDayAt, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages, zonedDateTimeToTimestamp } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
   /测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(
@@ -1300,6 +1300,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       ...(x002ScheduleChanged ? {
         "x-event-X002-due-real-at": String(x002DueRealAt),
         "x-event-X002-due-game-at": String(x002DueGameAt),
+        "x-event-X002-ready": false,
       } : {}),
     };
     if (shouldUnlockK113) {
