@@ -47,9 +47,8 @@ jobs:
         with:
           # The published static asset bundle is ~283 MB (mostly gallery photos).
           # The default 10-minute sync timeout is too short for this repository.
-          timeout: 1800
-          reporting_interval: 30
-          # deploy-pages defaults to only 10 status polls; large Pages syncs
-          # can still be in progress after those polls and get canceled.
-          error_count: 3600
+          timeout: 600000
+          reporting_interval: 30000
+          # Count only transient status API errors; successful in-progress polls
+          # continue until the 10-minute Pages service timeout.
 # Recovery trigger: use a fresh concurrency group to bypass the stale queued run.
