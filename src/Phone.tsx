@@ -905,6 +905,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
   }, [backlashNotificationsComplete, igQueue.length, igBanner, selectedBoyfriend, checkinSent, checkinDueAt]);
   useEffect(() => {
     if (!ready || !backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedFriend || friendStoryTriggered) return;
+    if (!/^MEND0[1-8]$/.test(String(s.ui?.kakao?.["boyfriend-admirer-discovery-result"] || ""))) return;
     if (!friendStoryDueAt) {
       const current = runtimeRef.current;
       const existingDue = Number(current.ui?.kakao?.["ig-backlash-checkin-due-at"] || 0);
@@ -947,7 +948,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
-  }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
+  }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt, s.ui?.kakao?.["boyfriend-admirer-discovery-result"]]);
 
   useEffect(() => {
     if (!ready || creator || !friendStoryTriggered || !selectedFriend) return;
@@ -1387,6 +1388,38 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     },Math.max(0,due-Date.now()));
     return ()=>window.clearTimeout(timer);
   },[ready,creator,app,s.ui?.kakao?.["secret-admirer-stage2-trigger-at"],s.ui?.kakao?.["secret-admirer-stage2-started"],s.ui?.kakao?.["secret-admirer-member-id"]]);
+
+  useEffect(() => {
+    if (!ready || creator || !selectedBoyfriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    const aOutcome = String(ui["secret-admirer-stage2-outcome"] || "");
+    const bfOutcome = String(ui["boyfriend-stage2-result"] || "");
+    const dueAt = Number(ui["boyfriend-admirer-discovery-due-at"] || 0);
+    if (!/^R1[1-8]$/.test(aOutcome) || !/^M(?:0[7-9]|1[0-2])$/.test(bfOutcome) || !dueAt || ui["boyfriend-admirer-discovery-started"] === true) return;
+    const gameNow = Number(current.gameClock?.currentGameTimestamp || Date.now());
+    const scale = Number(current.gameClock?.timeScale ?? 1);
+    if (scale <= 0 || gameNow < dueAt) return;
+    const timer = window.setTimeout(() => {
+      const latest = runtimeRef.current;
+      const latestUi = latest.ui?.kakao || {};
+      if (latestUi["boyfriend-admirer-discovery-started"] === true) return;
+      if (!/^R1[1-8]$/.test(String(latestUi["secret-admirer-stage2-outcome"] || "")) || !/^M(?:0[7-9]|1[0-2])$/.test(String(latestUi["boyfriend-stage2-result"] || ""))) return;
+      let queue: Array<{item?: Item; deliverAt?: number}> = [];
+      try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
+      if (queue.some(entry => Number(entry.deliverAt || 0) > Date.now())) return;
+      const memberId = String(latestUi["secret-admirer-member-id"] || "");
+      const member = ALD1_SECRET_ADMIRER_MEMBERS.find(entry => entry.id === memberId);
+      if (!member || member.name === selectedBoyfriend) return;
+      const node = getBoyfriendAdmirerNode("M170");
+      if (!node) return;
+      const first = makeItem({id:"boyfriend-admirer-M170-0",title:selectedBoyfriend,sender:selectedBoyfriend,avatar:boyfriendAvatarPath(selectedBoyfriend),body:node.lines[0],time:latest.time||displayTime,outgoing:false,read:false,meta:{boyfriendAdmirerNode:"M170",kakaoStageTiming:"stage-boundary"}});
+      const start = Date.now();
+      const queued = node.lines.slice(1).map((body,index)=>{const item=makeItem({id:"boyfriend-admirer-M170-"+(index+1),title:selectedBoyfriend,sender:selectedBoyfriend,avatar:boyfriendAvatarPath(selectedBoyfriend),body,time:latest.time||displayTime,outgoing:false,read:false,meta:{boyfriendAdmirerNode:"M170",kakaoStageTiming:"same-stage"}});const typingAt=start+index*5000+2000;return {item,typingAt,deliverAt:typingAt+3000};});
+      update({...latest,messages:{...latest.messages,kakao:[...(latest.messages.kakao||[]),first]},notifications:app==="kakao"?latest.notifications:[...latest.notifications,"KakaoTalk: "+selectedBoyfriend+"："+first.body],ui:{...latest.ui,kakao:{...latestUi,"boyfriend-admirer-discovery-started":true,"boyfriend-admirer-discovery-node":"M170","boyfriend-admirer-discovery-history":"[]","boyfriend-admirer-discovery-result":"","boyfriend-admirer-discovery-member-id":member.id,"delivery-queue":JSON.stringify([...queue,...queued])}}});
+    },Math.max(0,(dueAt-gameNow)/scale));
+    return ()=>window.clearTimeout(timer);
+  },[ready,creator,app,selectedBoyfriend,s.gameClock?.currentGameTimestamp,s.gameClock?.timeScale,s.ui?.kakao?.["secret-admirer-stage2-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["boyfriend-admirer-discovery-due-at"],s.ui?.kakao?.["boyfriend-admirer-discovery-started"]]);
 
   useEffect(() => {
     if (!ready || !friendStoryTriggered || !selectedFriend) return;
