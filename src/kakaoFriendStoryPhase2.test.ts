@@ -67,6 +67,11 @@ describe("KakaoTalk confidant friend story phase two", () => {
     expect(resolveFriendPhase2Next("F2_081", "A", "H13", 2, 0, 0, false)).toBe("H14");
     expect(resolveFriendPhase2Next("F2_081", "A", "H13", 0, 0, 0, true)).toBe("H14");
     expect(resolveFriendPhase2Next("F2_084", "B", "H15", -1, 0, 0)).toBe("H14");
+    // The second-lie ending is available only after the earlier warning was disclosed.
+    expect(resolveFriendPhase2Next("F2_084", "A", "H20", 2, 0, 0)).toBe("H19");
+    expect(resolveFriendPhase2Next("F2_084", "A", "H20", 2, 0, 1)).toBe("H20");
+    expect(resolveFriendPhase2Next("F2_087", "B", "H20", -2, 1, 0)).toBe("H19");
+    expect(resolveFriendPhase2Next("F2_087", "B", "H20", -2, 1, 1)).toBe("H20");
   });
 
   it("classifies all twelve previous outcomes without rewriting their meanings", () => {
