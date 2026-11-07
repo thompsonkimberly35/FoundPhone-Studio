@@ -825,7 +825,7 @@ export function MymyInstagram(p: SkinProps) {
             <button aria-label={selected ? "返回收件匣" : "返回"} onClick={() => selected ? setSelected(null) : p.onBack()}><ArrowLeft size={25}/></button>
             <b>allyz_1101</b><ChevronDown size={16}/>
             <span/>
-            <button aria-label="新增訊息"><SquarePen size={23}/></button>
+            <button aria-label="新增消息"><SquarePen size={23}/></button>
           </header>
         ) : selected?.folder === "私信" ? null : (
           <header className="igh">
@@ -840,7 +840,7 @@ export function MymyInstagram(p: SkinProps) {
               <header className="ig-dm-person">
                 <button aria-label="返回收件匣" onClick={() => setSelected(null)}><ArrowLeft size={23}/></button>
                 <Avatar name={selected.sender} /><span><b>{selected.sender}</b><small>活跃状态不可用</small></span>
-                <button aria-label="语音通话"><Phone size={21}/></button><button aria-label="視訊通話"><Video size={21}/></button><button aria-label="对话信息"><Info size={21}/></button>
+                <button aria-label="语音通话"><Phone size={21}/></button><button aria-label="视频通话"><Video size={21}/></button><button aria-label="对话信息"><Info size={21}/></button>
               </header>
               <div className="ig-dm-thread">
                 <div className="ig-dm-date">今天 {selected.time.slice(-5)}</div>
@@ -943,12 +943,12 @@ export function MymyInstagram(p: SkinProps) {
                 {dmTab === "一般" ? (
                   <>
                     <b>消息</b>
-                    <button onClick={() => setDmTab("陌生讯息")}>陌生訊息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
+                    <button onClick={() => setDmTab("陌生讯息")}>陌生消息{requestDms.length > 0 && <i>{requestDms.length > 99 ? "99+" : requestDms.length}</i>}</button>
                   </>
                 ) : (
                   <>
                     <button className="ig-dm-requests-back" onClick={() => setDmTab("一般")}><ArrowLeft size={17}/> 返回消息</button>
-                    <b>陌生訊息</b>
+                    <b>陌生消息</b>
                     <span />
                   </>
                 )}
