@@ -7,6 +7,7 @@ import {
   getFriendPhase2Opening,
   getFriendPhase2OutcomeLabel,
   getFriendPhase2OutcomeClass,
+  isExplicitBoyfriendAngerResponse,
   resolveFriendPhase2Next,
 } from "./kakaoFriendStoryPhase2";
 
