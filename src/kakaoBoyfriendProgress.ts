@@ -7,3 +7,7 @@ export function getBoyfriendStageResultKey(stage: BoyfriendStoryStage): "boyfrie
 export function getBoyfriendStageHistoryKey(stage: BoyfriendStoryStage): "boyfriend-stage2-history" | "boyfriend-stage3-history" {
   return stage === "stage2" ? "boyfriend-stage2-history" : "boyfriend-stage3-history";
 }
+
+export function getBoyfriendStageNodeKey(stage: BoyfriendStoryStage): "boyfriend-stage2-node" | "boyfriend-stage3-node" {
+  return stage === "stage2" ? "boyfriend-stage2-node" : "boyfriend-stage3-node";
+}
