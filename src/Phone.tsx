@@ -770,7 +770,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const existing = current.messages.kakao ?? [];
     const delivered = due
       .filter((entry) => !existing.some((item) => item.id === entry.item.id))
-      .map((entry) => ({ ...entry.item, read: entry.item.outgoing ? true : false }));
+      .map((entry) => ({ ...entry.item, sentAt: entry.item.sentAt || Date.now(), read: entry.item.outgoing ? true : false }));
     const startsBacklash = delivered.some((item) =>
       item.body === "你的身份好像已经被扒出来了"
       && !(current.messages.instagram ?? []).some((entry) => entry.id === "ig-backlash-1")
@@ -3014,11 +3014,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                           queued.push(...autoNextQueue);
                           activeNextNode = autoNextNode;
                         }
-                      } else if (nextNode.id !== "F2_074") {
-                        queued = queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
-                          ...entry,
-                          item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
+                      } else {
+                        const replyLines = (choice.replyLines || []).map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
+                        const replyQueue = replyLines.length ? queueLines(replyLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-reply", currentQueue, true).map(entry => ({
+                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nodeId } },
+                        })) : [];
+                        const resultQueue = nextNode.id === "F2_074" ? [] : queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey, [...currentQueue, ...replyQueue], true).map(entry => ({
+                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
                         }));
+                        queued = [...replyQueue, ...resultQueue];
                       }
                       const addScreenshotToQueue = (id: string, variant: string, body: string, offset: number) => {
                         const item = makeItem({ id, title: character, sender: character, avatar, body, time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: activeNextNode.id, friendPhase2Screenshot: variant } });
@@ -3055,6 +3059,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-phase2-source-identified": activeNextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
                         "friend-story-phase2-investigation-paused": activeNextNode.effect === "investigation-paused" || currentUi["friend-story-phase2-investigation-paused"] === true,
                         "friend-story-phase2-bf-informed": nodeId === "F2_080" && choiceKey === "C" ? true : currentUi["friend-story-phase2-bf-informed"] === true,
+                        "friend-story-phase2-bf-waiting-for-reaction": nodeId === "F2_080" && choiceKey === "C" ? true : currentUi["friend-story-phase2-bf-waiting-for-reaction"] === true,
                         "friend-story-phase2-truth": outcome === "H20" ? "D" : currentUi["friend-story-phase2-evidence-compared"] === true || activeNextNode.effect === "evidence-compared" ? "B" : currentUi["friend-story-phase2-source-identified"] === true || activeNextNode.effect === "source-identified" ? "A" : currentUi["friend-story-phase2-investigation-paused"] === true || activeNextNode.effect === "investigation-paused" ? "C" : String(currentUi["friend-story-phase2-truth"] || "C"),
                         "friend-story-phase2-ended": Boolean(outcome),
                         "delivery-queue": JSON.stringify([...currentQueue, ...queued]),
@@ -3062,7 +3067,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       let nextMessages = [...existing, outgoing];
                       if (nodeId === "F2_080" && choiceKey === "C" && selectedBoyfriend) {
                         const boyfriendText = "我想告诉你一件事：我的知心好友曾经为了帮我，向韩知恩求助并分享过一小部分私人聊天截图。现在网上流传的版本还有被加工的痕迹，我想和你一起确认事实。";
-                        const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, outgoing: true, read: true });
+                        const informedAtReal = Date.now();
+                        const informed = makeItem({ id: "friend-phase2-boyfriend-informed", title: selectedBoyfriend, sender: "我", body: boyfriendText, time, sentAt: informedAtReal, outgoing: true, read: true });
                         informed.meta = { ...informed.meta, friendPhase2Sync: "true" };
                         const alreadyInformed = (currentMessages.kakao || []).some(item => item.id === informed.id);
                         if (!alreadyInformed) nextMessages = [...nextMessages, informed];
@@ -3070,6 +3076,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         // fabricate his reaction here. His reply must come from his own active
                         // story state and its existing progression, not from the friend's arc.
                         nextUi["friend-story-phase2-bf-informed-at"] = String(storyStamp);
+                        nextUi["friend-story-phase2-bf-informed-real-at"] = String(informedAtReal);
                         nextUi["friend-story-phase2-bf-informed-member"] = selectedBoyfriend;
                       }
 
