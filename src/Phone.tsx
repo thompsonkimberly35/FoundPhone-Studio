@@ -1245,7 +1245,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { latestQueue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { latestQueue = []; }
       const latestPendingDeliveries = latestQueue.map(entry => Number(entry.deliverAt || 0)).filter(value => value > Date.now());
       if (latestPendingDeliveries.length) {
-        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-trigger-at": String(nextKakaoStageStartAt(Date.now(), latestPendingDeliveries)) } } });
+        update({ ...latest, ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-trigger-at": String(nextKakaoStageStartAt(Date.now(), latestPendingDeliveries, 90_000)) } } });
         return;
       }
       const existing = latest.messages.kakao ?? [];
