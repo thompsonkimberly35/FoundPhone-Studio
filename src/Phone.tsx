@@ -198,6 +198,35 @@ function PhoneRuntime({
   const [contextApp, setContextApp] = useState("");
   const [deviceScale, setDeviceScale] = useState(0.84);
   const shell = useRef<HTMLDivElement>(null);
+  const backgroundMusicRef = useRef<HTMLAudioElement | null>(null);
+  const backgroundMusicStartedRef = useRef(false);
+  const startBackgroundMusic = () => {
+    const existing = backgroundMusicRef.current;
+    if (backgroundMusicStartedRef.current && existing) {
+      if (existing.paused) void existing.play().catch(() => {});
+      return;
+    }
+    existing?.pause();
+    let trackNumber = 1;
+    const trackUrl = (number: number) =>
+      import.meta.env.BASE_URL + "music/song" + number + ".mp3";
+    const audio = new Audio(trackUrl(trackNumber));
+    audio.preload = "auto";
+    audio.volume = 0.6;
+    audio.loop = false;
+    audio.addEventListener("ended", () => {
+      trackNumber = trackNumber === 8 ? 1 : trackNumber + 1;
+      audio.src = trackUrl(trackNumber);
+      void audio.play().catch(() => {});
+    });
+    backgroundMusicRef.current = audio;
+    backgroundMusicStartedRef.current = true;
+    void audio.play().catch(() => {
+      if (backgroundMusicRef.current === audio) {
+        backgroundMusicStartedRef.current = false;
+      }
+    });
+  };
   const gesture = useRef({ x: 0, y: 0, time: 0, zone: "" });
   const [launchOrigin, setLaunchOrigin] = useState(screenOrigin);
 
@@ -492,6 +521,7 @@ function PhoneRuntime({
   const apps = installedApps.filter((a) => a.visible);
   const unlock = (pin = "") => {
     if (!work.phone.passcode || pin === work.phone.passcode) {
+      startBackgroundMusic();
       setLocked(false);
       setPinOpen(false);
       if (selectedBoyfriend || selectedFriend) {
@@ -1752,6 +1782,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
           data-app={app}
           onDragStart={(e) => e.preventDefault()}
           onPointerDown={(e) => {
+            if (backgroundMusicStartedRef.current && backgroundMusicRef.current?.paused) {
+              void backgroundMusicRef.current.play().catch(() => {});
+            }
             gestureConsumed.current = false;
             const button = (e.target as HTMLElement).closest<HTMLElement>(
               "[data-app-id]",
