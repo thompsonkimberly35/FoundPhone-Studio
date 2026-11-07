@@ -13,7 +13,11 @@ async function start(page: Page) {
     r.fulfill({ json: compileStory(fixture).work }),
   );
   await page.goto("/");
-  await page.locator("button.unlock-btn").click();
+  await page.locator("#ald1-person").waitFor({ state: "visible" });
+  await page.locator("#ald1-person").selectOption("李相沅");
+  await page.locator(".ald1-next").click();
+  await page.locator("#ald1-person").selectOption("周安信");
+  await page.locator(".ald1-next").click();
 }
 async function open(page: Page, name: string) {
   await page.getByRole("button", { name: "打开App Store", exact: true }).click();
