@@ -882,6 +882,20 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     }
   }, [ready, selectedBoyfriend]);
 
+  // Repair legacy saves that persisted the check-in flag without the actual
+  // message/node, which otherwise prevents the boyfriend route from resuming.
+  useEffect(() => {
+    if (!ready || !selectedBoyfriend || !checkinSent) return;
+    const current = runtimeRef.current;
+    const sent = (current.messages.kakao || []).some(item => item.id === "boyfriend-backlash-checkin");
+    const node = String(current.ui?.kakao?.["romance-node"] || "");
+    if (sent && !node) {
+      update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "romance-node": "K001" } } });
+    } else if (!sent) {
+      update({ ...current, ui: { ...current.ui, kakao: { ...current.ui?.kakao, "ig-backlash-checkin-sent": false, "ig-backlash-checkin-due-at": String(current.ui?.kakao?.["ig-backlash-checkin-due-at"] || Date.now()) } } });
+    }
+  }, [ready, selectedBoyfriend, checkinSent, s.messages.kakao, s.ui?.kakao?.["romance-node"]]);
+
   useEffect(() => {
     if (!backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedBoyfriend || checkinSent) return;
     if (!checkinDueAt) {
@@ -911,7 +925,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "金俊抒": "金俊抒-kakao.png", "金虔佑": "金虔佑-kakao.png",
       };
       const avatar = files[selectedBoyfriend] ? import.meta.env.BASE_URL + "kakao/" + files[selectedBoyfriend] : "";
-      const body = "你有收到粉丝的消息吗？";
+      const body = "亲爱的，我在处理了，目前有粉丝去找你吗？";
       const message = makeItem({
         id: "boyfriend-backlash-checkin",
         title: selectedBoyfriend,
@@ -938,9 +952,6 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     if (!ready || !backlashNotificationsComplete || igQueue.length > 0 || igBanner || !selectedFriend || friendStoryTriggered) return;
     // The confidant-friend storyline is an independent route. It must not wait
     // for the much later secret-admirer/boyfriend discovery MEND outcome.
-    let discoveryQueue: Array<{item?: Item; deliverAt?: number}> = [];
-    try { discoveryQueue = JSON.parse(String(s.ui?.kakao?.["delivery-queue"] || "[]")); } catch { discoveryQueue = []; }
-    if (discoveryQueue.some(entry => entry.item?.title === selectedBoyfriend && Number(entry.deliverAt || 0) > Date.now())) return;
     if (!friendStoryDueAt) {
       const current = runtimeRef.current;
       const existingDue = Number(current.ui?.kakao?.["ig-backlash-checkin-due-at"] || 0);
@@ -983,7 +994,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
     }, Math.max(0, dueAt - Date.now()));
     return () => window.clearTimeout(timer);
-  }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt, s.ui?.kakao?.["delivery-queue"]]);
+  }, [ready, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, friendStoryTriggered, friendStoryDueAt]);
 
   // Bridge the original two-message friend check-in into the actual F001-F069
   // confidant storyline. Older saves only stored the static reply, which left
