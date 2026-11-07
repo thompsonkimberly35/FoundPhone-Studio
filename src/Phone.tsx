@@ -2811,6 +2811,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const outgoing = makeItem({ id: "friend-phase2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendPhase2Node: nodeId, friendPhase2Choice: choiceKey };
                       let activeNextNode = nextNode;
+                      let pendingAutoNextNodeId = "";
                       const renderedLines = nextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
                       let queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
                       if (nextNode.scriptedPlayerLines?.length && nextNode.autoNext) {
@@ -2846,12 +2847,17 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         queued.push(...afterQueue);
                         const autoNextNode = getFriendPhase2Node(nextNode.autoNext);
                         if (!autoNextNode) return;
-                        const autoNextLines = autoNextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
-                        const autoNextQueue = queueLines(autoNextLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-auto-" + autoNextNode.id, [...currentQueue, ...queued], true).map(entry => ({
-                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: autoNextNode.id } },
-                        }));
-                        queued.push(...autoNextQueue);
-                        activeNextNode = autoNextNode;
+                        if (autoNextNode.id === "F2_084") {
+                          pendingAutoNextNodeId = autoNextNode.id;
+                          activeNextNode = nextNode;
+                        } else {
+                          const autoNextLines = autoNextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
+                          const autoNextQueue = queueLines(autoNextLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-auto-" + autoNextNode.id, [...currentQueue, ...queued], true).map(entry => ({
+                            ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: autoNextNode.id } },
+                          }));
+                          queued.push(...autoNextQueue);
+                          activeNextNode = autoNextNode;
+                        }
                       } else if (nextNode.id !== "F2_074") {
                         queued = queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
                           ...entry,
@@ -2875,6 +2881,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const nextUi: Record<string, UiValue> = {
                         ...currentUi,
                         "friend-story-phase2-node": activeNextNode.id,
+                        "friend-story-phase2-auto-next-node": pendingAutoNextNodeId || String(currentUi["friend-story-phase2-auto-next-node"] || ""),
+                        "friend-story-phase2-friend-took-responsibility": currentUi["friend-story-phase2-friend-took-responsibility"] === true || nextNode.effect === "self-blame",
                         "friend-story-phase2-history": JSON.stringify(nextHistory),
                         "friend-story-phase2-completed-nodes": JSON.stringify(nextCompleted),
                         "friend-story-phase2-trust": trust,
@@ -2911,66 +2919,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       let nextTwitter = [...(current.messages.twitter || [])];
                       let globalQueue: Item[] = [];
                       try { globalQueue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
-                      if (activeNextNode.id === "F2_084" && currentUi["friend-story-phase2-x2-posted"] !== true) {
-                        const existingSecondPost = nextTwitter.find(post => post.id === "friend-phase2-X002");
-                        const secondPost = existingSecondPost || makeItem({
-                          id: "friend-phase2-X002", title: "友人承认曾向第三方提供私人对话资料",
-                          sender: "@timeline_watch_09",
-                          body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。",
-                          time, kind: "post", folder: "主页", likes: 9200,
-                          comments: [
-                            "@bluehour_8m：承认提供资料不等于承认公开爆料，先把事实分清楚。",
-                            "@orbitallyz_4q：请不要去攻击任何一方的私人账号。",
-                            "@nightletter_2p：现在最重要的是停止继续传播截图。",
-                            "@teamfirst_7v：希望 Wake One 能处理隐私保护问题。",
-                            "@softpetal_3n：没有完整证据前不要替任何人定罪。",
-                            "@duskarchive_6r：朋友做错了也不代表可以网暴她。",
-                            "@silverorbit_9k：请把焦点放在资料如何外流。",
-                            "@moonfilm_5x：当事人有权利要求停止散播私人对话。",
-                          ],
-                          meta: { handle: "timeline_watch_09", verified: "false", reposts: "1360", views: "31.6万", storyEventId: "FRIEND_PHASE2_X002" },
-                        });
-                        if (!existingSecondPost) {
-                          nextTwitter = [...nextTwitter, secondPost];
-                          globalQueue = [...globalQueue, { ...secondPost, meta: { ...secondPost.meta, notificationAppId: "twitter", notificationPostId: secondPost.id } }];
-                        }
-                        nextUi["friend-story-phase2-x2-posted"] = true;
-                      }
-                      if (nodeId === "F2_080" && choiceKey === "C") {
-                        nextUi["friend-story-phase2-boyfriend-notice-at"] = String(stamp);
-                      }
-                      nextUi["delivery-queue"] = JSON.stringify([...currentQueue, ...queued]);
-                      update({
-                        ...current,
-                        messages: { ...currentMessages, kakao: nextMessages, twitter: nextTwitter },
-                        ui: { ...current.ui, kakao: { ...nextUi, "global-notification-queue": JSON.stringify(globalQueue) } },
-                      });
-                      return;
-                    }
-                    if (choiceId?.startsWith("friend:")) {
-                      const [, friendNodeId, friendChoiceKey] = choiceId.split(":");
-                      const activeNodeId = String(currentUi["friend-story-node"] || "");
-                      if (character !== selectedFriend || friendNodeId !== activeNodeId) return;
-                      const friendChoice = getFriendStoryChoice(friendNodeId, friendChoiceKey);
-                      if (!friendChoice) return;
-                      let history: string[] = [];
-                      let completed: string[] = [];
-                      try { history = JSON.parse(String(currentUi["friend-story-history"] || "[]")); } catch { history = []; }
-                      try { completed = JSON.parse(String(currentUi["friend-story-completed-nodes"] || "[]")); } catch { completed = []; }
-                      const historyKey = friendNodeId + ":" + friendChoiceKey;
-                      if (history.includes(historyKey)) return;
-                      const nextNode = getFriendStoryNode(friendChoice.next);
-                      if (!nextNode) return;
-                      const outgoing = makeItem({ id: "kakao-friend-player-" + friendNodeId + "-" + friendChoiceKey + "-" + stamp, title: character, sender: "我", body: friendChoice.text, time, outgoing: true, read: true });
-                      outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendStoryNode: friendNodeId, friendStoryChoice: friendChoiceKey };
-                      const queued = queueLines(nextNode.lines, "kakao-friend-" + friendNodeId + "-" + friendChoiceKey);
-                      const outcome = nextNode.result || String(currentUi["friend-story-outcome"] || "");
-                      const friendState = {
-                        trust: Number(currentUi["friend-story-trust"] || 0) + (["F036","F046","F051","H01"].includes(nextNode.id) ? 1 : 0),
-                        conflict: nextNode.id === "H04" || nextNode.id === "H10" || nextNode.id === "H06" ? true : currentUi["friend-story-conflict"] === true,
-                        teamConcern: ["F006","F014","F019","F020","F037","F040","F042","H02","H05"].includes(nextNode.id) || currentUi["friend-story-team-concern"] === true,
-                        secretLevel: ["F009","F026","F027","F028","F031","F056","F057","F058","F060","F069"].includes(nextNode.id) ? Math.max(1, Number(currentUi["friend-story-secret-level"] || 0)) : Number(currentUi["friend-story-secret-level"] || 0),
-                      };
+
                       const nextUi = {
                         ...currentUi,
                         "friend-story-node": nextNode.id,
