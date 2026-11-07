@@ -1,4 +1,4 @@
-import { BOYFRIEND_STAGE3, BOYFRIEND_STAGE3_RESULTS, getBoyfriendStage3Node } from "./kakaoBoyfriendStage3";
+import { BOYFRIEND_STAGE3, BOYFRIEND_STAGE3_RESULTS } from "./kakaoBoyfriendStage3";
 import { STAGE2_A } from "./kakaoBoyfriendStage2A";
 import { STAGE2_MIDDLE } from "./kakaoBoyfriendStage2Middle";
 export type BoyfriendStage2Choice={key:string;text:string;next:string};
