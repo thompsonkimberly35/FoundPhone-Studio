@@ -1458,16 +1458,16 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (bState === "team-conversation-available") opening.push("我知道团队里有人愿意重新沟通，也有人仍然有顾虑。我不会把任何一方的态度说成所有人的共识。");
       else if (bState === "respect-no-contact") opening.push("我知道团队里仍然有尚未解决的冲突，我会自己面对，不会把你的私人谈话拿去解释。");
       else if (bState === "relationship-stable" || bState === "past-story-unlocked") opening.push("团队里的一些旧问题也让我重新思考，不能要求每个人都做出和我一样的选择。");
-      const first = makeItem({ id: "boyfriend-stage3-K140-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K140", kakaoStageTiming: "stage-boundary" } });
+      const first = makeItem({ id: "boyfriend-stage3-K140-0", title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body: opening[0], time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage3Node: "K140", kakaoStageTiming: "stage-boundary" } });
       const start = Date.now();
       const queued = opening.slice(1).map((body, index) => {
-        const item = makeItem({ id: "boyfriend-stage3-K140-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage2Node: "K140", kakaoStageTiming: "same-stage" } });
+        const item = makeItem({ id: "boyfriend-stage3-K140-" + (index + 1), title: selectedBoyfriend, sender: selectedBoyfriend, avatar: boyfriendAvatarPath(selectedBoyfriend), body, time: latest.time || displayTime, outgoing: false, read: false, meta: { boyfriendStage3Node: "K140", kakaoStageTiming: "same-stage" } });
         const typingAt = start + index * 5000 + 2000;
         return { item, typingAt, deliverAt: typingAt + 3000 };
       });
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, "KakaoTalk: " + selectedBoyfriend + "：" + first.body],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", "boyfriend-stage3-history": "[]", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", "boyfriend-stage3-history": "[]", "boyfriend-stage3-result": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -2318,7 +2318,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     };
                     if (choiceId?.startsWith("boyfriend-stage2:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
-                      const isStage3Node = currentUi["boyfriend-stage3-started"] === true && /^K1[4-6]\\d$/.test(nodeId);
+                      const isStage3Node = currentUi["boyfriend-stage3-started"] === true && /^K1[4-6]\d$/.test(nodeId);
                       const activeNodeId = String(currentUi["boyfriend-stage2-node"] || "");
                       if (character !== selectedBoyfriend || nodeId !== activeNodeId) return;
                       const choice = getBoyfriendStage2Choice(nodeId, choiceKey);
