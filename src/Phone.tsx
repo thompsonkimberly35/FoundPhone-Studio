@@ -1413,9 +1413,10 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (!member || member.name === selectedBoyfriend) return;
       const node = getBoyfriendAdmirerNode("M170");
       if (!node) return;
-      const first = makeItem({id:"boyfriend-admirer-M170-0",title:selectedBoyfriend,sender:selectedBoyfriend,avatar:boyfriendAvatarPath(selectedBoyfriend),body:node.lines[0],time:latest.time||displayTime,outgoing:false,read:false,meta:{boyfriendAdmirerNode:"M170",kakaoStageTiming:"stage-boundary"}});
+      const personalize = (line:string) => line.replace(/那位成员/g,member.name).replace(/他/g,member.name);
+      const first = makeItem({id:"boyfriend-admirer-M170-0",title:selectedBoyfriend,sender:selectedBoyfriend,avatar:boyfriendAvatarPath(selectedBoyfriend),body:personalize(node.lines[0]),time:latest.time||displayTime,outgoing:false,read:false,meta:{boyfriendAdmirerNode:"M170",kakaoStageTiming:"stage-boundary"}});
       const start = Date.now();
-      const queued = node.lines.slice(1).map((body,index)=>{const item=makeItem({id:"boyfriend-admirer-M170-"+(index+1),title:selectedBoyfriend,sender:selectedBoyfriend,avatar:boyfriendAvatarPath(selectedBoyfriend),body,time:latest.time||displayTime,outgoing:false,read:false,meta:{boyfriendAdmirerNode:"M170",kakaoStageTiming:"same-stage"}});const typingAt=start+index*5000+2000;return {item,typingAt,deliverAt:typingAt+3000};});
+      const queued = node.lines.slice(1).map((rawBody,index)=>{const body=personalize(rawBody);const item=makeItem({id:"boyfriend-admirer-M170-"+(index+1),title:selectedBoyfriend,sender:selectedBoyfriend,avatar:boyfriendAvatarPath(selectedBoyfriend),body,time:latest.time||displayTime,outgoing:false,read:false,meta:{boyfriendAdmirerNode:"M170",kakaoStageTiming:"same-stage"}});const typingAt=start+index*5000+2000;return {item,typingAt,deliverAt:typingAt+3000};});
       update({...latest,messages:{...latest.messages,kakao:[...(latest.messages.kakao||[]),first]},notifications:app==="kakao"?latest.notifications:[...latest.notifications,"KakaoTalk: "+selectedBoyfriend+"："+first.body],ui:{...latest.ui,kakao:{...latestUi,"boyfriend-admirer-discovery-started":true,"boyfriend-admirer-discovery-node":"M170","boyfriend-admirer-discovery-history":"[]","boyfriend-admirer-discovery-result":"","boyfriend-admirer-discovery-member-id":member.id,"delivery-queue":JSON.stringify([...queue,...queued])}}});
     },Math.max(0,(dueAt-gameNow)/scale));
     return ()=>window.clearTimeout(timer);
