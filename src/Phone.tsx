@@ -34,6 +34,7 @@ import "./ios/status-bar.css";
 import { WeChatSkin, WhatsAppSkin } from "./AppSkins";
 import { RichText } from "./RichText";
 import { getBoyfriendStage2Node, getBoyfriendStage2Choice, STAGE2_X001, STAGE2_X002, STAGE2_X003 } from "./kakaoBoyfriendStage2";
+import { getBoyfriendStageResultKey, getBoyfriendStageHistoryKey } from "./kakaoBoyfriendProgress";
 import { BOYFRIEND_STAGE3_OPENINGS } from "./kakaoBoyfriendStage3";
 import { getBoyfriendAdmirerChoice, getBoyfriendAdmirerNode, getBoyfriendAdmirerOpening } from "./kakaoBoyfriendAdmirerDiscovery";
 import {
@@ -1428,7 +1429,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       try { queue = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { queue = []; }
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, `KakaoTalk: ${selectedBoyfriend}：${first.body}`],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-started": true, "boyfriend-stage2-node": "K046", "boyfriend-stage2-history": "[]", "boyfriend-stage2-trigger-at": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage2-started": true, "boyfriend-stage2-node": "K046", [getBoyfriendStageHistoryKey("stage2")]: "[]", "boyfriend-stage2-trigger-at": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -1468,7 +1469,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       });
       update({ ...latest, messages: { ...latest.messages, kakao: [...existing, first] },
         notifications: app === "kakao" ? latest.notifications : [...latest.notifications, "KakaoTalk: " + selectedBoyfriend + "：" + first.body],
-        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", "boyfriend-stage3-history": "[]", "boyfriend-stage3-result": "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
+        ui: { ...latest.ui, kakao: { ...latestUi, "boyfriend-stage3-started": true, "boyfriend-stage2-node": "K140", "boyfriend-stage2-trigger-at": "", "boyfriend-stage3-trigger-at": "", [getBoyfriendStageHistoryKey("stage3")]: "[]", [getBoyfriendStageResultKey("stage3")]: "", "delivery-queue": JSON.stringify([...queue, ...queued]) } }
       });
     }, Math.max(0, due - Date.now()));
     return () => window.clearTimeout(timer);
@@ -2324,8 +2325,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (character !== selectedBoyfriend || nodeId !== activeNodeId) return;
                       const choice = getBoyfriendStage2Choice(nodeId, choiceKey);
                       if (!choice) return;
-                      const historyKeyName = isStage3Node ? "boyfriend-stage3-history" : "boyfriend-stage2-history";
-                      const resultKeyName = isStage3Node ? "boyfriend-stage3-result" : "boyfriend-stage2-result";
+                      const historyKeyName = getBoyfriendStageHistoryKey(isStage3Node ? "stage3" : "stage2");
+                      const resultKeyName = getBoyfriendStageResultKey(isStage3Node ? "stage3" : "stage2");
                       let history: string[] = [];
                       try { history = JSON.parse(String(currentUi[historyKeyName] || "[]")); } catch { history = []; }
                       const historyKey = nodeId + ":" + choiceKey;
