@@ -178,7 +178,7 @@ export function getFriendPhase2OutcomeClass(outcome: string): "close" | "ordinar
   return "broken";
 }
 
-export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defaultNext: string, trust: number, suspicion: number, concealment: number, hasEvidence = false): string {
+export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defaultNext: string, trust: number, suspicion: number, concealment: number, _hasEvidence = false): string {
   if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) return "F2_087";
   if (nodeId === "F2_082" && choiceKey === "A") return "H13";
   if (nodeId === "F2_082" && choiceKey === "B") return "H14";
