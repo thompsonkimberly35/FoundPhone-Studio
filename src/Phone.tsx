@@ -1125,7 +1125,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const f081 = getFriendPhase2Node("F2_081");
     const f082 = getFriendPhase2Node("F2_082");
     if (!f081?.scriptedPlayerLine || !f082) return;
-    const avatar = avatarFor(selectedFriend);
+    const avatar = boyfriendAvatarPath(selectedFriend);
     let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
     const migratedQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
     const addIncoming = (lines: string[], nodeId: string, prefix: string) => {
