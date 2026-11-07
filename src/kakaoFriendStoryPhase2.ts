@@ -1,5 +1,5 @@
 export type FriendPhase2Choice = { key: string; text: string; next: string };
-export type FriendPhase2Node = { id: string; lines: string[]; choices: FriendPhase2Choice[]; result?: string; effect?: string };
+export type FriendPhase2Node = { id: string; lines: string[]; choices: FriendPhase2Choice[]; result?: string; effect?: string; autoNext?: string; scriptedPlayerLine?: { afterLineIndex: number; text: string } };
 const n = (id: string, lines: string[], choices: [string, string, string][] = [], result?: string, effect?: string): FriendPhase2Node => ({
   id, lines, choices: choices.map(([key, text, next]) => ({ key, text, next })),
   ...(result ? { result } : {}), ...(effect ? { effect } : {}),
@@ -83,8 +83,29 @@ export const FRIEND_PHASE2_STORY: Record<string, FriendPhase2Node> = {
   F2_080: n("F2_080", ["我现在突然很害怕。", "不是怕自己被骂。", "是怕我以为自己在帮你，结果每一步都把你推得更危险。", "如果早知道会这样，我那天就不应该去找任何人。"], [
     ["A", "现在后悔没有用，我们一起面对。", "F2_081"], ["B", "这件事你必须自己负责。", "F2_083"], ["C", "我想先告诉男友。", "F2_085"],
   ]),
-  F2_081: n("F2_081", ["我把所有对话都整理好了。", "包括我当时传出去的截图，还有韩知恩回复我的内容。", "我没有删除任何东西。", "我不是你的保护人，我是你的朋友。这两件事我以前好像一直搞混。"], [
-    ["A", "我们还是朋友。", "H13"], ["B", "我愿意再相信你一次，但需要时间。", "H14"],
+  F2_081: {
+    ...n("F2_081", [
+      "我把所有对话都整理好了。",
+      "包括我当时传出去的截图。",
+      "还有韩知恩回复我的内容。",
+      "我没有删除任何东西。",
+      "嗯。",
+      "我想过了。",
+      "我不是你的保护人。",
+      "我是你的朋友。",
+      "这两件事我以前好像一直搞混了。",
+    ]),
+    autoNext: "F2_082",
+    scriptedPlayerLine: { afterLineIndex: 4, text: "你这次终于没有自己决定了。" },
+  },
+  F2_082: n("F2_082", [
+    "如果有一天你不再和 {{BOYFRIEND_NAME}} 在一起……",
+    "我希望你还是可以找我。",
+    "但如果你们一直在一起，我也希望你幸福。",
+    "我不应该因为担心你，就一直替你决定什么才是对的。",
+  ], [
+    ["A", "我们还是朋友。", "H13"],
+    ["B", "我愿意再相信你一次，但需要时间。", "H14"],
   ]),
   F2_083: n("F2_083", ["我已经联络那个爆料账号了。", "我跟对方说，截图是我传出去的，叫他不要再去找你。", "我知道这件事应该先跟你商量，但我还是做了。"], go("F2_083", "F2_084"), undefined, "self-blame"),
   F2_084: n("F2_084", ["X 上出现新贴文：友人承认曾向第三方提供私人对话资料。", "贴文没有公开你的身份以外的个人资料，但评论区开始攻击好友。", "好友发来讯息：我没想到他会把我说的话也发出来。现在连我都被骂了。"], [
@@ -159,8 +180,8 @@ export function getFriendPhase2OutcomeClass(outcome: string): "close" | "ordinar
 
 export function resolveFriendPhase2Next(nodeId: string, choiceKey: string, defaultNext: string, trust: number, suspicion: number, concealment: number, hasEvidence = false): string {
   if (nodeId === "F2_080" && choiceKey === "B" && (trust <= -1 || suspicion >= 1 || concealment >= 1)) return "F2_087";
-  if (nodeId === "F2_081" && choiceKey === "A" && (trust <= 0 || !hasEvidence)) return "H14";
-  if (nodeId === "F2_081" && choiceKey === "B") return "H14";
+  if (nodeId === "F2_082" && choiceKey === "A") return "H13";
+  if (nodeId === "F2_082" && choiceKey === "B") return "H14";
   if (nodeId === "F2_084" && choiceKey === "A" && concealment < 1) return "H19";
   if (nodeId === "F2_084" && choiceKey === "B" && trust < 0) return "H14";
   // H20 is the second-concealment ending. It must never reveal a second lie
@@ -190,11 +211,12 @@ export function validateFriendPhase2Story(): string[] {
   const known = new Set(Object.keys(FRIEND_PHASE2_STORY));
   const terminal = new Set(["H13","H14","H15","H16","H17","H18","H19","H20"]);
   const roots = ["F2_070", ...Array.from({ length: 8 }, (_, i) => "F2_090_H" + (i + 13))];
-  if (known.size !== 54) errors.push("好友第二阶段节点数量应为54，实际为" + known.size);
+  if (known.size !== 55) errors.push("好友第二阶段节点数量应为55，实际为" + known.size);
   for (const node of Object.values(FRIEND_PHASE2_STORY)) {
     if (node.choices.length === 1) errors.push(node.id + ": 不允许只有一个玩家选项");
     if (node.choices.length > 3) errors.push(node.id + ": 玩家选项超过三个");
-    if (node.choices.length === 0 && !terminal.has(node.id) && node.effect !== "x-event") errors.push(node.id + ": 非结局节点缺少玩家选项或事件标记");
+    if (node.choices.length === 0 && !terminal.has(node.id) && node.effect !== "x-event" && !node.autoNext) errors.push(node.id + ": 非结局节点缺少玩家选项或自动后继节点");
+    if (node.autoNext && !known.has(node.autoNext)) errors.push(node.id + ": 自动后继指向不存在的节点 " + node.autoNext);
     const keys = new Set<string>();
     for (const choice of node.choices) {
       if (keys.has(choice.key)) errors.push(node.id + ": 重复选项键 " + choice.key);
@@ -212,7 +234,7 @@ export function validateFriendPhase2Story(): string[] {
     // F2_074 is an event-only node: the scheduled X post automatically opens F2_075.
     if (id === "F2_074") pending.push("F2_075");
     if (id === "F2_080") pending.push("F2_087");
-    if (id === "F2_081") pending.push("H14");
+    if (FRIEND_PHASE2_STORY[id].autoNext) pending.push(FRIEND_PHASE2_STORY[id].autoNext!);
   }
   for (const id of known) if (!reached.has(id)) errors.push("不可达节点：" + id);
   return errors;
