@@ -1661,7 +1661,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const ui = latest.ui?.kakao || {};
       if (ui["friend-story-phase2-x-posted"] === true) return;
       const posts = [...(latest.messages.twitter || [])];
-      if (posts.some(post => post.id === "friend-phase2-X001")) return;
+      const existingPost = posts.find(post => post.id === "friend-phase2-X001");
+      const createdPost = !existingPost;
       const comments = [
         "@bluehour_8m：如果是真的，希望先把完整对话放出来，不要继续断章取义。",
         "@orbitallyz_4q：不喜欢这段恋情也不代表可以公开别人的私人聊天。",
@@ -1672,7 +1673,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         "@silverorbit_9k：我很生气，但不支持去骚扰任何当事人。",
         "@moonfilm_5x：希望 Wake One 能说明如何保护当事人的隐私。",
       ];
-      const post = makeItem({
+      const post = existingPost || makeItem({
         id: "friend-phase2-X001",
         title: "独家后续：私人对话或有更多内容",
         sender: "@inside_line_27",
@@ -1698,25 +1699,26 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       const firstLine = node.lines[0];
       const first = makeItem({ id: "friend-phase2-F2_075-0", title: friend, sender: friend, avatar, body: firstLine, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
       const now = Date.now();
-      const queued = node.lines.slice(1).map((body, index) => {
-        const item = makeItem({ id: "friend-phase2-F2_075-" + (index + 1), title: friend, sender: friend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
-        const typingAt = now + index * 5000 + 2000;
-        return { item, typingAt, deliverAt: typingAt + 3000 };
-      });
       let delivery: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
       let globalQueue: Item[] = [];
       try { delivery = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { delivery = []; }
       try { globalQueue = JSON.parse(String(ui["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
+      const queued = node.lines.slice(1).map((body, index) => {
+        const item = makeItem({ id: "friend-phase2-F2_075-" + (index + 1), title: friend, sender: friend, avatar, body, time: latest.time || displayTime, outgoing: false, read: false, meta: { friendPhase2Node: "F2_075" } });
+        const typingAt = now + index * 5000 + 2000;
+        return { item, typingAt, deliverAt: typingAt + 3000 };
+      }).filter(entry => !existing.some(item => item.id === entry.item.id) && !delivery.some(entry2 => entry2.item.id === entry.item.id));
+      const hasFirst = existing.some(item => item.id === first.id);
       const notice = { ...post, meta: { ...post.meta, notificationAppId: "twitter", notificationPostId: post.id } };
       update({
         ...latest,
-        messages: { ...latest.messages, twitter: [...posts, post], kakao: [...existing, first] },
+        messages: { ...latest.messages, twitter: createdPost ? [...posts, post] : posts, kakao: hasFirst ? existing : [...existing, first] },
         ui: { ...latest.ui, kakao: {
           ...ui,
           "friend-story-phase2-x-posted": true,
           "friend-story-phase2-node": "F2_075",
           "delivery-queue": JSON.stringify([...delivery, ...queued]),
-          "global-notification-queue": JSON.stringify([...globalQueue, notice]),
+          "global-notification-queue": JSON.stringify(createdPost ? [...globalQueue, notice] : globalQueue),
         } },
       });
     }, Math.max(0, (dueAt - gameNow) / timeScale));
