@@ -2549,7 +2549,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                     if (choiceId?.startsWith("friend-phase2:")) {
                       const [, nodeId, choiceKey] = choiceId.split(":");
                       const activeNodeId = String(currentUi["friend-story-phase2-node"] || "");
-                      if (nodeId !== activeNodeId) return;
+                      // Only the selected friend's own chat can advance this storyline.
+                      if (character !== selectedFriend || nodeId !== activeNodeId) return;
                       const node = getFriendPhase2Node(nodeId);
                       const choice = node?.choices.find(entry => entry.key === choiceKey);
                       if (!node || !choice) return;
@@ -2572,6 +2573,25 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (nodeId === "F2_076" && choiceKey === "A") trust += 1;
                       if (nodeId === "F2_076" && choiceKey === "B") trust -= 1;
                       if (nodeId === "F2_075" && choiceKey === "C") concealment += 1;
+                      // Keep the player's stance meaningful after replacing the old one-button placeholders.
+                      const responseEffects: Record<string, number> = {
+                        "F2_070A:C": 1, "F2_070B:A": 1, "F2_070B:B": -1, "F2_070C:A": 1, "F2_070C:C": -1,
+                        "F2_071A:A": 1, "F2_071A:C": -1, "F2_071B:A": -1, "F2_071B:B": 1, "F2_071B:C": -1,
+                        "F2_071C:B": 1, "F2_071C:C": -1,
+                        "F2_072A:A": -1, "F2_072A:B": 1, "F2_072A:C": 1,
+                        "F2_072B:B": -1, "F2_072B:C": 1, "F2_072C:A": 1, "F2_072C:C": 1,
+                        "F2_073A:A": 1, "F2_073A:B": 1, "F2_073B:A": -1, "F2_073B:B": -1,
+                        "F2_073C:A": -1, "F2_073C:C": 1,
+                        "F2_075A:A": 1, "F2_075A:C": 1, "F2_075B:A": -1, "F2_075B:C": 1,
+                        "F2_075C:A": -1, "F2_075C:B": 1, "F2_075C:C": 1,
+                        "F2_076A:A": 1, "F2_076A:C": -1, "F2_076B:B": -1, "F2_076B:C": 1,
+                        "F2_076C:A": 1, "F2_076C:B": -1, "F2_076C:C": 1,
+                        "F2_077:A": 1, "F2_077:B": 1, "F2_077:C": 1,
+                        "F2_078A:A": 1, "F2_078A:C": 1, "F2_078B:B": 1, "F2_078B:C": 1,
+                        "F2_078C:A": 1, "F2_078C:B": 1, "F2_079:A": 1, "F2_079:C": 1,
+                        "F2_083:B": 1, "F2_083:C": 1, "F2_085:A": 1, "F2_085:C": 1,
+                      };
+                      trust += responseEffects[historyKey] || 0;
                       const hasFriendEvidence = currentUi["friend-story-phase2-evidence-compared"] === true || currentUi["friend-story-phase2-source-identified"] === true;
                       const resolvedNext = resolveFriendPhase2Next(nodeId, choiceKey, choice.next, trust, suspicion, concealment, hasFriendEvidence);
                       nextNode = getFriendPhase2Node(resolvedNext);
