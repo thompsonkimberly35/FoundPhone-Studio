@@ -79,7 +79,7 @@ import { getFriendPhase2Node, getFriendPhase2Opening, getFriendPhase2FollowupNod
 import { ALD1_SECRET_ADMIRER_MEMBERS, chooseSecretAdmirer, getSecretAdmirerChoice, getSecretAdmirerNode, memberIdForName } from "./kakaoSecretAdmirer";
 import { SECRET_ADMIRER_STAGE2_OPENINGS, getSecretAdmirerStage2Choice, getSecretAdmirerStage2Node } from "./kakaoSecretAdmirerStage2";
 import { chooseTeamConflictMember, getTeamConflictChoice, getTeamConflictNode, getTeamConflictBoyfriendFollowupState } from "./kakaoTeamConflictStory";
-import { formatGameTime, migrateRuntimeGameClock, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages } from "./gameClock";
+import { formatGameDate, formatGameDateTime, formatGameTime, migrateRuntimeGameClock, nextKakaoStageStartAt, normalizeStoryItems, stampNewMessages, zonedDateTimeToTimestamp } from "./gameClock";
 const PLAYER_THREADS_ID = "allyz_1101";
 const isTestContentItem = (item: Item) =>
   /测试|(?:^|[\s_-])(test|demo|sample)(?:$|[\s_-])/i.test(
@@ -1366,7 +1366,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         return;
       }
       const stamp=Date.now();
-      const first=makeItem({id:prefix+"-0",title:member.name,sender:member.name,avatar,body:opening[0],time:latest.time||displayTime,outgoing:false,read:false,meta:{secretAdmirerNode:"A070",secretAdmirerStage: "2",storyEventId:"SECRET_ADMIRER_STAGE2_OPENING",kakaoStageTiming:"stage-boundary"}});
+      const clock=latest.gameClock;
+      const timezone=clock?.timezone||"Asia/Seoul";
+      const clockTimestamp=Number(clock?.currentGameTimestamp||stamp);
+      const today=formatGameDate(clockTimestamp,timezone);
+      let openingAt=zonedDateTimeToTimestamp(today,"23:18",timezone);
+      if(openingAt<clockTimestamp) openingAt=zonedDateTimeToTimestamp(formatGameDate(clockTimestamp+86_400_000,timezone),"23:18",timezone);
+      const openingTime=formatGameDateTime(openingAt,timezone);
+      const first=makeItem({id:prefix+"-0",title:member.name,sender:member.name,avatar,body:opening[0],time:openingTime,outgoing:false,read:false,meta:{secretAdmirerNode:"A070",secretAdmirerStage: "2",storyEventId:"SECRET_ADMIRER_STAGE2_OPENING",kakaoStageTiming:"stage-boundary"}});
+      first.sentAt=openingAt;
       const stage2Node=getSecretAdmirerStage2Node("A070");
       const followBodies=[...opening.slice(1),...(stage2Node?.lines.slice(1)||[])];
       const follow=followBodies.map((body,index)=>{
