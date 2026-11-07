@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getFriendPhase3Opening } from "./kakaoFriendStoryPhase3";
 import {
   FRIEND_PHASE2_STORY,
   getFriendPhase2Node,
@@ -72,6 +73,18 @@ describe("KakaoTalk confidant friend story phase two", () => {
     expect(resolveFriendPhase2Next("F2_084", "A", "H20", 2, 0, 1)).toBe("H20");
     expect(resolveFriendPhase2Next("F2_087", "B", "H20", -2, 1, 0)).toBe("H19");
     expect(resolveFriendPhase2Next("F2_087", "B", "H20", -2, 1, 1)).toBe("H20");
+  });
+
+  it("carries each Phase 2 ending into a distinct Phase 3 opening", () => {
+    const endings = ["H13", "H14", "H15", "H16", "H17", "H18", "H19", "H20"];
+    const openings = endings.map(friendOutcome => getFriendPhase3Opening({ friendOutcome }).join(""));
+    expect(new Set(openings).size).toBe(endings.length);
+    expect(openings[0]).toContain("重新相信我");
+    expect(openings[2]).toContain("一起面对");
+    expect(openings[3]).toContain("承担");
+    expect(openings[4]).toContain("选边");
+    expect(openings[6]).toContain("道歉");
+    expect(openings[7]).toContain("第二次隐瞒");
   });
 
   it("classifies all twelve previous outcomes without rewriting their meanings", () => {
