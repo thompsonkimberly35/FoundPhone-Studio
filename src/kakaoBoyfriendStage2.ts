@@ -56,6 +56,12 @@ export const STAGE2_X003={
  likes:186300,reposts:42100,
  comments:[
  "@daylight_8rm：所以不是取消，只是延后公告对吧？",
+ "@allyzheart_4n：其他成员真的很无辜，希望活动不要取消。",
+ "@mellow_9pt：主办方考虑现场安全也可以理解。",
+ "@cobalt_6s：又是因为恋爱新闻影响活动吗？真的很失望。",
+ "@clearstar_2vx：不要把所有事情都推到一个人身上，官方也没有说原因。",
+ "@orbitfilm_7h：拜托让大家好好完成活动吧。"
+ ],
  commentDetails:[
   {handle:"@daylight_8rm",displayName:"Daylight",text:"所以不是取消，只是延后公告对吧？",likes:4210,time:"10:12"},
   {handle:"@allyzheart_4n",displayName:"ALLYZ心愿",text:"其他成员真的很无辜，希望活动不要取消。",likes:6820,time:"10:13"},
@@ -63,13 +69,6 @@ export const STAGE2_X003={
   {handle:"@cobalt_6s",displayName:"钴蓝色",text:"又是因为恋爱新闻影响活动吗？真的很失望。",likes:2540,time:"10:15"},
   {handle:"@clearstar_2vx",displayName:"Clear Star",text:"不要把所有事情都推到一个人身上，官方也没有说原因。",likes:5370,time:"10:16"},
   {handle:"@orbitfilm_7h",displayName:"Orbit Film",text:"拜托让大家好好完成活动吧。",likes:6140,time:"10:17"}
- ],
-
- "@allyzheart_4n：其他成员真的很无辜，希望活动不要取消。",
- "@mellow_9pt：主办方考虑现场安全也可以理解。",
- "@cobalt_6s：又是因为恋爱新闻影响活动吗？真的很失望。",
- "@clearstar_2vx：不要把所有事情都推到一个人身上，官方也没有说原因。",
- "@orbitfilm_7h：拜托让大家好好完成活动吧。"
  ]
 };
 
@@ -82,6 +81,14 @@ export const STAGE2_X001={
  likes:48200,reposts:12600,
  comments:[
  "@starry_4nq：看到这篇真的哭了……妳陪他走了那么久。",
+ "@allyzmoon_83：喜欢一个人是自由的，离开也是。谢谢妳以前拍的照片。",
+ "@vivid_7pk：我理解站姐，但我不认为他谈恋爱就代表以前对粉丝的真心都是假的。",
+ "@dawnfilm_x2：我也是因为这个站才开始认识他的，真的好难过。",
+ "@cloud_9rz：不是不能谈恋爱，是这件事让很多人觉得自己被瞒着。",
+ "@peachorbit_5m：拜托不要再去骚扰那个女生了，她不是你们可以随便攻击的人。",
+ "@silverday_q8：我不脱粉。我喜欢的是他的舞台，也希望他能幸福。",
+ "@hush_3vt：站姐做了自己的选择，其他 ALLYZ 也有权利继续支持。"
+ ],
  commentDetails:[
   {handle:"@starry_4nq",displayName:"星夜留影",text:"看到这篇真的哭了……妳陪他走了那么久。",likes:12840,time:"23:19"},
   {handle:"@allyzmoon_83",displayName:"月亮收集者",text:"喜欢一个人是自由的，离开也是。谢谢妳以前拍的照片。",likes:9360,time:"23:20"},
@@ -91,15 +98,6 @@ export const STAGE2_X001={
   {handle:"@peachorbit_5m",displayName:"桃子轨道",text:"拜托不要再去骚扰那个女生了，她不是你们可以随便攻击的人。",likes:10200,time:"23:24"},
   {handle:"@silverday_q8",displayName:"银色晴天",text:"我不脱粉。我喜欢的是他的舞台，也希望他能幸福。",likes:8930,time:"23:25"},
   {handle:"@hush_3vt",displayName:"安静星球",text:"站姐做了自己的选择，其他 ALLYZ 也有权利继续支持。",likes:3760,time:"23:26"}
- ],
-
- "@allyzmoon_83：喜欢一个人是自由的，离开也是。谢谢妳以前拍的照片。",
- "@vivid_7pk：我理解站姐，但我不认为他谈恋爱就代表以前对粉丝的真心都是假的。",
- "@dawnfilm_x2：我也是因为这个站才开始认识他的，真的好难过。",
- "@cloud_9rz：不是不能谈恋爱，是这件事让很多人觉得自己被瞒着。",
- "@peachorbit_5m：拜托不要再去骚扰那个女生了，她不是你们可以随便攻击的人。",
- "@silverday_q8：我不脱粉。我喜欢的是他的舞台，也希望他能幸福。",
- "@hush_3vt：站姐做了自己的选择，其他 ALLYZ 也有权利继续支持。"
  ]
 };
 export const STAGE2_X002={
@@ -111,6 +109,14 @@ export const STAGE2_X002={
  likes:236800,reposts:78400,
  comments:[
  "@allyzforever_8x：终于有声明了，拜托真的保护成员跟被公开资料的人。",
+ "@blueorbit_4r：所以公司到底有没有要说明恋爱的事？大家等这么久不是只想看这些。",
+ "@softstar_92q：偶像也是人，为什么谈恋爱就要被公开私人资料？",
+ "@frame_6kp：我不支持人肉搜索，但公司也应该正面回应粉丝的疑问。",
+ "@moonlit_3h：拜托不要取消活动，其他成员也努力很久了。",
+ "@allnight_7vc：ALLYZ 不是只有一种声音，有人失望，也有人选择继续支持。",
+ "@ribbon_5ty：如果有人真的威胁到别人的安全，公司就应该采取法律行动。",
+ "@starlane_2w：我现在只希望他们可以安心站上舞台。"
+ ],
  commentDetails:[
   {handle:"@allyzforever_8x",displayName:"永远的ALLYZ",text:"终于有声明了，拜托真的保护成员跟被公开资料的人。",likes:18420,time:"10:01"},
   {handle:"@blueorbit_4r",displayName:"蓝色轨道",text:"所以公司到底有没有要说明恋爱的事？大家等这么久不是只想看这些。",likes:12300,time:"10:02"},
@@ -120,15 +126,6 @@ export const STAGE2_X002={
   {handle:"@allnight_7vc",displayName:"整夜星光",text:"ALLYZ 不是只有一种声音，有人失望，也有人选择继续支持。",likes:13200,time:"10:06"},
   {handle:"@ribbon_5ty",displayName:"缎带结",text:"如果有人真的威胁到别人的安全，公司就应该采取法律行动。",likes:7250,time:"10:07"},
   {handle:"@starlane_2w",displayName:"星际航线",text:"我现在只希望他们可以安心站上舞台。",likes:10800,time:"10:08"}
- ],
-
- "@blueorbit_4r：所以公司到底有没有要说明恋爱的事？大家等这么久不是只想看这些。",
- "@softstar_92q：偶像也是人，为什么谈恋爱就要被公开私人资料？",
- "@frame_6kp：我不支持人肉搜索，但公司也应该正面回应粉丝的疑问。",
- "@moonlit_3h：拜托不要取消活动，其他成员也努力很久了。",
- "@allnight_7vc：ALLYZ 不是只有一种声音，有人失望，也有人选择继续支持。",
- "@ribbon_5ty：如果有人真的威胁到别人的安全，公司就应该采取法律行动。",
- "@starlane_2w：我现在只希望他们可以安心站上舞台。"
  ]
 };
 export const RESERVED_STAGE3_X_EVENT_IDS = ["X004","X005","X006","X007","X008"] as const;
