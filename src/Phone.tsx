@@ -1124,7 +1124,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
 
     const f081 = getFriendPhase2Node("F2_081");
     const f082 = getFriendPhase2Node("F2_082");
-    if (!f081?.scriptedPlayerLine || !f082) return;
+    const scriptedLine = f081?.scriptedPlayerLines?.[0];
+    if (!scriptedLine || !f082) return;
     const avatar = boyfriendAvatarPath(selectedFriend);
     let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
     const migratedQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
@@ -1149,7 +1150,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     };
 
     if (!hasF081Messages) {
-      const splitIndex = Math.max(0, Math.min(f081.lines.length, f081.scriptedPlayerLine.afterLineIndex));
+      const splitIndex = Math.max(0, Math.min(f081.lines.length, scriptedLine.afterLineIndex));
       addIncoming(f081.lines.slice(0, splitIndex), "F2_081", "friend-phase2-migration-F2_081-before");
     }
     const scriptedId = "friend-phase2-F2_081-scripted-player";
@@ -1161,7 +1162,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         id: scriptedId,
         title: selectedFriend,
         sender: "我",
-        body: f081.scriptedPlayerLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+        body: scriptedLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
         time: current.time || displayTime,
         outgoing: true,
         read: true,
@@ -2812,31 +2813,44 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       let activeNextNode = nextNode;
                       const renderedLines = nextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
                       let queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
-                      if (nextNode.scriptedPlayerLine && nextNode.autoNext) {
-                        const splitIndex = Math.max(0, Math.min(renderedLines.length, nextNode.scriptedPlayerLine.afterLineIndex));
-                        const beforeQueue = queueLines(renderedLines.slice(0, splitIndex), "friend-phase2-" + nodeId + "-" + choiceKey + "-before").map(entry => ({
-                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
-                        }));
-                        const lastBeforeAt = Math.max(stamp, ...[...currentQueue, ...beforeQueue].filter(entry => entry.item?.title === character).map(entry => entry.deliverAt));
-                        const scriptedPlayer = makeItem({
-                          id: "friend-phase2-" + nextNode.id + "-scripted-player",
-                          title: character, sender: "我",
-                          body: nextNode.scriptedPlayerLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
-                          time, outgoing: true, read: true,
-                        });
-                        scriptedPlayer.meta = { ...scriptedPlayer.meta, friendPhase2Node: nextNode.id, friendPhase2ScriptedPlayer: "true" };
-                        const scriptedPlayerAt = lastBeforeAt + 5000;
-                        const scriptedPlayerQueue = { item: scriptedPlayer, typingAt: scriptedPlayerAt, deliverAt: scriptedPlayerAt };
-                        const afterQueue = queueLines(renderedLines.slice(splitIndex), "friend-phase2-" + nodeId + "-" + choiceKey + "-after", [...currentQueue, ...beforeQueue, scriptedPlayerQueue], true).map(entry => ({
-                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
-                        }));
+                      if (nextNode.scriptedPlayerLines?.length && nextNode.autoNext) {
+                        let lineCursor = 0;
+                        for (let scriptedIndex = 0; scriptedIndex < nextNode.scriptedPlayerLines.length; scriptedIndex++) {
+                          const scriptedLine = nextNode.scriptedPlayerLines[scriptedIndex];
+                          const splitIndex = Math.max(lineCursor, Math.min(renderedLines.length, scriptedLine.afterLineIndex));
+                          const beforeQueue = queueLines(
+                            renderedLines.slice(lineCursor, splitIndex),
+                            "friend-phase2-" + nodeId + "-" + choiceKey + "-before-" + scriptedIndex,
+                            [...currentQueue, ...queued],
+                            true,
+                          ).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } } }));
+                          queued.push(...beforeQueue);
+                          const lastBeforeAt = Math.max(stamp, ...[...currentQueue, ...queued].filter(entry => entry.item?.title === character).map(entry => entry.deliverAt));
+                          const scriptedPlayer = makeItem({
+                            id: "friend-phase2-" + nextNode.id + "-scripted-player-" + scriptedIndex,
+                            title: character, sender: "我",
+                            body: scriptedLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+                            time, outgoing: true, read: true,
+                          });
+                          scriptedPlayer.meta = { ...scriptedPlayer.meta, friendPhase2Node: nextNode.id, friendPhase2ScriptedPlayer: String(scriptedIndex) };
+                          const scriptedPlayerAt = lastBeforeAt + 5000;
+                          queued.push({ item: scriptedPlayer, typingAt: scriptedPlayerAt, deliverAt: scriptedPlayerAt });
+                          lineCursor = splitIndex;
+                        }
+                        const afterQueue = queueLines(
+                          renderedLines.slice(lineCursor),
+                          "friend-phase2-" + nodeId + "-" + choiceKey + "-after",
+                          [...currentQueue, ...queued],
+                          true,
+                        ).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } } }));
+                        queued.push(...afterQueue);
                         const autoNextNode = getFriendPhase2Node(nextNode.autoNext);
                         if (!autoNextNode) return;
                         const autoNextLines = autoNextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
-                        const autoNextQueue = queueLines(autoNextLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-auto-" + autoNextNode.id, [...currentQueue, ...beforeQueue, scriptedPlayerQueue, ...afterQueue], true).map(entry => ({
+                        const autoNextQueue = queueLines(autoNextLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-auto-" + autoNextNode.id, [...currentQueue, ...queued], true).map(entry => ({
                           ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: autoNextNode.id } },
                         }));
-                        queued = [...beforeQueue, scriptedPlayerQueue, ...afterQueue, ...autoNextQueue];
+                        queued.push(...autoNextQueue);
                         activeNextNode = autoNextNode;
                       } else if (nextNode.id !== "F2_074") {
                         queued = queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
