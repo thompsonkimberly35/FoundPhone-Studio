@@ -1321,14 +1321,16 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const currentUi = runtimeRef.current.ui?.kakao || {};
     const priorOutcome = String(currentUi["secret-admirer-story-outcome"] || "");
     const boyfriendOutcome = String(currentUi["boyfriend-stage2-result"] || "");
-    if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome)) return;
+    const boyfriendNode = String(currentUi["boyfriend-stage2-node"] || "");
+    const hasHeardCompanyLimit = boyfriendNode === "K142" || /^K1(?:4[5-9]|[5-6][0-9])$/.test(boyfriendNode);
+    if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome) || !hasHeardCompanyLimit) return;
     if (currentUi["secret-admirer-stage2-started"] === true || currentUi["secret-admirer-stage2-trigger-at"]) return;
     const now = Date.now();
     let pending: Array<{deliverAt?:number}> = [];
     try { pending = JSON.parse(String(currentUi["delivery-queue"] || "[]")); } catch { pending = []; }
     const due = nextKakaoStageStartAt(now, pending.map(entry=>Number(entry.deliverAt||0)).filter(value=>value>now));
     update({...runtimeRef.current,ui:{...runtimeRef.current.ui,kakao:{...currentUi,"secret-admirer-stage2-trigger-at":String(due)}}});
-  }, [ready,creator,s.ui?.kakao?.["secret-admirer-story-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["secret-admirer-stage2-started"],s.ui?.kakao?.["secret-admirer-stage2-trigger-at"]]);
+  }, [ready,creator,s.ui?.kakao?.["secret-admirer-story-outcome"],s.ui?.kakao?.["boyfriend-stage2-result"],s.ui?.kakao?.["secret-admirer-stage2-started"],s.ui?.kakao?.["secret-admirer-stage2-trigger-at"],s.ui?.kakao?.["boyfriend-stage2-node"]]);
 
   useEffect(() => {
     if (!ready || creator) return;
@@ -1341,7 +1343,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       if (latestUi["secret-admirer-stage2-started"] === true) return;
       const priorOutcome = String(latestUi["secret-admirer-story-outcome"] || "");
       const boyfriendOutcome = String(latestUi["boyfriend-stage2-result"] || "");
-      if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome)) return;
+      const boyfriendNode = String(latestUi["boyfriend-stage2-node"] || "");
+      const hasHeardCompanyLimit = boyfriendNode === "K142" || /^K1(?:4[5-9]|[5-6][0-9])$/.test(boyfriendNode);
+      if (!/^R(0[1-9]|10)$/.test(priorOutcome) || !/^E(0[9]|1[0-8])$/.test(boyfriendOutcome) || !hasHeardCompanyLimit) return;
       let pending: Array<{deliverAt?:number}> = [];
       try { pending = JSON.parse(String(latestUi["delivery-queue"] || "[]")); } catch { pending = []; }
       const future = pending.map(entry=>Number(entry.deliverAt||0)).filter(value=>value>Date.now());
