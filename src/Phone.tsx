@@ -35,6 +35,7 @@ import { WeChatSkin, WhatsAppSkin } from "./AppSkins";
 import { RichText } from "./RichText";
 import { getBoyfriendStage2Node, getBoyfriendStage2Choice, STAGE2_X001, STAGE2_X002, STAGE2_X003 } from "./kakaoBoyfriendStage2";
 import { BOYFRIEND_STAGE3_OPENINGS } from "./kakaoBoyfriendStage3";
+import { getBoyfriendAdmirerChoice, getBoyfriendAdmirerNode } from "./kakaoBoyfriendAdmirerDiscovery";
 import {
   useEffect,
   useState,
@@ -1926,8 +1927,33 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const queued = queueLines(nextNode.lines, "boyfriend-stage2-" + nodeId + "-" + choiceKey, currentQueue, true).map(entry => ({ ...entry, item: { ...entry.item, meta: { ...entry.item.meta, boyfriendStage2Node: nextNode.id } } }));
                       const isPreviousStageOutcome = /^E(0[9]|1[0-8])$/.test(String(nextNode.result || ""));
                       const stage3TriggerAt = isPreviousStageOutcome ? String(nextKakaoStageStartAt(stamp, [...currentQueue.map(entry => entry.deliverAt), ...queued.map(entry => entry.deliverAt)])) : String(currentUi["boyfriend-stage3-trigger-at"] || "");
-                      const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "boyfriend-stage3-trigger-at": stage3TriggerAt, "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
+                      const nextUi = { ...currentUi, "boyfriend-stage2-node": nextNode.id, "boyfriend-stage2-history": JSON.stringify([...history, historyKey]), "boyfriend-stage2-result": nextNode.result || String(currentUi["boyfriend-stage2-result"] || ""), "boyfriend-admirer-discovery-due-at": /^M(?:0[7-9]|1[0-2])$/.test(String(nextNode.result || "")) ? String(storyStamp + 60_000) : String(currentUi["boyfriend-admirer-discovery-due-at"] || ""), "boyfriend-stage3-trigger-at": stage3TriggerAt, "delivery-queue": JSON.stringify([...currentQueue, ...queued]) };
                       update({ ...current, messages: { ...currentMessages, kakao: [...existing, outgoing] }, ui: { ...current.ui, kakao: nextUi } });
+                      return;
+                    }
+                    if (choiceId?.startsWith("boyfriend-admirer:")) {
+                      const [, nodeId, choiceKey] = choiceId.split(":");
+                      if (character !== selectedBoyfriend || nodeId !== String(currentUi["boyfriend-admirer-discovery-node"] || "")) return;
+                      const memberId = String(currentUi["boyfriend-admirer-discovery-member-id"] || "");
+                      const member = ALD1_SECRET_ADMIRER_MEMBERS.find(entry => entry.id === memberId);
+                      if (!member) return;
+                      const choice = getBoyfriendAdmirerChoice(nodeId, choiceKey);
+                      if (!choice) return;
+                      let history: string[] = [];
+                      try { history = JSON.parse(String(currentUi["boyfriend-admirer-discovery-history"] || "[]")); } catch { history = []; }
+                      const historyKey = nodeId + ":" + choiceKey;
+                      if (history.includes(historyKey)) return;
+                      const nextNode = getBoyfriendAdmirerNode(choice.next);
+                      if (!nextNode) return;
+                      const aOutcome = String(currentUi["secret-admirer-stage2-outcome"] || "");
+                      if (nodeId === "M184" && choiceKey === "A" && !["R12","R13","R16"].includes(aOutcome) && currentUi["boyfriend-admirer-explicit-rejection"] !== true) return;
+                      if (nodeId === "M184" && choiceKey === "B" && ["R12","R13","R16"].includes(aOutcome)) return;
+                      const personalize = (line:string) => line.replace(/那位成员/g, member.name).replace(/他/g, member.name);
+                      const outgoing = makeItem({id:"boyfriend-admirer-player-"+nodeId+"-"+choiceKey+"-"+stamp,title:character,sender:"我",body:personalize(choice.text),time,outgoing:true,read:true});
+                      outgoing.meta = {...outgoing.meta,unread:"1",unreadUntilAt:String(stamp+2000),boyfriendAdmirerNode:nodeId,boyfriendAdmirerChoice:choiceKey};
+                      const queued = queueLines(nextNode.lines.map(personalize),"boyfriend-admirer-"+nodeId+"-"+choiceKey).map(entry=>({...entry,item:{...entry.item,meta:{...entry.item.meta,boyfriendAdmirerNode:nextNode.id}}}));
+                      const nextResult = nextNode.result || String(currentUi["boyfriend-admirer-discovery-result"] || "");
+                      update({...current,messages:{...currentMessages,kakao:[...existing,outgoing]},ui:{...current.ui,kakao:{...currentUi,"boyfriend-admirer-discovery-node":nextNode.id,"boyfriend-admirer-discovery-history":JSON.stringify([...history,historyKey]),"boyfriend-admirer-discovery-result":nextResult,"boyfriend-admirer-explicit-rejection":currentUi["boyfriend-admirer-explicit-rejection"]===true || (nodeId==="M184" && choiceKey==="A"),"boyfriend-admirer-confrontation-unlocked":["MEND06","MEND08"].includes(nextResult),"delivery-queue":JSON.stringify([...currentQueue,...queued])}}});
                       return;
                     }
                     if (choiceId?.startsWith("team-conflict:")) {
