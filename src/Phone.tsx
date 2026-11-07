@@ -1166,7 +1166,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         meta: {
           handle: event.handle, verified: "true", reposts: String(event.reposts),
           views: event.eventId === "X001" ? "68.4万" : event.eventId === "X002" ? "326万" : "248万",
-          translation: event.translation, storyEventId: event.eventId,
+          translation: event.translation, storyEventId: event.eventId, commentDetails: JSON.stringify((event as typeof event & {commentDetails?: unknown[]}).commentDetails || []),
         }
       });
       posts.push(post);
