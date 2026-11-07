@@ -1070,6 +1070,77 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     return () => window.clearTimeout(timer);
   }, [ready, creator, backlashNotificationsComplete, igQueue.length, igBanner, selectedFriend, s.messages.kakao, s.ui?.kakao?.["ig-backlash-checkin-due-at"], s.ui?.kakao?.["friend-story-node"], s.ui?.kakao?.["friend-story-triggered"], s.ui?.kakao?.["delivery-queue"]]);
 
+  // Migrate older F083 saves: preserve existing chat, add the missing scripted player lines, then continue to F084.
+  useEffect(() => {
+    if (!ready || creator || !selectedFriend) return;
+    const current = runtimeRef.current;
+    const ui = current.ui?.kakao || {};
+    if (ui["friend-story-phase2-node"] !== "F2_083" || ui["friend-story-phase2-auto-next-node"] === "F2_084") return;
+
+    let queue: Array<{ item?: Item; typingAt?: number; deliverAt?: number }> = [];
+    let completed: string[] = [];
+    try { queue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { queue = []; }
+    try { completed = JSON.parse(String(ui["friend-story-phase2-completed-nodes"] || "[]")); } catch { completed = []; }
+    if (queue.some(entry => entry.item?.meta?.friendPhase2Node === "F2_083")) return;
+
+    const node = getFriendPhase2Node("F2_083");
+    if (!node?.scriptedPlayerLines?.length) return;
+    const messages = current.messages.kakao || [];
+    const hasF083Messages = messages.some(item => item.meta?.friendPhase2Node === "F2_083");
+    const avatar = boyfriendAvatarPath(selectedFriend);
+    let cursor = Math.max(Date.now(), ...queue.filter(entry => entry.item?.title === selectedFriend).map(entry => Number(entry.deliverAt || 0)));
+    const migratedQueue: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+    const addIncoming = (lines: string[], prefix: string) => {
+      lines.forEach((body, index) => {
+        const typingAt = cursor + 2000;
+        const deliverAt = typingAt + 3000;
+        const item = makeItem({
+          id: prefix + "-" + index, title: selectedFriend, sender: selectedFriend, avatar,
+          body: body.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+          time: current.time || displayTime, outgoing: false, read: false,
+          meta: { friendPhase2Node: "F2_083" },
+        });
+        migratedQueue.push({ item, typingAt, deliverAt });
+        cursor = deliverAt;
+      });
+    };
+    if (!hasF083Messages) {
+      const first = node.scriptedPlayerLines[0];
+      addIncoming(node.lines.slice(0, first.afterLineIndex), "friend-phase2-migration-F2_083-before-0");
+    }
+
+    node.scriptedPlayerLines.forEach((scriptedLine, index) => {
+      const id = "friend-phase2-F2_083-scripted-player-" + index;
+      const alreadyExists = messages.some(item => item.id === id) || queue.some(entry => entry.item?.id === id);
+      if (alreadyExists) return;
+      const scriptedAt = cursor + 5000;
+      const item = makeItem({
+        id, title: selectedFriend, sender: "我",
+        body: scriptedLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+        time: current.time || displayTime, outgoing: true, read: true,
+        meta: { friendPhase2Node: "F2_083", friendPhase2ScriptedPlayer: String(index) },
+      });
+      migratedQueue.push({ item, typingAt: scriptedAt, deliverAt: scriptedAt });
+      cursor = scriptedAt;
+      if (!hasF083Messages) {
+        const nextLineIndex = node.scriptedPlayerLines[index + 1]?.afterLineIndex ?? node.lines.length;
+        const currentLineIndex = scriptedLine.afterLineIndex;
+        addIncoming(node.lines.slice(currentLineIndex, nextLineIndex), "friend-phase2-migration-F2_083-between-" + index);
+      }
+    });
+
+    update({
+      ...current,
+      ui: { ...current.ui, kakao: {
+        ...ui,
+        "friend-story-phase2-auto-next-node": "F2_084",
+        "friend-story-phase2-friend-took-responsibility": true,
+        "friend-story-phase2-completed-nodes": JSON.stringify([...new Set([...completed, "F2_083"])]),
+        "delivery-queue": JSON.stringify([...queue, ...migratedQueue]),
+      } },
+    });
+  }, [ready, creator, selectedFriend, selectedBoyfriend, s.messages.kakao, s.ui?.kakao?.["friend-story-phase2-node"], s.ui?.kakao?.["friend-story-phase2-auto-next-node"], s.ui?.kakao?.["friend-story-phase2-completed-nodes"], s.ui?.kakao?.["delivery-queue"]]);
+
   // The F083 conversation must finish before its X disclosure is published and F084 begins.
   useEffect(() => {
     if (!ready || creator || !selectedFriend) return;
