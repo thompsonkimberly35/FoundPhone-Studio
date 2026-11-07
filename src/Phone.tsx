@@ -1980,8 +1980,8 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       const nextNode = getBoyfriendAdmirerNode(choice.next);
                       if (!nextNode) return;
                       const aOutcome = String(currentUi["secret-admirer-stage2-outcome"] || "");
-                      if (nodeId === "M184" && choiceKey === "A" && !["R12","R13","R16"].includes(aOutcome) && currentUi["boyfriend-admirer-explicit-rejection"] !== true) return;
-                      if (nodeId === "M184" && choiceKey === "B" && ["R12","R13","R16"].includes(aOutcome)) return;
+                      if (nodeId === "M184" && choiceKey === "A" && aOutcome !== "R12" && currentUi["boyfriend-admirer-explicit-rejection"] !== true) return;
+                      if (nodeId === "M184" && choiceKey === "B" && aOutcome === "R12") return;
                       const personalize = (line:string) => line.replace(/那位成员/g, member.name).replace(/他/g, member.name);
                       const outgoing = makeItem({id:"boyfriend-admirer-player-"+nodeId+"-"+choiceKey+"-"+stamp,title:character,sender:"我",body:personalize(choice.text),time,outgoing:true,read:true});
                       outgoing.meta = {...outgoing.meta,unread:"1",unreadUntilAt:String(stamp+2000),boyfriendAdmirerNode:nodeId,boyfriendAdmirerChoice:choiceKey};
