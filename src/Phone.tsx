@@ -2916,7 +2916,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         const secondPost = existingSecondPost || makeItem({
                           id: "friend-phase2-X002", title: "友人承认曾向第三方提供私人对话资料",
                           sender: "@timeline_watch_09",
-                          body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。相关截图仍有部分来源与传播过程未明。",
+                          body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。",
                           time, kind: "post", folder: "主页", likes: 9200,
                           comments: [
                             "@bluehour_8m：承认提供资料不等于承认公开爆料，先把事实分清楚。",
