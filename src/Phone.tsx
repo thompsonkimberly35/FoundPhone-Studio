@@ -1262,9 +1262,15 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
         postId: event.postId, deliveredAt: Date.now(), notificationDelivered: false,
       });
     }
-    if (!added.length) return;
-    const publishesX002 = added.some(event => event.eventId === "X002");
     const kakaoMessages = [...(current.messages.kakao || [])];
+    const x002AlreadyPublished = events.some(event => event.eventId === "X002")
+      || posts.some(post => post.id === STAGE2_X002.postId);
+    const publishesX002 = added.some(event => event.eventId === "X002") || x002AlreadyPublished;
+    const k113AlreadyDelivered = kakaoMessages.some(item => item.id === "boyfriend-stage2-K113-0");
+    const shouldUnlockK113 = publishesX002
+      && STAGE2_X002.triggeredByNodes.some(node => deliveredNodes.has(node))
+      && !k113AlreadyDelivered;
+    if (!added.length && !shouldUnlockK113) return;
     let deliveryQueue: Array<{item:Item;typingAt:number;deliverAt:number}> = [];
     try { deliveryQueue = JSON.parse(String(ui["delivery-queue"] || "[]")); } catch { deliveryQueue = []; }
     let boyfriendNotice: string[] = [];
@@ -1274,7 +1280,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
       "story-x-events": JSON.stringify([...events, ...added]),
       "global-notification-queue": JSON.stringify(queue),
     };
-    if (publishesX002 && !kakaoMessages.some(item => item.id === "boyfriend-stage2-K113-0")) {
+    if (shouldUnlockK113) {
       const node = getBoyfriendStage2Node("K113");
       if (node) {
         const now = Date.now();
