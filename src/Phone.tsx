@@ -770,7 +770,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
     const existing = current.messages.kakao ?? [];
     const delivered = due
       .filter((entry) => !existing.some((item) => item.id === entry.item.id))
-      .map((entry) => ({ ...entry.item, read: false }));
+      .map((entry) => ({ ...entry.item, read: entry.item.outgoing ? true : false }));
     const startsBacklash = delivered.some((item) =>
       item.body === "你的身份好像已经被扒出来了"
       && !(current.messages.instagram ?? []).some((entry) => entry.id === "ig-backlash-1")
@@ -2694,28 +2694,58 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       if (!nextNode) return;
                       const outgoing = makeItem({ id: "friend-phase2-player-" + nodeId + "-" + choiceKey + "-" + stamp, title: character, sender: "我", body: choice.text, time, outgoing: true, read: true });
                       outgoing.meta = { ...outgoing.meta, unread: "1", unreadUntilAt: String(stamp + 2000), friendPhase2Node: nodeId, friendPhase2Choice: choiceKey };
+                      let activeNextNode = nextNode;
                       const renderedLines = nextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
-                      const queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = nextNode.id === "F2_074" ? [] : queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
-                        ...entry,
-                        item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
-                      }));
+                      let queued: Array<{ item: Item; typingAt: number; deliverAt: number }> = [];
+                      if (nextNode.scriptedPlayerLine && nextNode.autoNext) {
+                        const splitIndex = Math.max(0, Math.min(renderedLines.length, nextNode.scriptedPlayerLine.afterLineIndex));
+                        const beforeQueue = queueLines(renderedLines.slice(0, splitIndex), "friend-phase2-" + nodeId + "-" + choiceKey + "-before").map(entry => ({
+                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
+                        }));
+                        const lastBeforeAt = Math.max(stamp, ...[...currentQueue, ...beforeQueue].filter(entry => entry.item?.title === character).map(entry => entry.deliverAt));
+                        const scriptedPlayer = makeItem({
+                          id: "friend-phase2-" + nextNode.id + "-scripted-player",
+                          title: character, sender: "我",
+                          body: nextNode.scriptedPlayerLine.text.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"),
+                          time, outgoing: true, read: true,
+                        });
+                        scriptedPlayer.meta = { ...scriptedPlayer.meta, friendPhase2Node: nextNode.id, friendPhase2ScriptedPlayer: "true" };
+                        const scriptedPlayerAt = lastBeforeAt + 5000;
+                        const scriptedPlayerQueue = { item: scriptedPlayer, typingAt: scriptedPlayerAt, deliverAt: scriptedPlayerAt };
+                        const afterQueue = queueLines(renderedLines.slice(splitIndex), "friend-phase2-" + nodeId + "-" + choiceKey + "-after", [...currentQueue, ...beforeQueue, scriptedPlayerQueue], true).map(entry => ({
+                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
+                        }));
+                        const autoNextNode = getFriendPhase2Node(nextNode.autoNext);
+                        if (!autoNextNode) return;
+                        const autoNextLines = autoNextNode.lines.map(line => line.replace(/\{\{BOYFRIEND_NAME\}\}/g, selectedBoyfriend || "他"));
+                        const autoNextQueue = queueLines(autoNextLines, "friend-phase2-" + nodeId + "-" + choiceKey + "-auto-" + autoNextNode.id, [...currentQueue, ...beforeQueue, scriptedPlayerQueue, ...afterQueue], true).map(entry => ({
+                          ...entry, item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: autoNextNode.id } },
+                        }));
+                        queued = [...beforeQueue, scriptedPlayerQueue, ...afterQueue, ...autoNextQueue];
+                        activeNextNode = autoNextNode;
+                      } else if (nextNode.id !== "F2_074") {
+                        queued = queueLines(renderedLines, "friend-phase2-" + nodeId + "-" + choiceKey).map(entry => ({
+                          ...entry,
+                          item: { ...entry.item, meta: { ...entry.item.meta, friendPhase2Node: nextNode!.id } },
+                        }));
+                      }
                       const addScreenshotToQueue = (id: string, variant: string, body: string, offset: number) => {
-                        const item = makeItem({ id, title: character, sender: character, avatar, body, time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: nextNode!.id, friendPhase2Screenshot: variant } });
+                        const item = makeItem({ id, title: character, sender: character, avatar, body, time, kind: "image", outgoing: false, read: false, meta: { friendPhase2Node: activeNextNode.id, friendPhase2Screenshot: variant } });
                         const baseAt = queued.length ? queued[queued.length - 1].deliverAt : stamp;
                         const typingAt = baseAt + 2000 + offset;
                         queued.push({ item, typingAt, deliverAt: typingAt + 3000 });
                       };
-                      if (nextNode.id === "F2_071") addScreenshotToQueue("friend-phase2-screenshot-initial", "cropped", "聊天记录截图", 0);
-                      if (nextNode.id === "F2_078A") {
+                      if (activeNextNode.id === "F2_071") addScreenshotToQueue("friend-phase2-screenshot-initial", "cropped", "聊天记录截图", 0);
+                      if (activeNextNode.id === "F2_078A") {
                         addScreenshotToQueue("friend-phase2-screenshot-original", "original", "原始聊天截图", 0);
                         addScreenshotToQueue("friend-phase2-screenshot-circulated", "cropped", "网上流传的截图", 5000);
                       }
                       const nextHistory = [...history, historyKey];
                       const nextCompleted = [...new Set([...completed, nodeId])];
-                      const outcome = nextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
+                      const outcome = activeNextNode.result || String(currentUi["friend-story-phase2-outcome"] || "");
                       const nextUi: Record<string, UiValue> = {
                         ...currentUi,
-                        "friend-story-phase2-node": nextNode.id,
+                        "friend-story-phase2-node": activeNextNode.id,
                         "friend-story-phase2-history": JSON.stringify(nextHistory),
                         "friend-story-phase2-completed-nodes": JSON.stringify(nextCompleted),
                         "friend-story-phase2-trust": trust,
@@ -2723,14 +2753,14 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                         "friend-story-phase2-concealment": concealment,
                         "friend-story-phase2-outcome": outcome,
                         "friend-story-phase2-outcome-name": getFriendPhase2OutcomeLabel(outcome),
-                        "friend-story-phase2-followup-due-at": nextNode.result && !nodeId.startsWith("F2_090_") && currentUi["friend-story-phase2-followup-sent"] !== true
+                        "friend-story-phase2-followup-due-at": activeNextNode.result && !nodeId.startsWith("F2_090_") && currentUi["friend-story-phase2-followup-sent"] !== true
                           ? String(storyStamp + (outcome === "H18" || outcome === "H20" ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000))
                           : String(currentUi["friend-story-phase2-followup-due-at"] || ""),
                         "friend-story-phase2-followup-completed": nodeId.startsWith("F2_090_") ? true : currentUi["friend-story-phase2-followup-completed"] === true,
-                        "friend-story-phase2-x-due-at": nextNode.id === "F2_074" ? String(storyStamp + 30 * 60 * 1000) : String(currentUi["friend-story-phase2-x-due-at"] || ""),
-                        "friend-story-phase2-evidence-compared": nextNode.effect === "evidence-compared" || currentUi["friend-story-phase2-evidence-compared"] === true,
-                        "friend-story-phase2-source-identified": nextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
-                        "friend-story-phase2-investigation-paused": nextNode.effect === "investigation-paused" || currentUi["friend-story-phase2-investigation-paused"] === true,
+                        "friend-story-phase2-x-due-at": activeNextNode.id === "F2_074" ? String(storyStamp + 30 * 60 * 1000) : String(currentUi["friend-story-phase2-x-due-at"] || ""),
+                        "friend-story-phase2-evidence-compared": activeNextNode.effect === "evidence-compared" || currentUi["friend-story-phase2-evidence-compared"] === true,
+                        "friend-story-phase2-source-identified": activeNextNode.effect === "source-identified" || currentUi["friend-story-phase2-source-identified"] === true,
+                        "friend-story-phase2-investigation-paused": activeNextNode.effect === "investigation-paused" || currentUi["friend-story-phase2-investigation-paused"] === true,
                         "friend-story-phase2-bf-informed": nodeId === "F2_080" && choiceKey === "C" ? true : currentUi["friend-story-phase2-bf-informed"] === true,
                         "friend-story-phase2-truth": outcome === "H20" ? "D" : currentUi["friend-story-phase2-evidence-compared"] === true || nextNode.effect === "evidence-compared" ? "B" : currentUi["friend-story-phase2-source-identified"] === true || nextNode.effect === "source-identified" ? "A" : currentUi["friend-story-phase2-investigation-paused"] === true || nextNode.effect === "investigation-paused" ? "C" : String(currentUi["friend-story-phase2-truth"] || "C"),
                         "friend-story-phase2-ended": Boolean(outcome),
@@ -2752,7 +2782,7 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       let nextTwitter = [...(current.messages.twitter || [])];
                       let globalQueue: Item[] = [];
                       try { globalQueue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
-                      if (nextNode.id === "F2_084" && currentUi["friend-story-phase2-x2-posted"] !== true) {
+                      if (activeNextNode.id === "F2_084" && currentUi["friend-story-phase2-x2-posted"] !== true) {
                         const existingSecondPost = nextTwitter.find(post => post.id === "friend-phase2-X002");
                         const secondPost = existingSecondPost || makeItem({
                           id: "friend-phase2-X002", title: "友人承认曾向第三方提供私人对话资料",
