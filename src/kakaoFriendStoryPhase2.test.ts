@@ -56,6 +56,7 @@ describe("KakaoTalk confidant friend story phase two", () => {
   it("has no dangling choice targets", () => {
     for (const node of Object.values(FRIEND_PHASE2_STORY)) {
       for (const choice of node.choices) expect(FRIEND_PHASE2_STORY[choice.next]).toBeDefined();
+      if (node.autoNext) expect(FRIEND_PHASE2_STORY[node.autoNext]).toBeDefined();
     }
   });
 
