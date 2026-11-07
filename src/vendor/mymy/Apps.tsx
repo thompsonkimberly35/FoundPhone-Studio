@@ -156,10 +156,11 @@ export function MymyKakao(p: SkinProps) {
     setShowChoices(hasBacklashCheckin);
   }, [p.thread, messages.length, hasBacklashCheckin]);
   const boyfriendThread = Boolean(p.selectedBoyfriend && p.thread === p.selectedBoyfriend);
+  const admirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === String(p.ui?.["boyfriend-admirer-discovery-member-id"] || ""));
   const boyfriendAdmirerNodeId = String(p.ui?.["boyfriend-admirer-discovery-node"] || "");
   const boyfriendAdmirerNode = boyfriendThread && p.ui?.["boyfriend-admirer-discovery-started"] === true ? getBoyfriendAdmirerNode(boyfriendAdmirerNodeId) : undefined;
   const admirerMember = ALD1_SECRET_ADMIRER_MEMBERS.find(member => member.id === String(p.ui?.["boyfriend-admirer-discovery-member-id"] || ""));
-  const boyfriendAdmirerChoices = (boyfriendAdmirerNode?.choices || []).filter(choice => !(boyfriendAdmirerNodeId === "M184" && choice.key === "A" && !["R12","R13","R16"].includes(String(p.ui?.["secret-admirer-stage2-outcome"] || "")) && p.ui?.["boyfriend-admirer-explicit-rejection"] !== true) && !(boyfriendAdmirerNodeId === "M184" && choice.key === "B" && ["R12","R13","R16"].includes(String(p.ui?.["secret-admirer-stage2-outcome"] || "")));
+  const boyfriendAdmirerChoices = (boyfriendAdmirerNode?.choices || []).filter(choice => !(boyfriendAdmirerNodeId === "M184" && choice.key === "A" && String(p.ui?.["secret-admirer-stage2-outcome"] || "") !== "R12" && p.ui?.["boyfriend-admirer-explicit-rejection"] !== true) && !(boyfriendAdmirerNodeId === "M184" && choice.key === "B" && String(p.ui?.["secret-admirer-stage2-outcome"] || "") === "R12");
 
   const friendThread = Boolean(p.selectedFriend && p.thread === p.selectedFriend);
   const boyfriendContext = romanceNode?.lines.join("") || "";
@@ -353,7 +354,7 @@ export function MymyKakao(p: SkinProps) {
                 <div style={{ display: "grid", gap: 9, width: "100%", minWidth: 0, boxSizing: "border-box", padding: "10px 9px", borderRadius: 20, background: "linear-gradient(145deg, #fffefa 0%, #fbf3e8 100%)", border: "1px solid #eee2d2", boxShadow: "0 3px 12px rgba(126, 99, 69, 0.07)" }}>
                   {(boyfriendAdmirerNode ? boyfriendAdmirerChoices : displayedRomanceChoices).map((choice, index) => (
                     <button key={choice.key} type="button" className="go" style={{ display: "block", boxSizing: "border-box", minWidth: 0, maxWidth: "100%", width: "100%", minHeight: 42, borderRadius: 14, padding: "10px 13px", border: "1px solid #eadbc8", background: "linear-gradient(180deg, #ffffff 0%, #fffaf2 100%)", color: "#655344", boxShadow: "0 2px 5px rgba(115, 87, 58, 0.06)", fontFamily: "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif", fontSize: 13, fontWeight: 500, lineHeight: 1.55, letterSpacing: "0.1px", textAlign: "left", whiteSpace: "normal", overflowWrap: "anywhere", wordBreak: "break-word", overflow: "visible" }}
-                      onClick={() => p.onKakaoChoice?.(p.thread, choice.text, "", "", boyfriendAdmirerNode ? "boyfriend-admirer:" + boyfriendAdmirerNode.id + ":" + choice.key : boyfriendAdmirerNode ? "boyfriend-admirer:" + boyfriendAdmirerNode.id + ":" + choice.key : boyfriendStage2Node ? "boyfriend-stage2:" + boyfriendStage2Node.id + ":" + choice.key : choice.key)}>
+                      onClick={() => p.onKakaoChoice?.(p.thread, admirerMember ? choice.text.replace(/那位成员/g, admirerMember.name).replace(/他/g, admirerMember.name) : choice.text, "", "", boyfriendAdmirerNode ? "boyfriend-admirer:" + boyfriendAdmirerNode.id + ":" + choice.key : boyfriendStage2Node ? "boyfriend-stage2:" + boyfriendStage2Node.id + ":" + choice.key : choice.key)}>
                       <span style={{ display: "inline-block", marginRight: 7, color: "#c2a17c", fontSize: 11, fontWeight: 600 }}>{String(index + 1).padStart(2, "0")}</span>
                       {choice.text}
                     </button>
