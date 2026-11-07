@@ -50,7 +50,16 @@ export function SocialDetail(p: {
     [menu, setMenu] = useState(false),
     [sort, setSort] = useState(false),
     [copied, setCopied] = useState(false);
-  const comments = [...item.comments, ...extra],
+  const structuredComments = (() => {
+    try {
+      const parsed = JSON.parse(String(item.meta?.commentDetails || "[]"));
+      return Array.isArray(parsed) ? parsed as Array<{handle:string;displayName:string;text:string;likes:number;time:string}> : [];
+    } catch { return []; }
+  })();
+  const seededComments = structuredComments.length
+    ? structuredComments.map(comment => comment.handle + "：" + comment.text)
+    : item.comments;
+  const comments = [...seededComments, ...extra],
     replies = sort ? [...comments].reverse() : comments;
   const copy = async () => {
     try {
@@ -212,29 +221,25 @@ export function SocialDetail(p: {
             {replies.map((c, index) => {
               const split = c.search(/[：:]/),
                 hasName = split > 0 && split < 24,
-                name = hasName ? c.slice(0, split) : "用户",
-                body = hasName ? c.slice(split + 1) : c;
+                handle = hasName ? c.slice(0, split) : "用户",
+                body = hasName ? c.slice(split + 1) : c,
+                detailIndex = sort ? replies.length - index - 1 : index,
+                detail = structuredComments[detailIndex];
               return (
                 <article key={index} className="post-detail-comment">
-                  <Avatar name={name} />
+                  <Avatar name={detail?.displayName || handle} />
                   <div>
-                    <strong>{name}</strong>
+                    <strong>{detail?.displayName || handle}</strong>
+                    {detail?.handle && <small className="post-comment-handle"> {detail.handle}</small>}
                     <p>{body}</p>
                     <div className="post-comment-actions">
-                      <button
-                        aria-label={"回复" + name}
-                        onClick={() => setTarget(name)}
-                      >
+                      <button aria-label={"回复" + handle} onClick={() => setTarget(handle)}>
                         <MessageCircle size={16} />
                       </button>
-                      <button
-                        aria-label={"喜欢回复" + index}
-                        onClick={(e) => {
-                          e.currentTarget.classList.toggle("liked");
-                        }}
-                      >
+                      <button aria-label={"喜欢回复" + index} onClick={(e) => e.currentTarget.classList.toggle("liked")}>
                         <Heart size={16} />
                       </button>
+                      {detail && <small>{detail.likes.toLocaleString()} 赞 · {detail.time}</small>}
                     </div>
                   </div>
                   <MoreHorizontal size={17} />
