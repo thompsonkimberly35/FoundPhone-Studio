@@ -32,6 +32,7 @@ describe("KakaoTalk confidant friend story phase three", () => {
     const node = getFriendPhase3Node("F092", { knowsBoyfriendConflict: false });
     expect(node?.lines.join(" ")).toContain("没有听到他们吵架");
     expect(getFriendPhase3Node("F092", { knowsBoyfriendConflict: true })?.lines.join(" ")).toContain("单独谈了一会儿");
+    expect(getFriendPhase3Node("F100", { knowsBoyfriendConflict: false })?.lines.join(" ")).toContain("没有听到他们谈话的内容");
   });
 
   it("does not reveal A's private disclosure without a trusted source", () => {
