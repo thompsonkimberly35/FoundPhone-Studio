@@ -2667,8 +2667,9 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                       let nextTwitter = [...(current.messages.twitter || [])];
                       let globalQueue: Item[] = [];
                       try { globalQueue = JSON.parse(String(currentUi["global-notification-queue"] || "[]")); } catch { globalQueue = []; }
-                      if (nextNode.id === "F2_084" && !nextTwitter.some(post => post.id === "friend-phase2-X002")) {
-                        const secondPost = makeItem({
+                      if (nextNode.id === "F2_084" && currentUi["friend-story-phase2-x2-posted"] !== true) {
+                        const existingSecondPost = nextTwitter.find(post => post.id === "friend-phase2-X002");
+                        const secondPost = existingSecondPost || makeItem({
                           id: "friend-phase2-X002", title: "友人承认曾向第三方提供私人对话资料",
                           sender: "@timeline_watch_09",
                           body: "ALD1 成员女友身边的友人承认，曾向第三方提供私人对话资料。相关截图仍有部分来源与传播过程未明。",
@@ -2685,8 +2686,11 @@ ALPHA DRIVE ONE成员${selectedBoyfriend || "李理悟"}近日因恋爱传闻成
                           ],
                           meta: { handle: "timeline_watch_09", verified: "false", reposts: "1360", views: "31.6万", storyEventId: "FRIEND_PHASE2_X002" },
                         });
-                        nextTwitter = [...nextTwitter, secondPost];
-                        globalQueue = [...globalQueue, { ...secondPost, meta: { ...secondPost.meta, notificationAppId: "twitter", notificationPostId: secondPost.id } }];
+                        if (!existingSecondPost) {
+                          nextTwitter = [...nextTwitter, secondPost];
+                          globalQueue = [...globalQueue, { ...secondPost, meta: { ...secondPost.meta, notificationAppId: "twitter", notificationPostId: secondPost.id } }];
+                        }
+                        nextUi["friend-story-phase2-x2-posted"] = true;
                       }
                       if (nodeId === "F2_080" && choiceKey === "C") {
                         nextUi["friend-story-phase2-boyfriend-notice-at"] = String(stamp);
